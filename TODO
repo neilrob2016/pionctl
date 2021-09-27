@@ -1,0 +1,6 @@
+be less verbose , ie don't decode and print every return from the streamer
+   unless verbose flag set
+parse XML
+after command. eg after 10 ex,2 up,en
+stream command - shows stream currently selected (put info in titles too)
+
