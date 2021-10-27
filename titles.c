@@ -62,13 +62,13 @@ int printTitles(int xtitles, u_char *pat, int max)
 	{
 		printf("Usage: %stitles [<pattern> [<count>]]\n",
 			xtitles ? "x" : "");
-		return CMD_ERROR;
+		return ERR_CMD_FAIL;
 	}
 
 	if (!titles_pos)
 	{
 		puts("No titles received.");
-		return CMD_OK;
+		return OK;
 	}
 
 	puts("\n*** Titles ***\n");
@@ -98,7 +98,7 @@ int printTitles(int xtitles, u_char *pat, int max)
 		printf("\n%d of %d entries\n\n",cnt,titles_pos);
 	else
 		printf("\n%d entries\n\n",titles_pos);
-	return CMD_OK;
+	return OK;
 }
 
 

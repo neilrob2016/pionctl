@@ -1,6 +1,7 @@
 #include "globals.h"
 
-#define COM_LEN 3
+#define COM_LEN     3
+#define PKT_HDR_LEN (int)sizeof(t_iscp_hdr)
 
 int  resolveAddress();
 void printPacketDetails(t_iscp_hdr *hdr, t_iscp_data *data);
@@ -300,7 +301,7 @@ int connectToStreamer()
 
 /*** Read a packet from the socket. First read the header then get the data
      length and read up to the end of that ***/
-void readSocket()
+void readSocket(int print_prompt)
 {
 	t_iscp_data *pkt_data;
 	char readbuff[READBUFF_SIZE];
@@ -324,9 +325,11 @@ void readSocket()
 	}
 	if (read_len > READBUFF_SIZE) read_len = READBUFF_SIZE;
 
+	READ:
 	switch((len = read(tcp_sock,readbuff,read_len)))
 	{
 	case -1:
+		if (errno == EINTR && FLAGISSET(FLAG_INTERRUPTED)) goto READ;
 		perror("\nERROR: readSocket(): read()");
 		goto ERROR;
 	case 0:
@@ -366,7 +369,7 @@ void readSocket()
 		sprintf(timer_str,"%.8s",pkt_data->command+3);
 
 		/* Ignore unless told otherwise */
-		if (!(flags & FLAG_SHOW_TIMER))
+		if (!FLAGISSET(FLAG_SHOW_TIMER))
 		{
 			clearBuffer(BUFF_TCP);
 			return;
@@ -383,10 +386,10 @@ void readSocket()
 	}
 
 	/* Print raw RX. Show repeated data. */
-	if (flags & FLAG_SHOW_RAW)
+	if (FLAGISSET(FLAG_SHOW_RAW))
 	{
 		clearPrompt();
-		if (flags & FLAG_SHOW_DETAIL)
+		if (FLAGISSET(FLAG_SHOW_DETAIL))
 		{
 			/* Header */
 			printf("\nRX %d bytes:\n",buffer[BUFF_TCP].len);
@@ -402,28 +405,28 @@ void readSocket()
 		if (data_len > 2 && !memcmp(pkt_data->command,"NTI",3))
 			addTitle(pkt_data->mesg,data_len - 3);
 		clearBuffer(BUFF_TCP);
-		printPrompt();
+		if (print_prompt) printPrompt();
 		return;
 	}
 
 	/* Pretty print */
-	if (flags & FLAG_SHOW_DETAIL)
+	if (FLAGISSET(FLAG_SHOW_DETAIL))
 	{
 		clearPrompt();
 		printf("RX: ");
 		printMesg(buffer[BUFF_TCP].data+PKT_HDR_LEN,pkt_hdr->data_len);
-		printPrompt();
+		if (print_prompt) printPrompt();
 	}
 	/* If new data then print it otherwise dump */
 	if (new_data)
-		prettyPrint(pkt_data);
+		prettyPrint(pkt_data,print_prompt);
 	else
 		clearBuffer(BUFF_TCP);
 	return;
 
 	ERROR:
 	networkClear();
-	printPrompt();
+	if (print_prompt) printPrompt();
 	clearBuffer(BUFF_TCP);
 }
 
@@ -480,9 +483,9 @@ int writeSocket(u_char *write_data, int write_data_len)
 	memcpy(data->mesg,write_data+COM_LEN,write_data_len);
 	data->mesg[write_data_len] = '\r';
 
-	if (flags & FLAG_SHOW_DETAIL)
+	if (FLAGISSET(FLAG_SHOW_DETAIL))
 	{
-		if (flags & FLAG_SHOW_RAW)
+		if (FLAGISSET(FLAG_SHOW_RAW))
 		{
 			printf("TX %d bytes:\n",pkt_len);
 			/* Reset back to host ordering before printing */
@@ -504,8 +507,11 @@ int writeSocket(u_char *write_data, int write_data_len)
 	for(write_len=pkt_len,write_ptr=pkt;
 	    write_len > 0;write_len-=wrote_len,write_ptr+=wrote_len)
 	{
+		WRITE:
 		if ((wrote_len = write(tcp_sock,write_ptr,write_len)) == -1)
 		{
+			if (errno == EINTR && FLAGISSET(FLAG_INTERRUPTED))
+				goto WRITE;
 			perror("\nERROR: writeSocket(): write()");
 			networkClear();
 			ret = 0;

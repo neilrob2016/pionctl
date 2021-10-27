@@ -117,17 +117,17 @@ void parseCmdLine(int argc, char **argv)
 			goto USAGE;
 		}
 	}
-	if (ipaddr && (flags & FLAG_OFFLINE))
+	if (ipaddr && FLAGISSET(FLAG_OFFLINE))
 	{
 		puts("ERROR: The -a and -o options are mutually exclusive.");
 		exit(1);
 	}
-	if ((flags & FLAG_TRANS_HTML_AMPS) && (flags & FLAG_SHOW_RAW))
+	if (FLAGISSET(FLAG_TRANS_HTML_AMPS) && FLAGISSET(FLAG_SHOW_RAW))
 	{
 		puts("ERROR: The -c and -r options are mutually exclusive.");
 		exit(1);
 	}
-	if ((flags & FLAG_EXIT_AFTER_CMDS) && !cmd_list)
+	if (FLAGISSET(FLAG_EXIT_AFTER_CMDS) && !cmd_list)
 	{
 		puts("ERROR: The -e option requires -i.");
 		exit(1);
@@ -141,7 +141,8 @@ void parseCmdLine(int argc, char **argv)
 	       "       -u <UDP listen port>     : Default = %d.\n"
 	       "       -l <UDP listen timeout>] : Default = %d secs.\n"
 	       "       -d <device code (0-9)>]  : Default = %c.\n"
-	       "       -i <command list>        : CSV list of commands to run immediately.\n"
+	       "       -i <command list>        : Semi colon seperated list of commands to run\n"
+	       "                                  immediately. Eg: tunein;3 dn;en\n"
 	       "       -p [0/1/2/3]             : 0 = bare prompt, 1 = show connect timer\n"
 	       "                                  2 = show streamer timer, 3 = show both.\n"
 	       "                                  Default = %d.\n"
@@ -171,19 +172,23 @@ void init()
 	initTitles();
 	initMenu();
 	initSave();
+	initMacros();
 	sortCommands();
 	menu_cursor_pos = -1;
 	menu_selection = NULL;
+	input_state = INPUT_CMD;
+	macro_append = -1;
 
 	signal(SIGINT,sigHandler);
 	signal(SIGQUIT,sigHandler);
+	signal(SIGTERM,sigHandler);
 	connect_time = 0;
 
-	if (flags & FLAG_OFFLINE)
-		puts("Offline mode.\n");
-	else
+	if (FLAGISSET(FLAG_OFFLINE)) puts("Offline mode.\n");
+	else if (!networkStart())
 	{
-		if (!networkStart()) doExit(1);
+		if (!FLAGISSET(FLAG_INTERRUPTED)) doExit(1);
+		UNSETFLAG(FLAG_INTERRUPTED);
 	}
 	strcpy(timer_str,TIMER_STR_DEF);
 	printPrompt();
@@ -200,6 +205,7 @@ void mainloop()
 
 	while(1)
 	{
+		UNSETFLAG(FLAG_INTERRUPTED);
 		FD_ZERO(&mask);
 		FD_SET(STDIN,&mask);
 		if (tcp_sock) FD_SET(tcp_sock,&mask);
@@ -207,6 +213,7 @@ void mainloop()
 		switch(select(FD_SETSIZE,&mask,0,0,0))
 		{
 		case -1:
+			if (FLAGISSET(FLAG_INTERRUPTED)) continue;
 			perror("ERROR: mainLoop(): select()");
 			doExit(1);
 		case 0:
@@ -214,7 +221,7 @@ void mainloop()
 			puts("ERROR: mainLoop(): select() timeout");
 			continue;
 		}
-		if (tcp_sock && FD_ISSET(tcp_sock,&mask)) readSocket();
+		if (tcp_sock && FD_ISSET(tcp_sock,&mask)) readSocket(1);
 		if (FD_ISSET(STDIN,&mask)) readKeyboard();
 	}
 }
@@ -227,10 +234,10 @@ void runImmediate()
 	printPrompt();
 	puts(cmd_list);
 	addToBuffer(keyb_buffnum,cmd_list,strlen(cmd_list));
-	parseUserInput();
+	parseInputLine(buffer[keyb_buffnum].data,buffer[keyb_buffnum].len);
 	printPrompt();
 
-	if (flags & FLAG_EXIT_AFTER_CMDS)
+	if (FLAGISSET(FLAG_EXIT_AFTER_CMDS))
 	{
 		puts("\n*** EXIT after immediate commands ***");
 		doExit(0);

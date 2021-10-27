@@ -130,7 +130,7 @@ void printMesg(u_char *mesg, int len)
 
 /*** Call pretty print function for the command in the raw data from the 
      streamer. Called from readSocket() ***/
-void prettyPrint(t_iscp_data *pkt_data)
+void prettyPrint(t_iscp_data *pkt_data, int print_prompt)
 {
 	int mesg_len = pkt_hdr->data_len - (MESG_OFFSET + 3);
 	int i;
@@ -143,7 +143,7 @@ void prettyPrint(t_iscp_data *pkt_data)
 		if (!strncmp((char *)pkt_data->command,comfunc[i].com,3))
 		{
 			if (i != RX_COM_NJA) nja_prev = 0;
-			if (i != RX_COM_NLS && (flags & FLAG_IN_MENU))
+			if (i != RX_COM_NLS && FLAGISSET(FLAG_IN_MENU))
 				flags ^= FLAG_IN_MENU;
 
 			/* Call print function */
@@ -159,7 +159,7 @@ void prettyPrint(t_iscp_data *pkt_data)
 		setUnknownKey((char *)pkt_data->command);
 	}
 
-	printPrompt();
+	if (print_prompt) printPrompt();
 	clearBuffer(BUFF_TCP);
 }
 
@@ -180,7 +180,7 @@ int prettyPrintList(u_char *pat, int max)
 	if (max < 0)
 	{
 		puts("Usage: show [<pattern> [<count>]]");
-		return CMD_ERROR;
+		return ERR_CMD_FAIL;
 	}
 
 	printf("\n*** Processed streamer RX (%s%s) ***\n\n",
@@ -235,7 +235,7 @@ int prettyPrintList(u_char *pat, int max)
 		printf("\n%d entries\n\n",cnt);
 	flags ^= FLAG_PRETTY_PRINTING;
 
-	return CMD_OK;
+	return OK;
 }
 
 
@@ -335,7 +335,7 @@ void printIFA(u_char *mesg, uint32_t len)
 	for(i=0,ptr=(char *)mesg-1;i< 10 && ptr;++i,ptr=end)
 	{
 		++ptr;
-		if ((end = (char *)strchr(ptr,CMD_SEPARATOR)))
+		if ((end = (char *)strchr(ptr,SEPARATOR)))
 		{
 			c2 = *end;
 			*end = 0;
@@ -610,7 +610,7 @@ void printNLS(u_char *mesg, uint32_t len)
 
 		/* Don't recalculate cursor pos if pretty printing due to
 		   the show command */
-		if (!(flags & FLAG_PRETTY_PRINTING) && isdigit(mesg[1]))
+		if (!FLAGISSET(FLAG_PRETTY_PRINTING) && isdigit(mesg[1]))
 		{
 			/* Deal with streamer sending 10+ as 0+ if more than
 			   10 items (0 - 9) in the menu. Sadly there's no way
@@ -623,14 +623,14 @@ void printNLS(u_char *mesg, uint32_t len)
 
 			if (!menu_cursor_pos &&
 			    prev_menu_cursor_pos < menu_option_cnt - 1 &&
-			    (flags & FLAG_COM_DN))
+			    FLAGISSET(FLAG_COM_DN))
 			{
 				menu_cursor_pos = prev_menu_cursor_pos + 1;
 			}
 			else
 			if (!prev_menu_cursor_pos &&
 			    menu_cursor_pos < menu_option_cnt - 1 &&
-			    (flags & FLAG_COM_UP))
+			    FLAGISSET(FLAG_COM_UP))
 			{
 				menu_cursor_pos = menu_option_cnt - 1;
 			}
@@ -645,7 +645,7 @@ void printNLS(u_char *mesg, uint32_t len)
 	case 'U':
 		++mesg;
 		printMesg(mesg,len-1);
-		if (!(flags & FLAG_PRETTY_PRINTING)) addMenuOption(mesg,len-3);
+		if (!FLAGISSET(FLAG_PRETTY_PRINTING)) addMenuOption(mesg,len-3);
 		SETFLAG(FLAG_IN_MENU);
 		return;
 	default:
@@ -1183,7 +1183,7 @@ void printTranslatedMesg(u_char *mesg, uint32_t len, int add_title)
 {
 	u_char *tstr;
 
-	if (len && (flags & FLAG_TRANS_HTML_AMPS)) 
+	if (len && FLAGISSET(FLAG_TRANS_HTML_AMPS)) 
 	{
 		tstr = replaceAmpCodes(mesg,&len);
 		printMesg(tstr,len);

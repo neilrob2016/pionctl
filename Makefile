@@ -17,6 +17,7 @@ OBJS=\
 	titles.o \
 	menu.o \
 	saveart.o \
+	macros.o \
 	misc.o
 BIN=pionctl
 
@@ -55,6 +56,9 @@ menu.o: menu.c $(DEPS)
 
 saveart.o: saveart.c $(DEPS)
 	$(COMP) saveart.c
+
+macros.o: macros.c build_date.h $(DEPS)
+	$(COMP) macros.c
 
 misc.o: misc.c build_date.h $(DEPS)
 	$(COMP) misc.c

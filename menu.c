@@ -20,7 +20,7 @@ void addMenuOption(u_char *mesg, uint32_t len)
 	/* If we've received an option number thats less than the current
 	   count AND we're not still receiving the menu then reset */
 	if (isdigit(mesg[0]) &&
-	    (mesg[0] - '0') < menu_option_cnt && !(flags & FLAG_IN_MENU))
+	    (mesg[0] - '0') < menu_option_cnt && !FLAGISSET(FLAG_IN_MENU))
 	{
 		clearMenu();
 	}
@@ -62,7 +62,7 @@ void setMenuSelection()
 /*** Wanted to have the menu selection as another cursor pointing to the
      selected option but it was too complex figuring out when the menus
      changed so just using a string copy of the option ***/
-void printMenu()
+void printMenuList()
 {
 	int i;
 
@@ -78,16 +78,16 @@ void printMenu()
 		putchar('\n');
 	}
 	else puts("No menu list stored.");
-	printMenuInfo();
+	printf("Calculated cursor pos : %d\n",menu_cursor_pos);
+	printMenuSelection();
 }
 
 
 
 
-void printMenuInfo()
+void printMenuSelection()
 {
-	printf("Calculated cursor pos: %d\n",menu_cursor_pos);
-	printf("Most recent selection: %s\n",
+	printf("Current menu selection: %s\n",
 		menu_selection ? menu_selection : "<not set>");
 }
 

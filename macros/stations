@@ -1,0 +1,4 @@
+am
+echo ">>> Tuning Ambient..."; tunein; wait 4; en; wait 3; 2 dn; wait 0.5; en; echo "***** Tuned *****"
+tr
+echo ">>> Tuning talkRadio..."; tunein; wait 4; en; wait 3; 2 dn; wait 0.5; 2 dn; wait 0.5; 2 dn; wait 0.5; en; echo "***** Tuned *****"

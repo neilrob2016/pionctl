@@ -135,7 +135,7 @@ int dumpList(u_char *pat, int max)
 	if (max < 0)
 	{
 		puts("Usage: showr [<pattern> [<count>]]");
-		return CMD_ERROR;
+		return ERR_CMD_FAIL;
 	}
 
 	printf("\n*** Raw streamer RX (%s%s) ***\n\n",
@@ -178,7 +178,7 @@ int dumpList(u_char *pat, int max)
 	}
 	else printf("\n%d entries (%d unknown)\n\n",entry_cnt,unknown_cnt);
 
-	return CMD_OK;
+	return OK;
 }
 
 

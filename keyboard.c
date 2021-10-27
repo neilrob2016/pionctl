@@ -80,7 +80,8 @@ void readKeyboard()
 	{
 	case '\n':
 		putchar('\n');
-		parseUserInput();
+		parseInputLine(
+			buffer[keyb_buffnum].data,buffer[keyb_buffnum].len);
 		from_buffnum = keyb_buffnum;
 		clearBuffer(keyb_buffnum);
 		break;
@@ -154,67 +155,4 @@ void readKeyboard()
 void resetKeyboard()
 {
 	tcsetattr(STDIN,TCSANOW,&saved_tio);
-}
-
-
-
-
-/*** Commands can be seperated by CMD_SEPARATOR so split them up ***/
-void parseUserInput()
-{
-	u_char *separator;
-	u_char *ptr;
-	u_char *end;
-	u_char c;
-	u_char q_char;
-	int in_quotes;
-	int len;
-	int ret;
-
-	ptr = buffer[keyb_buffnum].data;
-	end = ptr + buffer[keyb_buffnum].len;
-	q_char = 0;
-	
-	for(ptr=buffer[keyb_buffnum].data;ptr < end;ptr=separator+1)
-	{
-		in_quotes = 0;
-
-		/* Find the seperator (but ignore if inside double quotes) */
-		for(separator=ptr;*separator;++separator)
-		{
-			c = *separator;
-			if (c == '"' || c == '\'')
-			{
-				if (in_quotes)
-				{
-					if (c == q_char)
-					{
-						in_quotes = 0;
-						q_char = 0;
-					}
-				}
-				else 
-				{
-					in_quotes = 1;
-					q_char = c;
-				}
-			}
-			else if (c == CMD_SEPARATOR && !in_quotes) break;
-		}
-		if (in_quotes)
-		{
-			puts("ERROR: Unterminated quotes.");
-			keyb_buffnum = (keyb_buffnum + 1) % MAX_HIST_BUFFERS;
-			break;
-		}
-	
-		if (*separator)
-			len = (int)(separator - ptr);
-		else
-			len = (int)(end - ptr);
-
-		if ((ret = parseCommand(ptr,len)) != CMD_MISSING)
-			keyb_buffnum = (keyb_buffnum + 1) % MAX_HIST_BUFFERS;
-		if (ret != CMD_OK || !separator) break;
-	}
 }

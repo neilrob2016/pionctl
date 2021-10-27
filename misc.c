@@ -50,6 +50,11 @@ int isNumber(u_char *str, int len)
 
 void printPrompt()
 {
+	if (input_state != INPUT_CMD)
+	{
+		write(STDOUT,"] ",2);
+		return;
+	}
 	write(STDOUT,"\rPIONCTL",8);
 
 	switch(prompt_type)
@@ -144,8 +149,22 @@ void doExit(int code)
 
 void sigHandler(int sig)
 {
-	printf("\n*** EXIT on signal %d ***\n",sig);
-	doExit(sig);
+	switch(sig)
+	{
+	case SIGINT:
+		puts("*** BREAK ***");
+		clearBuffer(keyb_buffnum);
+		discardMultiLineMacro();
+		if (!FLAGISSET(FLAG_MACRO_RUNNING)) printPrompt();
+		SETFLAG(FLAG_INTERRUPTED);
+		break;
+	case SIGQUIT:
+	case SIGTERM:
+		printf("\n*** EXIT on signal %d ***\n",sig);
+		doExit(sig);
+	default:
+		assert(0);
+	}
 }
 
 

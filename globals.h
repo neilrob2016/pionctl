@@ -12,6 +12,7 @@
 #include <signal.h>
 #include <assert.h>
 #include <sys/socket.h>
+#include <sys/time.h>
 #include <arpa/inet.h>
 #include <netinet/tcp.h>
 
@@ -21,7 +22,7 @@
 #define EXTERN extern
 #endif
 
-#define VERSION "20210608"
+#define VERSION "20211027"
 
 #define STDIN          0
 #define STDOUT         1
@@ -31,7 +32,7 @@
 #define MESG_OFFSET    5
 #define ADDR_LIST_SIZE 255
 #define MAX_WORDS      4
-#define CMD_SEPARATOR  ';'
+#define SEPARATOR      ';'
 
 /* Cmd line defaults */
 #define UDP_PORT       10102
@@ -40,17 +41,26 @@
 #define LISTEN_TIMEOUT 60
 #define TIMER_STR_DEF  "--:--:--"
 
-#define FREE(M) if (M) free(M)
+#define FREE(M) if (M) { free(M); M = NULL; }
 
 #define SETFLAG(F)   (flags |= F)
 #define UNSETFLAG(F) (flags &= ~(uint32_t)F)
 #define FLIPFLAG(F)  (flags ^= F)
+#define FLAGISSET(F) (flags & F)
 
 #ifdef __APPLE__
 /* Don't bitch about pragma pack every time it sees it */
 #pragma clang diagnostic ignored "-Wpragma-pack"
 #endif
 #pragma pack(1)
+
+
+enum
+{
+	INPUT_CMD,
+	INPUT_MACRO_DEF,
+	INPUT_MACRO_APP
+};
 
 
 enum
@@ -62,12 +72,14 @@ enum
 	NUM_BUFFERS
 };
 
+#define MAX_HIST_BUFFERS BUFF_TCP
 
 enum
 {
-	CMD_MISSING,
-	CMD_ERROR,
-	CMD_OK
+	OK,
+	ERR_CMD_MISSING,
+	ERR_CMD_FAIL,
+	ERR_MACRO
 };
 
 
@@ -81,8 +93,6 @@ enum
 	NUM_PROMPTS
 };
 
-#define MAX_HIST_BUFFERS BUFF_TCP
-
 
 enum
 {
@@ -95,7 +105,19 @@ enum
 	FLAG_PRETTY_PRINTING = (1 << 6),
 	FLAG_IN_MENU         = (1 << 7),
 	FLAG_COM_UP          = (1 << 8),
-	FLAG_COM_DN          = (1 << 9)
+	FLAG_COM_DN          = (1 << 9),
+	FLAG_MACRO_VERBOSE   = (1 << 10),
+	FLAG_MACRO_RUNNING   = (1 << 11),
+	FLAG_INTERRUPTED     = (1 << 12)
+};
+
+
+/* State for saving NJA jpeg */
+enum 
+{
+	SAVE_INACTIVE = -1,
+	SAVE_START,
+	SAVE_NEXT
 };
 
 
@@ -107,8 +129,6 @@ typedef struct
 	u_char version;
 	u_char reserved[3];
 } t_iscp_hdr;
-
-#define PKT_HDR_LEN (int)sizeof(t_iscp_hdr)
 
 
 typedef struct
@@ -138,13 +158,14 @@ typedef struct
 } t_buffer;
 
 
-/* State for saving NJA jpeg */
-enum 
+typedef struct
 {
-	SAVE_INACTIVE = -1,
-	SAVE_START,
-	SAVE_NEXT
-};
+	u_char *name;
+	u_char *comlist;
+	int len;
+	int running;
+} t_macro;
+
 
 /* Cmd line params */
 EXTERN char *ipaddr;
@@ -162,7 +183,9 @@ EXTERN struct sockaddr_in con_addr;
 EXTERN t_iscp_hdr *pkt_hdr;
 EXTERN t_buffer buffer[NUM_BUFFERS];
 EXTERN t_entry *list[256];
+EXTERN t_macro *macros;
 EXTERN time_t connect_time;
+EXTERN int input_state;
 EXTERN int keyb_buffnum;
 EXTERN int from_buffnum;
 EXTERN int udp_sock;
@@ -174,36 +197,41 @@ EXTERN int save_fd;
 EXTERN int prompt_type;
 EXTERN int menu_cursor_pos;
 EXTERN int menu_option_cnt;
+EXTERN int macro_cnt;
+EXTERN int macro_alloc;
+EXTERN int macro_append;
 EXTERN char *save_filename;
 EXTERN char timer_str[9];
 EXTERN char nja_prev;
 EXTERN char *menu_selection;
 EXTERN char **menu_options;
+EXTERN char *macro_line_tmp;
+EXTERN u_char *macro_name;
 
 /*** Forward declarations ***/
 
 /* keyboard.c */
 void initKeyboard();
 void readKeyboard();
-void parseUserInput();
 void resetKeyboard();
 
 /* commands.c */
-void sortCommands();
+int  parseInputLine(u_char *data, int len);
 int  parseCommand(u_char *buff, int bufflen);
+void sortCommands();
 
 /* network.c */
 int  networkStart();
 int  createUDPSocket();
 int  getStreamerAddress();
 int  connectToStreamer();
-void readSocket();
+void readSocket(int print_prompt);
 int  writeSocket(u_char *write_data, int write_data_len);
 void networkClear();
 
 /* print.c */
 void printMesg(u_char *mesg, int len);
-void prettyPrint(t_iscp_data *pkt_data);
+void prettyPrint(t_iscp_data *pkt_data, int print_prompt);
 int  prettyPrintList(u_char *pat, int max);
 void printRXCommands(u_char *pat);
 void printTimes();
@@ -235,8 +263,8 @@ void clearTitles();
 void initMenu();
 void addMenuOption();
 void setMenuSelection();
-void printMenu();
-void printMenuInfo();
+void printMenuList();
+void printMenuSelection();
 void clearMenu();
 
 /* save.c */
@@ -244,6 +272,23 @@ void initSave();
 void resetSave();
 void startSave(char *filename);
 void saveArtDataLine();
+
+/* macros.c */
+void initMacros();
+int  initMultiLineMacro(u_char *name);
+int  initMultiLineMacroAppend(u_char *name);
+void discardMultiLineMacro();
+int  addMacro(u_char *name, u_char *comlist);
+void addMacroLine(u_char *line, int len);
+int  appendMacro(u_char *name, u_char *comlist);
+void appendMacroComlist(int macro_num, u_char *comlist);
+int  deleteMacro(u_char *name);
+int  clearMacros();
+int  runMacro(u_char *name);
+int  loadMacros(u_char *filename);
+int  saveMacro(u_char *filename, u_char *name, int append);
+int  saveAllMacros(u_char *filename, int append);
+void listMacros();
 
 /* misc.c */
 int   wildMatch(char *str, char *pat);
