@@ -95,9 +95,9 @@ int printTitles(int xtitles, u_char *pat, int max)
 		}
 	}
 	if (pat || max)
-		printf("\n%d of %d entries\n\n",cnt,titles_pos);
+		printf("\n%d of %d entries.\n\n",cnt,titles_pos);
 	else
-		printf("\n%d entries\n\n",titles_pos);
+		printf("\n%d entries.\n\n",titles_pos);
 	return OK;
 }
 

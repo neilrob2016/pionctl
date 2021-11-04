@@ -10,9 +10,12 @@
 #include <ctype.h>
 #include <errno.h>
 #include <signal.h>
+#include <pwd.h>
+#include <uuid/uuid.h>
 #include <assert.h>
 #include <sys/socket.h>
 #include <sys/time.h>
+#include <sys/types.h>
 #include <arpa/inet.h>
 #include <netinet/tcp.h>
 
@@ -22,7 +25,7 @@
 #define EXTERN extern
 #endif
 
-#define VERSION "20211027"
+#define VERSION "20211104"
 
 #define STDIN          0
 #define STDOUT         1
@@ -199,10 +202,10 @@ EXTERN int menu_cursor_pos;
 EXTERN int menu_option_cnt;
 EXTERN int macro_cnt;
 EXTERN int macro_alloc;
-EXTERN int macro_append;
-EXTERN char *save_filename;
 EXTERN char timer_str[9];
 EXTERN char nja_prev;
+EXTERN int macro_append;
+EXTERN char *save_filename;
 EXTERN char *menu_selection;
 EXTERN char **menu_options;
 EXTERN char *macro_line_tmp;

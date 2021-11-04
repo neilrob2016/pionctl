@@ -5,20 +5,29 @@
 #define INDENT       14
 #define ENTER_STR    "Enter macro lines, end with a '.' on its own..."
 
+static char *home_dir;
+
 int     findMacro(u_char *name);
 int     findEmptySlot();
 int     writeMacro(FILE *fp, int m, int append);
 int     clearMacro(int m);
 u_char *trim(u_char *name);
+char   *tildaToHomeDir(u_char *filename);
 
 
 void initMacros()
 {
+	struct passwd *ud;
+
 	macros = NULL;
 	macro_cnt = 0;
 	macro_alloc = 0;
 	macro_line_tmp = NULL;
 	macro_name = NULL;
+
+	/* Get the home directory in order to substitute '~' in filenames */
+	ud = getpwuid(getuid());
+	home_dir = ud->pw_dir ? strdup(ud->pw_dir) : "";
 }
 
 
@@ -248,6 +257,7 @@ int clearMacros()
 
 int runMacro(u_char *name)
 {
+	static int recurse = 0;
 	t_macro *macro;
 	int ret;
 	int m;
@@ -258,19 +268,24 @@ int runMacro(u_char *name)
 		return ERR_MACRO;
 	}
 	macro = &macros[m];
+
+	/* Can't recurse into the same macro or we'll end up in an endless
+	   loop */
 	if (macro->running)
 	{
-		/* Otherwise we'd enter an endless loop and crash */
 		puts("ERROR: Macro recursion.");
 		return ERR_MACRO;
 	}
 
 	SETFLAG(FLAG_MACRO_RUNNING);
+	recurse++;
 	macro->running = 1; 
+
 	printf("Running macro \"%s\"...\n",name);
 	ret = parseInputLine(macros[m].comlist,macros[m].len);
+
 	macro->running = 0;
-	UNSETFLAG(FLAG_MACRO_RUNNING);
+	if (!--recurse) UNSETFLAG(FLAG_MACRO_RUNNING);
 
 	if (ret != OK) printf("ERROR: Macro \"%s\" FAILED\n",macro->name);
 	return ret;
@@ -286,11 +301,15 @@ int loadMacros(u_char *filename)
 	   read crap. */
 	char name[MAX_LINE_LEN];
 	char comlist[MAX_LINE_LEN];
+	char *path;
 	FILE *fp;
 	int cnt;
 
-	printf("Loading from file \"%s\"...\n",filename);
-	if (!(fp = fopen((char *)filename,"r")))
+	path = tildaToHomeDir(filename);
+	printf("Loading from file \"%s\"...\n",path);
+	fp = fopen(path,"r");
+	free(path);
+	if (!fp)
 	{
 		printf("ERROR: Can't open file to read: %s\n",strerror(errno));
 		return ERR_MACRO;
@@ -321,6 +340,7 @@ int loadMacros(u_char *filename)
 int saveMacro(u_char *filename, u_char *name, int append)
 {
 	FILE *fp;
+	char *path;
 	int ret;
 	int m;
 
@@ -329,9 +349,11 @@ int saveMacro(u_char *filename, u_char *name, int append)
 		printf("ERROR: Macro \"%s\" does not exist.\n",name);
 		return ERR_MACRO;
 	}
-
-	printf("Writing to file \"%s\"...\n",filename);
-	if (!(fp = fopen((char *)filename,append ? "a" : "w")))
+	path = tildaToHomeDir(filename);
+	printf("Writing to file \"%s\"...\n",path);
+	fp = fopen(path,append ? "a" : "w");
+	free(path);
+	if (!fp)
 	{
 		printf("ERROR: Can't open file to write: %s\n",strerror(errno));
 		return ERR_MACRO;
@@ -347,6 +369,7 @@ int saveMacro(u_char *filename, u_char *name, int append)
 int saveAllMacros(u_char *filename, int append)
 {
 	FILE *fp;
+	char *path;
 	int cnt;
 	int m;
 
@@ -355,12 +378,15 @@ int saveAllMacros(u_char *filename, int append)
 		puts("No macros defined.");
 		return OK;
 	}
-	if (!(fp = fopen((char *)filename,append ? "a" : "w")))
+	path = tildaToHomeDir(filename);
+	printf("Writing to file \"%s\"...\n",path);
+	fp = fopen(path,append ? "a" : "w");
+	free(path);
+	if (!fp)
 	{
 		printf("ERROR: Can't open file to write: %s\n",strerror(errno));
 		return ERR_MACRO;
 	}
-	printf("Writing to file \"%s\"...\n",filename);
 
 	for(m=cnt=0;m < macro_cnt;++m)
 	{
@@ -417,7 +443,7 @@ void listMacros()
 		putchar('\n');
 		++cnt;
 	}
-	printf("\n%d macros defined.\n\n",cnt);
+	printf("\n%d defined.\n\n",cnt);
 }
 
 
@@ -499,4 +525,27 @@ u_char *trim(u_char *str)
 	for(end=str+strlen((char *)str)-1;end > str && *end < 33;--end);
 	*++end = 0;
 	return str;
+}
+
+
+
+
+char *tildaToHomeDir(u_char *filename)
+{
+	char *new_filename;
+	int ret;
+
+	filename = trim(filename);
+	if (filename[0] == '~')
+	{
+		ret = asprintf(&new_filename,
+			"%s/%s",home_dir,filename+(filename[1] == '/' ? 2 : 1));
+		assert(ret != -1);
+	}
+	else
+	{
+		new_filename = strdup((char *)filename);
+		assert(new_filename);
+	}
+	return new_filename;
 }

@@ -230,9 +230,9 @@ int prettyPrintList(u_char *pat, int max)
 	}
 
 	if (pat || max)
-		printf("\n%d of %d entries\n\n",cnt,total);
+		printf("\n%d of %d entries.\n\n",cnt,total);
 	else
-		printf("\n%d entries\n\n",cnt);
+		printf("\n%d entries.\n\n",cnt);
 	flags ^= FLAG_PRETTY_PRINTING;
 
 	return OK;
@@ -1160,9 +1160,9 @@ void printRXCommands(u_char *pat)
 		}
 	}
 	if (pat)
-		printf("\n\n%d of %d entries\n\n",cnt,i);
+		printf("\n\n%d of %d entries.\n\n",cnt,i);
 	else
-		printf("\n\n%d entries\n\n",cnt);
+		printf("\n\n%d entries.\n\n",cnt);
 }
 
 

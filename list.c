@@ -173,10 +173,10 @@ int dumpList(u_char *pat, int max)
 	}
 	if (pat || max)
 	{
-		printf("\n%d of %d entries (%d unknown)\n\n",
+		printf("\n%d of %d entries (%d unknown).\n\n",
 			entry_cnt,total,unknown_cnt);
 	}
-	else printf("\n%d entries (%d unknown)\n\n",entry_cnt,unknown_cnt);
+	else printf("\n%d entries (%d unknown).\n\n",entry_cnt,unknown_cnt);
 
 	return OK;
 }

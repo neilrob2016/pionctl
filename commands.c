@@ -373,9 +373,13 @@ int parseInputLine(u_char *data, int len)
 		{
 			if (FLAGISSET(FLAG_MACRO_RUNNING))
 			{
+				/* Skip initial whitespace */
 				for(ptr2=ptr;*ptr2 < 33;++ptr2);
 				if (FLAGISSET(FLAG_MACRO_VERBOSE))
-					printf("Exec cmd: %.*s\n",len,ptr2);
+				{
+					printf("Exec cmd: %.*s\n",
+						len - (int)(ptr2-ptr),ptr2);
+				}
 			}
 
 			if ((ret = parseCommand(ptr,len)) != ERR_CMD_MISSING)
@@ -785,6 +789,7 @@ int processBuiltInCommand(
 	case COM_CLEAR:
 		clearList();
 		clearTitles();
+		clearHistory();
 		break;
 	case COM_QMARK:
 	case COM_HELP:
@@ -1121,15 +1126,20 @@ int doDeleteMacro(u_char *name)
 
 int doRunMacro(int comnum, u_char *name)
 {
+	static int recurse = 0;
 	int ret;
 
 	if (name)
 	{
+		/* Check recurse because want verbosity to continue even if a 
+		   macro calls MARUN itself */
 		if (comnum == COM_MAVRUN)
 			SETFLAG(FLAG_MACRO_VERBOSE);
-		else
+		else if (!recurse)
 			UNSETFLAG(FLAG_MACRO_VERBOSE);
+		++recurse;
 		ret = runMacro(name);
+		--recurse;
 		return ret;
 	}
 	puts("Usage: marun <macro>");
@@ -1149,6 +1159,7 @@ int doLoadMacros(u_char *filename)
 
 
 
+/*** Save one or save all macros, either Append or Create ***/
 int doSaveMacro(int comnum, int cmd_word, int word_cnt, u_char **words)
 {
 	u_char *filename;
