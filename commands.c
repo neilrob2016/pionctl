@@ -10,7 +10,7 @@ enum
 	COM_EXIT,
 	COM_VER,
 	COM_DET,
-	COM_STMR,
+	COM_SVCTM,
 	COM_PROMPT,
 
 	/* 5 */
@@ -98,7 +98,7 @@ static struct st_command
 	{ "exit",   NULL },
 	{ "ver",    NULL },
 	{ "det",    NULL },
-	{ "stmr",   NULL },
+	{ "svctm",  NULL },
 	{ "prompt", NULL },
 
 	/* 5 */
@@ -272,7 +272,7 @@ static struct st_command
 
 char *sorted_commands[NUM_COMMANDS];
 
-int  getComNum(char *word, int len);
+int  parseCommand(u_char *buff, int bufflen);
 int  sendCommand(int repeat_cnt, u_char *cmd, int cmd_len);
 int  copyHistoryBuffer(int buffnum);
 int  processBuiltInCommand(
@@ -400,6 +400,7 @@ int parseInputLine(u_char *data, int len)
 int parseCommand(u_char *buff, int bufflen)
 {
 	u_char *words[MAX_WORDS];
+	u_char *comword;
 	u_char *end;
 	u_char *s;
 	u_char c;
@@ -514,8 +515,10 @@ int parseCommand(u_char *buff, int bufflen)
 		cmd_word = 1;
 	}
 
+	comword = words[cmd_word];
+
 	/* Treat uppercase as a raw streamer command */
-	if (words[cmd_word][0] >= 'A' && words[cmd_word][0] <= 'Z')
+	if (comword[0] >= 'A' && comword[0] <= 'Z')
 	{
 		if (!tcp_sock)
 		{
@@ -531,18 +534,25 @@ int parseCommand(u_char *buff, int bufflen)
 		}
 		/* Clear value so its seen as a new value on RX so will get
 		   printed out */
-		clearValueOfKey((char *)words[cmd_word]);
+		clearValueOfKey((char *)comword);
 
-		if (sendCommand(repeat_cnt,words[cmd_word],word_len[cmd_word]))
+		if (sendCommand(repeat_cnt,comword,word_len[cmd_word]))
 			ret = OK;
 		else
 			ret = ERR_CMD_FAIL;
 		goto FREE;
 	}
 
-	if ((comnum = getComNum(
-		(char *)words[cmd_word],word_len[cmd_word])) == -1)
+	/* Look for a command. If we can't find one try a macro */
+	if ((comnum = getCommand((char *)comword,word_len[cmd_word],1)) == -1)
 	{
+		if (findMacro(comword) != -1)
+		{
+			ret = doRunMacro(comnum,comword);
+			goto FREE;
+		}
+		printf("ERROR: Unknown command or macro \"%s\". Type '?' or 'help' for a list of\n",comword);
+		puts("       commands or 'malist' for a list of macros.");
 		ret = ERR_CMD_FAIL;
 		goto FREE;
 	}
@@ -670,7 +680,7 @@ int parseCommand(u_char *buff, int bufflen)
 
 /*** Look for a client command. Try exact match first and if that fails look 
      for partial match ***/
-int getComNum(char *word, int len)
+int getCommand(char *word, int len, int expmsg)
 {
 	int comnum;
 
@@ -686,11 +696,10 @@ int getComNum(char *word, int len)
 
 	if (comnum < NUM_COMMANDS)
 	{
-		printf("Expanded to: \"%s\"\n",commands[comnum].com);
+		if (expmsg)
+			printf("Expanded to: \"%s\"\n",commands[comnum].com);
 		return comnum;
 	}
-
-	printf("ERROR: Unknown command \"%s\". Type '?' or 'help' for a list.\n",word);
 	return -1;
 }
 
@@ -766,9 +775,9 @@ int processBuiltInCommand(
 		FLIPFLAG(FLAG_SHOW_DETAIL);
 		printf("Show detail: %s\n",ONOFF(FLAG_SHOW_DETAIL));
 		break;
-	case COM_STMR:
-		FLIPFLAG(FLAG_SHOW_TIMER);
-		printf("Show service timer: %s\n",ONOFF(FLAG_SHOW_TIMER));
+	case COM_SVCTM:
+		FLIPFLAG(FLAG_SHOW_SVC_TIME);
+		printf("Show service time: %s\n",ONOFF(FLAG_SHOW_SVC_TIME));
 		break;
 	case COM_PROMPT:
 		return setPrompt(param);
@@ -874,7 +883,7 @@ int setPrompt(u_char *param)
 			return OK;
 		}
 	}
-	puts("Usage: prompt [0/1/2/3]");
+	puts("Usage: prompt [0 to 6]");
 	return ERR_CMD_FAIL;
 }
 

@@ -3,6 +3,11 @@
 
 #define TIMER_STR_LEN 8
 
+void printPromptLocalTime();
+void printPromptConnectTime();
+void printPromptServiceTime();
+
+
 /*** Returns 1 if the string matches the pattern, else 0. Supports wildcard 
      patterns containing '*' and '?'. Case insensitive. ***/
 int wildMatch(char *str, char *pat)
@@ -55,32 +60,38 @@ void printPrompt()
 		write(STDOUT,"] ",2);
 		return;
 	}
-	write(STDOUT,"\rPIONCTL",8);
+	printf("\rPIONCTL");
 
 	switch(prompt_type)
 	{
 	case PROMPT_BASE:
 		break;
-
-	case PROMPT_TIME:
-		write(STDOUT," T",2);
-		write(STDOUT,getTime(),8);
+	case PROMPT_L_TIME:
+		printPromptLocalTime();
 		break;
-
-	case PROMPT_CONN_TIMER:
-		write(STDOUT," C",2);
-		write(STDOUT,getConnectTime(),8);
+	case PROMPT_C_TIME:
+		printPromptConnectTime();
 		break;
-
-	case PROMPT_STRM_TIMER:
-		write(STDOUT," S",2);
-		write(STDOUT,timer_str,strlen(timer_str));
+	case PROMPT_S_TIME:
+		printPromptServiceTime();
 		break;
-
+	case PROMPT_L_C_TIME:
+		printPromptLocalTime();
+		printPromptConnectTime();
+		break;
+	case PROMPT_L_S_TIME:
+		printPromptLocalTime();
+		printPromptServiceTime();
+		break;
+	case PROMPT_C_S_TIME:
+		printPromptConnectTime();
+		printPromptServiceTime();
+		break;
 	default:
 		assert(0);
 	}
-	write(STDOUT,">",1);
+	putchar('>');
+	fflush(stdout);
 
 	if (buffer[keyb_buffnum].len)
 		write(STDOUT,buffer[keyb_buffnum].data,buffer[keyb_buffnum].len);
@@ -89,12 +100,40 @@ void printPrompt()
 
 
 
+void printPromptLocalTime()
+{
+	printf(" L%s",getTime());
+}
+
+
+
+
+void printPromptConnectTime()
+{
+	printf(" C%s",getConnectTime());
+}
+
+
+
+
+void printPromptServiceTime()
+{
+	printf(" S%s",svc_time_str);
+}
+
+
+
+
 void clearPrompt()
 {
 	int i;
-	write(STDOUT,"\r                         ",26);
 
+	/* Clear the prompt itself */
+	printf("\r                             ");
+
+	/* Clear anything in the keyboard buffer */
 	for(i=buffer[keyb_buffnum].len+1;i >= 0;--i) putchar(' ');
+
 	putchar('\r');
 	fflush(stdout);
 }
@@ -173,6 +212,7 @@ void sigHandler(int sig)
 void version(int print_pid)
 {
 	puts("\n*** PIONCTL - Pioneer N-70AE control client ***\n");
+	puts("Copyright (C) Neil Robertson 2021\n");
 	printf("Version   : %s\n",VERSION);
 	printf("Build date: %s\n",BUILD_DATE);
 	if (print_pid) printf("PID       : %d\n",getpid());

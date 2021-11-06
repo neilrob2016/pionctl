@@ -1,8 +1,10 @@
-tunein
+tin
 tunein; wait 4; en; wait 3
 amb
-echo ">>> Tuning Ambient..."; marun tunein; 2 dn; wait 0.5; en; echo "***** Tuned *****"
+echo ">>> Tuning Ambient..."; tin; 2 dn; wait 0.5; en; echo "***** Tuned *****"
 tlk
-echo ">>> Tuning talkRadio..."; marun tunein; 3 dn; wait 0.5; 3 dn; wait 0.5; en; echo "***** Tuned *****"
+echo ">>> Tuning talkRadio..."; tin; 3 dn; wait 0.5; 3 dn; wait 0.5; en; echo "***** Tuned *****"
 tms
-echo ">>> Tuning Times Radio..."; marun tunein; 3 dn; wait 0.5; 2 dn; wait 0.5; en; echo "***** Tuned *****"
+echo ">>> Tuning Times Radio..."; tin; 3 dn; wait 0.5; 2 dn; wait 0.5; en; echo "***** Tuned *****"
+rap
+echo ">>> Tuning Rapture..."; tin; en; ***** Tuned *****

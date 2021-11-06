@@ -1,4 +1,4 @@
 t1
-echo Calling t2...; mar t2; echo t1 done
+echo Calling t2...; t2; echo t1 done
 t2
 echo t2 clearing...; mac; echo t2 done

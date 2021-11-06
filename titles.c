@@ -45,7 +45,7 @@ void addTitle(u_char *mesg, uint32_t len)
 
 	/* Allocate title. Change *_POS if asprintf changed */
 	asprintf((char **)&titles[titles_pos],"%s  %s  %s  %-5d  %.*s",
-		getConnectTime(),timer_str,getTime(),len,len,mesg);
+		getConnectTime(),svc_time_str,getTime(),len,len,mesg);
 
 	++titles_pos;
 }
@@ -74,7 +74,7 @@ int printTitles(int xtitles, u_char *pat, int max)
 	puts("\n*** Titles ***\n");
 	if (xtitles) 
 	{
-		puts("C timer   S timer   Time      Bytes  Text");
+		puts("C time    S time    L time    Bytes  Text");
 		puts("--------  --------  --------  -----  ----");
 	}
 	else

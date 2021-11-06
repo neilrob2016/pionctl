@@ -25,7 +25,7 @@
 #define EXTERN extern
 #endif
 
-#define VERSION "20211104"
+#define VERSION "20211106"
 
 #define STDIN          0
 #define STDOUT         1
@@ -42,7 +42,7 @@
 #define TCP_PORT       60128
 #define DEVICE_CODE    '1'
 #define LISTEN_TIMEOUT 60
-#define TIMER_STR_DEF  "--:--:--"
+#define SVC_TIME_DEF   "--:--:--"
 
 #define FREE(M) if (M) { free(M); M = NULL; }
 
@@ -89,9 +89,12 @@ enum
 enum
 {
 	PROMPT_BASE,
-	PROMPT_TIME,
-	PROMPT_CONN_TIMER,
-	PROMPT_STRM_TIMER,
+	PROMPT_L_TIME,
+	PROMPT_C_TIME,
+	PROMPT_S_TIME,
+	PROMPT_L_C_TIME,
+	PROMPT_L_S_TIME,
+	PROMPT_C_S_TIME,
 
 	NUM_PROMPTS
 };
@@ -100,7 +103,7 @@ enum
 enum
 {
 	FLAG_SHOW_DETAIL     = 1,
-	FLAG_SHOW_TIMER      = (1 << 1),
+	FLAG_SHOW_SVC_TIME   = (1 << 1),
 	FLAG_SHOW_RAW        = (1 << 2),
 	FLAG_TRANS_HTML_AMPS = (1 << 3),
 	FLAG_OFFLINE         = (1 << 4),
@@ -202,7 +205,7 @@ EXTERN int menu_cursor_pos;
 EXTERN int menu_option_cnt;
 EXTERN int macro_cnt;
 EXTERN int macro_alloc;
-EXTERN char timer_str[9];
+EXTERN char svc_time_str[9];
 EXTERN char nja_prev;
 EXTERN int macro_append;
 EXTERN char *save_filename;
@@ -220,8 +223,8 @@ void resetKeyboard();
 
 /* commands.c */
 int  parseInputLine(u_char *data, int len);
-int  parseCommand(u_char *buff, int bufflen);
 void sortCommands();
+int  getCommand(char *word, int len, int expmsg);
 
 /* network.c */
 int  networkStart();
@@ -292,6 +295,7 @@ int  loadMacros(u_char *filename);
 int  saveMacro(u_char *filename, u_char *name, int append);
 int  saveAllMacros(u_char *filename, int append);
 void listMacros();
+int  findMacro(u_char *name);
 
 /* misc.c */
 int   wildMatch(char *str, char *pat);

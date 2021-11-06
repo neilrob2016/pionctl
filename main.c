@@ -71,7 +71,7 @@ void parseCmdLine(int argc, char **argv)
 			SETFLAG(FLAG_SHOW_DETAIL);
 			continue;
 		case 't':
-			SETFLAG(FLAG_SHOW_TIMER);
+			SETFLAG(FLAG_SHOW_SVC_TIME);
 			continue;
 		case 'v':
 			version(0);
@@ -143,9 +143,7 @@ void parseCmdLine(int argc, char **argv)
 	       "       -d <device code (0-9)>]  : Default = %c.\n"
 	       "       -i <command list>        : Semi colon seperated list of commands to run\n"
 	       "                                  immediately. Eg: tunein;3 dn;en\n"
-	       "       -p [0/1/2/3]             : 0 = bare prompt, 1 = show connect timer\n"
-	       "                                  2 = show streamer timer, 3 = show both.\n"
-	       "                                  Default = %d.\n"
+	       "       -p [0 to 6]              : Prompt type. Default = %d.\n"
 	       "       -e                       : Exit after immediate commands run.\n"
 	       "       -o                       : Offline mode - don't listen for streamer.\n"
 	       "       -c                       : Translate HTML ampersand codes in album,\n"
@@ -153,7 +151,7 @@ void parseCmdLine(int argc, char **argv)
 	       "       -r                       : Show raw RX from streamer, don't prettify.\n"
 	       "       -s                       : Show field info. If -p enabled then show\n"
 	       "                                  raw messages.\n"
-	       "       -t                       : Print NTM service timer messages.\n"
+	       "       -t                       : Print NTM service time messages.\n"
 	       "       -v                       : Print version then exit.\n"
 	       "All arguments are optional. If the -a option is not used then the streamer\n"
 	       "address is obtained by listening for an EZProxy UDP packet unless -o is.\n"
@@ -190,7 +188,7 @@ void init()
 		if (!FLAGISSET(FLAG_INTERRUPTED)) doExit(1);
 		UNSETFLAG(FLAG_INTERRUPTED);
 	}
-	strcpy(timer_str,TIMER_STR_DEF);
+	strcpy(svc_time_str,SVC_TIME_DEF);
 	printPrompt();
 }
 

@@ -4,10 +4,10 @@
 #define WRAP_COL     79
 #define INDENT       14
 #define ENTER_STR    "Enter macro lines, end with a '.' on its own..."
+#define CMDERR_STR   "ERROR: Macros cannot have the same name or substring as a command."
 
 static char *home_dir;
 
-int     findMacro(u_char *name);
 int     findEmptySlot();
 int     writeMacro(FILE *fp, int m, int append);
 int     clearMacro(int m);
@@ -35,17 +35,22 @@ void initMacros()
 
 int initMultiLineMacro(u_char *name)
 {
-	if ((name = trim(name)))
+	if (!(name = trim(name)))
 	{
-		macro_name = (u_char *)strdup((char *)name);
-		assert(macro_name);
-		macro_line_tmp = NULL;
-		input_state = INPUT_MACRO_DEF;
-		puts(ENTER_STR);
-		return OK;
+		puts("ERROR: Empty macro name.");
+		return ERR_MACRO;
 	}
-	puts("ERROR: Empty macro name.");
-	return ERR_MACRO;
+	if (getCommand((char *)name,strlen((char *)name),0) != -1)
+	{
+		puts(CMDERR_STR);
+		return ERR_MACRO;
+	}
+	macro_name = (u_char *)strdup((char *)name);
+	assert(macro_name);
+	macro_line_tmp = NULL;
+	input_state = INPUT_MACRO_DEF;
+	puts(ENTER_STR);
+	return OK;
 }
 
 
@@ -99,11 +104,14 @@ int addMacro(u_char *name, u_char *comlist)
 		puts("ERROR: Empty command list.");
 		return ERR_MACRO;
 	}
-
-	/* Trim end */
 	if (findMacro(name) != -1)
 	{
 		printf("ERROR: Duplicate macro name \"%s\".\n",name);
+		return ERR_MACRO;
+	}
+	if (getCommand((char *)name,strlen((char *)name),0) != -1)
+	{
+		puts(CMDERR_STR);
 		return ERR_MACRO;
 	}
 	if ((m = findEmptySlot()) == -1)
@@ -281,7 +289,7 @@ int runMacro(u_char *name)
 	recurse++;
 	macro->running = 1; 
 
-	printf("Running macro \"%s\"...\n",name);
+	printf("Running macro: \"%s\"\n",name);
 	ret = parseInputLine(macros[m].comlist,macros[m].len);
 
 	macro->running = 0;
@@ -447,7 +455,7 @@ void listMacros()
 }
 
 
-/********************************* SUPPORT ***********************************/
+
 
 int findMacro(u_char *name)
 {
@@ -459,7 +467,7 @@ int findMacro(u_char *name)
 }
 
 
-
+/********************************* SUPPORT ***********************************/
 
 int findEmptySlot()
 {

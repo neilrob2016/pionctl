@@ -366,10 +366,10 @@ void readSocket(int print_prompt)
 	/* NTM is sent every second */
 	if (!strncmp((char *)pkt_data->command,"NTM",3))
 	{
-		sprintf(timer_str,"%.8s",pkt_data->command+3);
+		sprintf(svc_time_str,"%.8s",pkt_data->command+3);
 
 		/* Ignore unless told otherwise */
-		if (!FLAGISSET(FLAG_SHOW_TIMER))
+		if (!FLAGISSET(FLAG_SHOW_SVC_TIME))
 		{
 			clearBuffer(BUFF_TCP);
 			return;
@@ -558,7 +558,7 @@ void networkClear()
 	{
 		close(tcp_sock);
 		tcp_sock = 0;
-		strcpy(timer_str,TIMER_STR_DEF);
+		strcpy(svc_time_str,SVC_TIME_DEF);
 		puts("*** DISCONNECTED ***");
 	}
 	if (ipaddr)

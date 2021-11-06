@@ -927,7 +927,7 @@ void printNTI(u_char *mesg, uint32_t len)
 
 void printNTM(u_char *mesg, uint32_t len)
 {
-	printf("Timer : %s\n",timer_str);
+	printf("Service time: %s\n",svc_time_str);
 }
 
 
@@ -1170,9 +1170,9 @@ void printRXCommands(u_char *pat)
 
 void printTimes()
 {
-	printf("Local time    : %s\n",getTime());
-	printf("Connect timer : %s\n",getConnectTime());
-	printf("Streamer timer: %s\n",timer_str);
+	printf("Local time  : %s\n",getTime());
+	printf("Connect time: %s\n",getConnectTime());
+	printf("Service time: %s\n",svc_time_str);
 }
 
 
