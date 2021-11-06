@@ -1,13 +1,8 @@
 /***************************************************************************** 
  PIONCTL
 
- Connects to the control port of the Pioneer N70 streamer. Unfortunately
- the server on the Pioneer is not well written - sometimes it doesn't reply,
- sometimes sends the same thing 2 or 3 times.
-
- TODO:
- - Use NLA to navigate menus better? See bottom of NRI section in doc.
- - Find command for Now Playing remote control button functionality.
+ A command line control client for the Pioneer N-70AE streamer using the 
+ Onkyo ISCP protocol.
 
  Initial version December 2019
 *****************************************************************************/
