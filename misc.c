@@ -43,7 +43,18 @@ int wildMatch(char *str, char *pat)
 
 
 
-int isNumber(u_char *str, int len)
+
+int isNumber(char *str)
+{
+	char *s;
+	for(s=str;*s;++s) if (!isdigit(*s)) return 0;
+	return 1;
+}
+
+
+
+
+int isNumberWithLen(u_char *str, int len)
 {
 	int i;
 	for(i=0;i < len && isdigit(str[i]);++i);

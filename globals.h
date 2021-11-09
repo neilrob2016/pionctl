@@ -5,14 +5,14 @@
 #include <unistd.h>
 #include <termios.h>
 #include <time.h>
+#include <pwd.h>
 #include <netdb.h>
 #include <fcntl.h>
 #include <ctype.h>
 #include <errno.h>
 #include <signal.h>
-#include <pwd.h>
-#include <uuid/uuid.h>
 #include <assert.h>
+#include <uuid/uuid.h>
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -25,7 +25,7 @@
 #define EXTERN extern
 #endif
 
-#define VERSION "20211106"
+#define VERSION "20211108"
 
 #define STDIN          0
 #define STDOUT         1
@@ -33,7 +33,7 @@
 #define READBUFF_SIZE  100
 #define START_CHAR     '!'
 #define MESG_OFFSET    5
-#define ADDR_LIST_SIZE 255
+#define ADDR_LIST_SIZE 20
 #define MAX_WORDS      4
 #define SEPARATOR      ';'
 
@@ -102,19 +102,28 @@ enum
 
 enum
 {
-	FLAG_SHOW_DETAIL     = 1,
-	FLAG_SHOW_SVC_TIME   = (1 << 1),
-	FLAG_SHOW_RAW        = (1 << 2),
-	FLAG_TRANS_HTML_AMPS = (1 << 3),
-	FLAG_OFFLINE         = (1 << 4),
-	FLAG_EXIT_AFTER_CMDS = (1 << 5),
-	FLAG_PRETTY_PRINTING = (1 << 6),
-	FLAG_IN_MENU         = (1 << 7),
-	FLAG_COM_UP          = (1 << 8),
-	FLAG_COM_DN          = (1 << 9),
-	FLAG_MACRO_VERBOSE   = (1 << 10),
-	FLAG_MACRO_RUNNING   = (1 << 11),
-	FLAG_INTERRUPTED     = (1 << 12)
+	RAW_OFF,
+	RAW_LOW1,
+	RAW_LOW2,
+	RAW_HIGH1,
+	RAW_HIGH2,
+
+	NUM_RAW_LEVELS
+};
+
+enum
+{
+	FLAG_SHOW_SVC_TIME   = 1,
+	FLAG_TRANS_HTML_AMPS = (1 << 1),
+	FLAG_OFFLINE         = (1 << 2),
+	FLAG_EXIT_AFTER_CMDS = (1 << 3),
+	FLAG_PRETTY_PRINTING = (1 << 4),
+	FLAG_IN_MENU         = (1 << 5),
+	FLAG_COM_UP          = (1 << 6),
+	FLAG_COM_DN          = (1 << 7),
+	FLAG_MACRO_VERBOSE   = (1 << 8),
+	FLAG_MACRO_RUNNING   = (1 << 9),
+	FLAG_INTERRUPTED     = (1 << 10)
 };
 
 
@@ -205,6 +214,7 @@ EXTERN int menu_cursor_pos;
 EXTERN int menu_option_cnt;
 EXTERN int macro_cnt;
 EXTERN int macro_alloc;
+EXTERN int raw_level;
 EXTERN char svc_time_str[9];
 EXTERN char nja_prev;
 EXTERN int macro_append;
@@ -299,7 +309,8 @@ int  findMacro(u_char *name);
 
 /* misc.c */
 int   wildMatch(char *str, char *pat);
-int   isNumber(u_char *str, int len);
+int   isNumberWithLen(u_char *str, int len);
+int   isNumber(char *str);
 void  printPrompt();
 void  clearPrompt();
 char *getConnectTime();

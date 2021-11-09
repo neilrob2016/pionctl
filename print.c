@@ -351,7 +351,7 @@ void printIFA(u_char *mesg, uint32_t len)
 
 void printFWV(u_char *mesg, uint32_t len)
 {
-	printf("Firmware version: ");
+	printf("Firmware vers: ");
 	printMesg(mesg,len);
 }
 
@@ -927,7 +927,7 @@ void printNTI(u_char *mesg, uint32_t len)
 
 void printNTM(u_char *mesg, uint32_t len)
 {
-	printf("Service time: %s\n",svc_time_str);
+	printf("Service time : %s\n",svc_time_str);
 }
 
 
@@ -1121,7 +1121,7 @@ void printLRA(u_char *mesg, uint32_t len)
 void printMGV(u_char *mesg, uint32_t len)
 {
 	printf("Multiroom group version: ");
-	if (len > 2 && isNumber(mesg,len))
+	if (len > 2 && isNumberWithLen(mesg,len))
 		printf("%c.%.*s\n", mesg[0],len-1,mesg+1);
 	else
 		printf("%.*s\n",len,mesg);

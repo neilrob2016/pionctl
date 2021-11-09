@@ -9,81 +9,78 @@ enum
 	/* 0. Client commands */
 	COM_EXIT,
 	COM_VER,
-	COM_DET,
 	COM_SVCTM,
 	COM_PROMPT,
+	COM_RAW,
 
 	/* 5 */
-	COM_RAW,
 	COM_TAMP,
 	COM_SHOW,
 	COM_SHOWR,
 	COM_CLEAR,
+	COM_QMARK,
 
 	/* 10 */
-	COM_QMARK,
 	COM_HELP,
 	COM_XHELP,
 	COM_SHELP,
 	COM_CON,
+	COM_DISCON,
 
 	/* 15 */
-	COM_DISCON,
 	COM_HIST,
 	COM_CHIST,
 	COM_TITLES,
 	COM_XTITLES,
+	COM_WAIT,
 
 	/* 20 */
-	COM_WAIT,
 	COM_CLS,
 	COM_RXCOMS,
 	COM_TIME,
 	COM_LIST,
+	COM_SELECTED,
 
 	/* 25 */
-	COM_SELECTED,
 	COM_ECHO,
 	COM_MADEF,
 	COM_MAAPP,
 	COM_MADEL,
+	COM_MACLEAR,
 
 	/* 30 */
-	COM_MACLEAR,
 	COM_MARUN,
 	COM_MAVRUN,
 	COM_MALIST,
 	COM_MALOAD,
+	COM_MASAVA,
 
 	/* 35 */
-	COM_MASAVA,
 	COM_MASAVC,
 
-	/* 37. Streamer commands */
+	/* 36. Streamer commands */
 	COM_MENU,
 	COM_UP,
 	COM_DN,
+	COM_EN,
 
 	/* 40 */
-	COM_EN,
 	COM_EX,
 	COM_MSTAT,
 	COM_FLIP,
 	COM_DS,
+	COM_DSD,
 
 	/* 45 */
-	COM_DSD,
 	COM_DSSTAT,
 	COM_DF,
 	COM_ARTBMP,
 	COM_ARTURL,
-
-	/* 50 */
 	COM_SAVEART,
 
-	/* 45+ Enums not required except for these 2 */
-	COM_SETNAME = 102,
-	COM_LRA     = 117
+	/* 50+ Enums not required except for these 2 */
+	COM_SETNAME = 101,
+	COM_LRA     = 116
 };
 
 
@@ -97,54 +94,53 @@ static struct st_command
 	/* 0. Built in commands */
 	{ "exit",   NULL },
 	{ "ver",    NULL },
-	{ "det",    NULL },
 	{ "svctm",  NULL },
 	{ "prompt", NULL },
+	{ "raw",    NULL },
 
 	/* 5 */
-	{ "raw",    NULL },
 	{ "tamp",   NULL },
 	{ "show",   NULL },
 	{ "showr",  NULL },
 	{ "clear",  NULL },
+	{ "?",      NULL },
 
 	/* 10 */
-	{ "?",      NULL },
 	{ "help",   NULL },
 	{ "xhelp",  NULL },
 	{ "shelp",  NULL },
 	{ "con",    NULL },
+	{ "discon", NULL },
 
 	/* 15 */
-	{ "discon", NULL },
 	{ "hist",   NULL },
 	{ "chist",  NULL },
 	{ "titles", NULL },
 	{ "xtitles",NULL },
+	{ "wait",   NULL },
 
 	/* 20 */
-	{ "wait",   NULL },
 	{ "cls",    NULL },
 	{ "rxcoms", NULL },
 	{ "time",   NULL },
 	{ "list",   NULL },
+	{ "selected",NULL },
 
 	/* 25 */
-	{ "selected",NULL },
 	{ "echo",    NULL },
 	{ "madef",   NULL },
 	{ "maapp",   NULL },
 	{ "madel",   NULL },
+	{ "maclear",NULL },
 
 	/* 30 */
-	{ "maclear",NULL },
 	{ "marun",  NULL },
 	{ "mavrun", NULL },
 	{ "malist", NULL },
 	{ "maload", NULL },
+	{ "masava", NULL },
 
 	/* 35 */
-	{ "masava", NULL },
 	{ "masavc", NULL },
 
 	/* Menu navigation */
@@ -278,6 +274,7 @@ int  copyHistoryBuffer(int buffnum);
 int  processBuiltInCommand(
 	int comnum, int cmd_word, int word_cnt, u_char **words);
 int  setPrompt(u_char *param);
+int  setRaw(u_char *param);
 void showHelp(int conmum, u_char *pat);
 void showSortedHelp(u_char *pat);
 int  doConnect(u_char *param);
@@ -295,7 +292,6 @@ int  doSaveMacro(int comnum, int cmd_word, int word_cnt, u_char **words);
 
 int   compareComs(const void *addr1, const void *addr2);
 u_int getUsecTime();
-
 
 
 void sortCommands()
@@ -631,7 +627,7 @@ int parseCommand(u_char *buff, int bufflen)
 	case COM_LRA:
 		/* Commands that take a numeric argument */
 		if (word_cnt < cmd_word + 2 || 
-		    !isNumber(words[cmd_word+1],word_len[cmd_word+1]) || 
+		    !isNumber((char *)words[cmd_word+1]) || 
 		    (val = atoi((char *)words[cmd_word+1])) > 99)
 		{
 			printf("Usage: %s <number>\n",commands[comnum].com);
@@ -771,10 +767,6 @@ int processBuiltInCommand(
 	case COM_VER:
 		version(1);
 		break;
-	case COM_DET:
-		FLIPFLAG(FLAG_SHOW_DETAIL);
-		printf("Show detail: %s\n",ONOFF(FLAG_SHOW_DETAIL));
-		break;
 	case COM_SVCTM:
 		FLIPFLAG(FLAG_SHOW_SVC_TIME);
 		printf("Show service time: %s\n",ONOFF(FLAG_SHOW_SVC_TIME));
@@ -782,9 +774,7 @@ int processBuiltInCommand(
 	case COM_PROMPT:
 		return setPrompt(param);
 	case COM_RAW:
-		FLIPFLAG(FLAG_SHOW_RAW);
-		printf("Show raw RX: %s\n",ONOFF(FLAG_SHOW_RAW));
-		break;
+		return setRaw(param);
 	case COM_TAMP:
 		FLIPFLAG(FLAG_TRANS_HTML_AMPS);
 		printf("Translate HTML amp codes: %s\n",
@@ -877,13 +867,34 @@ int setPrompt(u_char *param)
 	if (param)
 	{
 		val = atoi((char *)param);
-		if (val >= 0 && val < NUM_PROMPTS)
+		if (isNumber((char *)param) && val >= 0 && val < NUM_PROMPTS)
 		{
 			prompt_type = val;
 			return OK;
 		}
 	}
-	puts("Usage: prompt [0 to 6]");
+	printf("Usage: prompt [0 to %d]\n",NUM_PROMPTS-1);
+	return ERR_CMD_FAIL;
+}
+
+
+
+
+int setRaw(u_char *param)
+{
+	int val;
+
+	if (param)
+	{
+		val = atoi((char *)param);
+		if (isNumber((char *)param) && val >= 0 && val < NUM_RAW_LEVELS)
+		{
+			raw_level = val;
+			puts("OK");
+			return OK;
+		}
+	}
+	printf("Usage: raw [0 to %d]\n",NUM_RAW_LEVELS-1);
 	return ERR_CMD_FAIL;
 }
 

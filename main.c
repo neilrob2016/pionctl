@@ -43,6 +43,7 @@ void parseCmdLine(int argc, char **argv)
 	flags = 0;
 	cmd_list = NULL;
 	prompt_type = PROMPT_BASE;
+	raw_level = 0;
 
 	for(i=1;i < argc;++i)
 	{
@@ -58,12 +59,6 @@ void parseCmdLine(int argc, char **argv)
 			continue;
 		case 'o':
 			SETFLAG(FLAG_OFFLINE);
-			continue;
-		case 'r':
-			SETFLAG(FLAG_SHOW_RAW);
-			continue;
-		case 's':
-			SETFLAG(FLAG_SHOW_DETAIL);
 			continue;
 		case 't':
 			SETFLAG(FLAG_SHOW_SVC_TIME);
@@ -88,23 +83,37 @@ void parseCmdLine(int argc, char **argv)
 			cmd_list = argv[++i];
 			break;
 		case 'l':
-			if ((listen_timeout = atoi(argv[++i])) < 0) goto USAGE;
+			++i;
+			if (!isNumber(argv[i]) ||
+			    (listen_timeout = atoi(argv[i])) < 0) goto USAGE;
 			break;
 		case 'n':
-			if ((connect_timeout = atoi(argv[++i])) < 0) goto USAGE;
+			++i;
+			if (!isNumber(argv[i]) ||
+			    (connect_timeout = atoi(argv[i])) < 0) goto USAGE;
 			break;
 		case 'p':
 			prompt_type = atoi(argv[++i]);
-			if (prompt_type < 0 || prompt_type >= NUM_PROMPTS)
+			if (!isNumber(argv[i]) ||
+			    prompt_type < 0 || prompt_type >= NUM_PROMPTS)
+			{
 				goto USAGE;
+			}
+			continue;
+		case 'r':
+			raw_level = atoi(argv[++i]);
+			if (!isNumber(argv[i]) ||
+			    raw_level < 0 || raw_level >= NUM_RAW_LEVELS)
+			{
+				goto USAGE;
+			}
 			continue;
 		case 'u':
 			up = atoi(argv[++i]);
 			/* Comparison wouldn't work if we used uint16_t */
-			if (up < 0 || up > 65535)
+			if (!isNumber(argv[i]) || up < 0 || up > 65535)
 			{
-				printf("ERROR: Invalid UDP port %d. Must be from 0 to 65535.\n",up);
-				exit(1);
+				goto USAGE;
 			}
 			udp_port = (uint16_t)up;
 			break;
@@ -115,11 +124,6 @@ void parseCmdLine(int argc, char **argv)
 	if (ipaddr && FLAGISSET(FLAG_OFFLINE))
 	{
 		puts("ERROR: The -a and -o options are mutually exclusive.");
-		exit(1);
-	}
-	if (FLAGISSET(FLAG_TRANS_HTML_AMPS) && FLAGISSET(FLAG_SHOW_RAW))
-	{
-		puts("ERROR: The -c and -r options are mutually exclusive.");
 		exit(1);
 	}
 	if (FLAGISSET(FLAG_EXIT_AFTER_CMDS) && !cmd_list)
@@ -133,25 +137,26 @@ void parseCmdLine(int argc, char **argv)
 	printf("Usage: %s\n"
 	       "       -a <TCP address[:<port>]>\n"
 	       "       -n <TCP connect timeout> : Default = TCP default\n"
-	       "       -u <UDP listen port>     : Default = %d.\n"
+	       "       -u <UDP listen port>     : 0 to 65535. Default = %d.\n"
 	       "       -l <UDP listen timeout>] : Default = %d secs.\n"
 	       "       -d <device code (0-9)>]  : Default = %c.\n"
 	       "       -i <command list>        : Semi colon seperated list of commands to run\n"
 	       "                                  immediately. Eg: tunein;3 dn;en\n"
-	       "       -p [0 to 6]              : Prompt type. Default = %d.\n"
+	       "       -p [0 to %d]              : Prompt type. Default = %d.\n"
+	       "       -r [0 to %d]              : Raw RX/TX print level. Default = %d.\n"
 	       "       -e                       : Exit after immediate commands run.\n"
 	       "       -o                       : Offline mode - don't listen for streamer.\n"
 	       "       -c                       : Translate HTML ampersand codes in album,\n"
 	       "                                  artist and title when pretty printing.\n"
-	       "       -r                       : Show raw RX from streamer, don't prettify.\n"
-	       "       -s                       : Show field info. If -p enabled then show\n"
-	       "                                  raw messages.\n"
 	       "       -t                       : Print NTM service time messages.\n"
 	       "       -v                       : Print version then exit.\n"
 	       "All arguments are optional. If the -a option is not used then the streamer\n"
 	       "address is obtained by listening for an EZProxy UDP packet unless -o is.\n"
 	       "specified.\n",
-		argv[0],UDP_PORT,LISTEN_TIMEOUT,DEVICE_CODE,prompt_type);
+		argv[0],
+		UDP_PORT,LISTEN_TIMEOUT,DEVICE_CODE,
+		NUM_PROMPTS-1,prompt_type,
+		NUM_RAW_LEVELS-1,raw_level);
 	exit(1);
 }
 

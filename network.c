@@ -1,7 +1,8 @@
 #include "globals.h"
 
-#define COM_LEN     3
-#define PKT_HDR_LEN (int)sizeof(t_iscp_hdr)
+#define COM_LEN      3
+#define MAX_ATTEMPTS (ADDR_LIST_SIZE * 2)
+#define PKT_HDR_LEN  (int)sizeof(t_iscp_hdr)
 
 int  resolveAddress();
 void printPacketDetails(t_iscp_hdr *hdr, t_iscp_data *data);
@@ -9,6 +10,7 @@ void printPacketDetails(t_iscp_hdr *hdr, t_iscp_data *data);
 int networkStart()
 {
 	char *ptr;
+	int cnt;
 
 	tcp_port = TCP_PORT;
 
@@ -32,22 +34,32 @@ int networkStart()
 		if (!resolveAddress()) return 0;
 		if (!connectToStreamer())
 		{
-			puts("*** Connection failed ***");
+			puts("ERROR: Connect failed.");
 			return 0;
 		}
 	}
 	else
 	{
 		if (!createUDPSocket()) return 0;
-		do
+		for(cnt=0;cnt < MAX_ATTEMPTS;++cnt)
 		{
+			if (cnt) printf("Retry %d...\n",cnt);
+
 			if (!getStreamerAddress())
 			{
 				puts("ERROR: Listen failed.");
+				networkClear();
 				return 0;
 			}
-		} while(!connectToStreamer());
+			if (connectToStreamer()) break;
+		}
 
+		if (cnt == MAX_ATTEMPTS) 
+		{
+			puts("ERROR: Max connection attempts reached.");
+			networkClear();
+			return 0;
+		}
 		close(udp_sock);
 		udp_sock = 0;
 	}
@@ -58,6 +70,7 @@ int networkStart()
 
 
 
+/*** Create the socket to listen for EZPROXY packets on ***/
 int createUDPSocket()
 {
 	struct sockaddr_in addr;
@@ -155,6 +168,7 @@ int getStreamerAddress()
 		}
 		if (i == addr_list_cnt)
 		{
+			/* The count will be reset when we disconnect */
 			puts("New address.");
 			addr_list[addr_list_cnt] = addr.sin_addr;
 			con_addr.sin_addr = addr.sin_addr;
@@ -386,10 +400,10 @@ void readSocket(int print_prompt)
 	}
 
 	/* Print raw RX. Show repeated data. */
-	if (FLAGISSET(FLAG_SHOW_RAW))
+	if (raw_level)
 	{
 		clearPrompt();
-		if (FLAGISSET(FLAG_SHOW_DETAIL))
+		if (raw_level >= RAW_HIGH1)
 		{
 			/* Header */
 			printf("\nRX %d bytes:\n",buffer[BUFF_TCP].len);
@@ -397,8 +411,10 @@ void readSocket(int print_prompt)
 		}
 		else
 		{
-			printf("%.3s",pkt_data->command);
-			printMesg(pkt_data->mesg,data_len);
+			printf("RX: ");
+			printMesg(
+				buffer[BUFF_TCP].data+PKT_HDR_LEN,
+				pkt_hdr->data_len);
 		}
 		/* Minor issue - any ampersand codes won't get translated even
 		   if translate flag set. Oh well. */
@@ -406,17 +422,11 @@ void readSocket(int print_prompt)
 			addTitle(pkt_data->mesg,data_len - 3);
 		clearBuffer(BUFF_TCP);
 		if (print_prompt) printPrompt();
-		return;
+
+		/* 2 of the levels don't do pretty print */
+		if (raw_level == RAW_LOW1 || raw_level == RAW_HIGH1) return;
 	}
 
-	/* Pretty print */
-	if (FLAGISSET(FLAG_SHOW_DETAIL))
-	{
-		clearPrompt();
-		printf("RX: ");
-		printMesg(buffer[BUFF_TCP].data+PKT_HDR_LEN,pkt_hdr->data_len);
-		if (print_prompt) printPrompt();
-	}
 	/* If new data then print it otherwise dump */
 	if (new_data)
 		prettyPrint(pkt_data,print_prompt);
@@ -483,21 +493,25 @@ int writeSocket(u_char *write_data, int write_data_len)
 	memcpy(data->mesg,write_data+COM_LEN,write_data_len);
 	data->mesg[write_data_len] = '\r';
 
-	if (FLAGISSET(FLAG_SHOW_DETAIL))
+	switch(raw_level)
 	{
-		if (FLAGISSET(FLAG_SHOW_RAW))
-		{
-			printf("TX %d bytes:\n",pkt_len);
-			/* Reset back to host ordering before printing */
-			hdr.hdr_len = PKT_HDR_LEN;
-			hdr.data_len = data_len;
-			printPacketDetails(&hdr,(t_iscp_data *)data);
-		}
-		else
-		{
-			printf("TX: ");
-			printMesg((u_char *)data,data_len);
-		}
+	case RAW_OFF:
+		break;
+	case RAW_LOW1:
+	case RAW_LOW2:
+		printf("TX: ");
+		printMesg((u_char *)data,data_len);
+		break;
+	case RAW_HIGH1:
+	case RAW_HIGH2:
+		printf("TX %d bytes:\n",pkt_len);
+		/* Reset back to host ordering before printing */
+		hdr.hdr_len = PKT_HDR_LEN;
+		hdr.data_len = data_len;
+		printPacketDetails(&hdr,(t_iscp_data *)data);
+		break;
+	default:
+		assert(0);
 	}
 
 	ret = 1;
