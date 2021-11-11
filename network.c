@@ -471,9 +471,9 @@ int writeSocket(u_char *write_data, int write_data_len)
 	hdr.reserved[1] = 0;
 	hdr.reserved[2] = 0;
 
-	/* Unfortunately it seems like the player can't handle packets split up
-	   over several ethernet frames so have to ut everything in one lump of
-	   memory then send it */
+	/* Unfortunately it seems like the player can't handle commands split up
+	   over several writes so have to put everything in one lump of memory 
+	   then send it */
 	pkt_len = PKT_HDR_LEN + data_len;
 	if (!(pkt = (u_char *)malloc(pkt_len)))
 	{

@@ -21,8 +21,8 @@ use the -a command line option to set the IP address manually.
 On the command line type "help" or just "?" to get a list of commands. The rest
 you'll have to work out for yourself as I haven't got around to any 
 documentation though to navigate the menus use "up","dn","ex" for exit and "en"
-for enter and macros can be run multiple times by putting a number in front 
-eg "2 dn". See the macros for more command examples.
+for enter and commands and macros can be run multiple times by putting a number
+in front, eg "2 dn". See macros/* for examples.
 
 I retain the copyright to this code but feel free to use and modify it however
 you see fit so long as my original copyright message remains.

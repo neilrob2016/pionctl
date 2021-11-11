@@ -1149,7 +1149,7 @@ void printRXCommands(u_char *pat)
 	int cnt;
 	int i;
 
-	puts("\n*** RX server commands ***\n");
+	puts("\n*** RX streamer commands parsed by this client ***\n");
 	for(i=cnt=0;comfunc[i].func;++i)
 	{
 		if (!pat || wildMatch(comfunc[i].com,(char *)pat))
@@ -1160,9 +1160,9 @@ void printRXCommands(u_char *pat)
 		}
 	}
 	if (pat)
-		printf("\n\n%d of %d entries.\n\n",cnt,i);
+		printf("\n\n%d of %d commands.\n\n",cnt,i);
 	else
-		printf("\n\n%d entries.\n\n",cnt);
+		printf("\n\n%d commands.\n\n",cnt);
 }
 
 

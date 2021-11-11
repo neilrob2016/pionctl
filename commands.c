@@ -37,50 +37,53 @@ enum
 	/* 20 */
 	COM_CLS,
 	COM_RXCOMS,
+	COM_TXCOMS,
 	COM_TIME,
 	COM_LIST,
-	COM_SELECTED,
 
 	/* 25 */
+	COM_SELECTED,
 	COM_ECHO,
 	COM_MADEF,
 	COM_MAAPP,
 	COM_MADEL,
-	COM_MACLEAR,
 
 	/* 30 */
+	COM_MACLEAR,
 	COM_MARUN,
 	COM_MAVRUN,
 	COM_MALIST,
 	COM_MALOAD,
-	COM_MASAVA,
 
 	/* 35 */
+	COM_MASAVA,
 	COM_MASAVC,
 
-	/* 36. Streamer commands */
+	/* 37. Streamer commands */
 	COM_MENU,
 	COM_UP,
 	COM_DN,
-	COM_EN,
 
 	/* 40 */
+	COM_EN,
 	COM_EX,
 	COM_MSTAT,
 	COM_FLIP,
 	COM_DS,
-	COM_DSD,
 
 	/* 45 */
+	COM_DSD,
 	COM_DSSTAT,
 	COM_DF,
 	COM_ARTBMP,
 	COM_ARTURL,
+
+	/* 50 */
 	COM_SAVEART,
 
-	/* 50+ Enums not required except for these 2 */
-	COM_SETNAME = 101,
-	COM_LRA     = 116
+	/* Enums beyond saveart not required except for these */
+	COM_SETNAME = 102,
+	COM_LRA     = 117
 };
 
 
@@ -122,25 +125,26 @@ static struct st_command
 	/* 20 */
 	{ "cls",    NULL },
 	{ "rxcoms", NULL },
+	{ "txcoms", NULL },
 	{ "time",   NULL },
 	{ "list",   NULL },
-	{ "selected",NULL },
 
 	/* 25 */
+	{ "selected",NULL },
 	{ "echo",    NULL },
 	{ "madef",   NULL },
 	{ "maapp",   NULL },
 	{ "madel",   NULL },
-	{ "maclear",NULL },
 
 	/* 30 */
+	{ "maclear",NULL },
 	{ "marun",  NULL },
 	{ "mavrun", NULL },
 	{ "malist", NULL },
 	{ "maload", NULL },
-	{ "masava", NULL },
 
 	/* 35 */
+	{ "masava", NULL },
 	{ "masavc", NULL },
 
 	/* Menu navigation */
@@ -282,6 +286,7 @@ int  doDisconnect();
 void printHistory();
 void clearHistory();
 int  doWait(u_char *param);
+void printTXCommands(u_char *pat);
 void doEcho(int cmd_word, int word_cnt, u_char **words);
 int  defineMacro(int cmd_word, int word_cnt, u_char **words);
 int  doAppendMacro(int cmd_word, int word_cnt, u_char **words);
@@ -820,6 +825,9 @@ int processBuiltInCommand(
 	case COM_RXCOMS:
 		printRXCommands(param);
 		break;
+	case COM_TXCOMS:
+		printTXCommands(param);
+		break;
 	case COM_TIME:
 		printTimes();
 		break;
@@ -858,7 +866,7 @@ int processBuiltInCommand(
 }
 
 
-
+/****************************** BUILT IN COMMANDS *****************************/
 
 int setPrompt(u_char *param)
 {
@@ -1087,6 +1095,35 @@ int doWait(u_char *param)
 	}
 	puts("Usage: wait <seconds>");
 	return ERR_CMD_FAIL;
+}
+
+
+
+
+void printTXCommands(u_char *pat)
+{
+	int cnt1;
+	int cnt2;
+	int i;
+
+	puts("\n*** TX streamer command mappings ***\n");
+	for(i=cnt1=cnt2=0;i < NUM_COMMANDS;++i)
+	{
+		if (commands[i].data)
+		{
+			++cnt1;
+			if (!pat || wildMatch(commands[i].com,(char *)pat))
+			{
+				if (cnt2 && !(cnt2 % 3)) putchar('\n');
+				printf("%-8s = %-15s",commands[i].com,commands[i].data);
+				++cnt2;
+			}
+		}
+	}
+	if (pat)
+		printf("\n\n%d of %d commands.\n\n",cnt2,cnt1);
+	else
+		printf("\n\n%d commands.\n\n",cnt1);
 }
 
 
