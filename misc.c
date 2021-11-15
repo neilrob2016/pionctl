@@ -64,6 +64,42 @@ int isNumberWithLen(u_char *str, int len)
 
 
 
+char *getTime()
+{
+	static char text[9];
+	time_t now = time(0);
+
+	strftime(text,sizeof(text),"%T",localtime(&now));
+	return text;
+}
+
+
+
+
+char *getTimeString(time_t tm)
+{
+	static char text[9];
+	time_t diff;
+	int hours;
+	int mins;
+	int secs;
+	
+	if (tcp_sock && tm)
+	{
+		diff = time(0) - tm;
+		hours = (diff / 3600) % 100;
+		mins = (diff % 3600) / 60;
+		secs = diff % 60;
+		snprintf(text,9,"%02d:%02d:%02d",hours,mins,secs);
+	}
+	else strcpy(text,TIME_DEF_STR);
+
+	return text;
+}
+
+
+
+
 void printPrompt()
 {
 	if (input_state != INPUT_CMD)
@@ -121,7 +157,7 @@ void printPromptLocalTime()
 
 void printPromptConnectTime()
 {
-	printf(" C%s",getConnectTime());
+	printf(" C%s",getTimeString(connect_time));
 }
 
 
@@ -147,42 +183,6 @@ void clearPrompt()
 
 	putchar('\r');
 	fflush(stdout);
-}
-
-
-
-
-char *getConnectTime()
-{
-	static char text[9];
-	time_t diff;
-	int hours;
-	int mins;
-	int secs;
-
-	if (connect_time)
-	{
-		diff = time(0) - connect_time;
-		hours = (diff / 3600) % 100;
-		mins = (diff % 3600) / 60;
-		secs = diff % 60;
-		snprintf(text,9,"%02d:%02d:%02d",hours,mins,secs);
-	}
-	else strcpy(text,"--.--.--");
-
-	return text;
-}
-
-
-
-
-char *getTime()
-{
-	static char text[9];
-	time_t now = time(0);
-
-	strftime(text,sizeof(text),"%T",localtime(&now));
-	return text;
 }
 
 

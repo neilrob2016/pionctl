@@ -13,12 +13,18 @@ int networkStart()
 	int cnt;
 
 	tcp_port = TCP_PORT;
-
 	bzero(&con_addr,sizeof(con_addr));
 	con_addr.sin_family = AF_INET;
 	con_addr.sin_port = htons(tcp_port);
+	connect_time = 0;
+	last_rx_time = 0;
+	last_tx_time = 0;
 	tcp_sock = 0;
 	udp_sock = 0;
+	rx_bytes = 0;
+	rx_reads = 0;
+	tx_bytes = 0;
+	tx_writes = 0;
 
 	if (ipaddr)
 	{
@@ -350,6 +356,10 @@ void readSocket(int print_prompt)
 		puts("\n*** Connection closed by remote host ***");
 		goto ERROR;
 	}
+	++rx_reads;
+	rx_bytes += len;
+	last_rx_time = time(0);
+
 	addToBuffer(BUFF_TCP,readbuff,len);
 
 	if (buffer[BUFF_TCP].len == PKT_HDR_LEN)
@@ -531,6 +541,9 @@ int writeSocket(u_char *write_data, int write_data_len)
 			ret = 0;
 			break;
 		}
+		++tx_writes;
+		tx_bytes += wrote_len;
+		last_tx_time = time(0);
 	}
 	free(pkt);
 	return ret;
@@ -572,7 +585,7 @@ void networkClear()
 	{
 		close(tcp_sock);
 		tcp_sock = 0;
-		strcpy(svc_time_str,SVC_TIME_DEF);
+		strcpy(svc_time_str,TIME_DEF_STR);
 		puts("*** DISCONNECTED ***");
 	}
 	if (ipaddr)
@@ -580,5 +593,4 @@ void networkClear()
 		free(ipaddr);
 		ipaddr = NULL;
 	}
-	connect_time = 0;
 }

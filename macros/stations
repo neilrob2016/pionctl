@@ -1,5 +1,5 @@
 tin
-tunein; wait 4; en; wait 3
+tunein; wait 5; en; wait 3
 amb
 echo ">>> Tuning Ambient..."; tin; 1 dn; wait 0.5; en; echo "***** Tuned *****"
 talk

@@ -188,7 +188,7 @@ void init()
 		if (!FLAGISSET(FLAG_INTERRUPTED)) doExit(1);
 		UNSETFLAG(FLAG_INTERRUPTED);
 	}
-	strcpy(svc_time_str,SVC_TIME_DEF);
+	strcpy(svc_time_str,TIME_DEF_STR);
 	printPrompt();
 }
 

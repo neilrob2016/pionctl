@@ -138,8 +138,8 @@ int dumpList(u_char *pat, int max)
 		return ERR_CMD_FAIL;
 	}
 
-	printf("\n*** Raw streamer RX (%s%s) ***\n\n",
-		inet_ntoa(con_addr.sin_addr),tcp_sock ? "" : " - offline");
+	printf("\n*** Raw streamer RX (%s : %sCONNECTED) ***\n\n",
+		inet_ntoa(con_addr.sin_addr),tcp_sock ? "" : "DIS");
 	puts("Com   Bytes   Message");
 	puts("---   -----   -------");
 	for(i=unknown_cnt=entry_cnt=total=0;i < 256;++i)

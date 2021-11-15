@@ -11,7 +11,7 @@ OBJS=\
 	keyboard.o \
 	commands.o \
 	network.o \
-	print.o \
+	printrx.o \
 	buffer.o \
 	list.o \
 	titles.o \
@@ -39,8 +39,8 @@ commands.o: commands.c $(DEPS)
 network.o: network.c $(DEPS)
 	$(COMP) network.c
 
-print.o: print.c $(DEPS)
-	$(COMP) print.c
+printrx.o: printrx.c $(DEPS)
+	$(COMP) printrx.c
 
 buffer.o: buffer.c $(DEPS)
 	$(COMP) buffer.c

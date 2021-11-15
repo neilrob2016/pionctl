@@ -25,7 +25,7 @@
 #define EXTERN extern
 #endif
 
-#define VERSION "20211110"
+#define VERSION "20211115"
 
 #define STDIN          0
 #define STDOUT         1
@@ -42,7 +42,7 @@
 #define TCP_PORT       60128
 #define DEVICE_CODE    '1'
 #define LISTEN_TIMEOUT 60
-#define SVC_TIME_DEF   "--:--:--"
+#define TIME_DEF_STR   "--:--:--"
 
 #define FREE(M) if (M) { free(M); M = NULL; }
 
@@ -200,6 +200,8 @@ EXTERN t_buffer buffer[NUM_BUFFERS];
 EXTERN t_entry *list[256];
 EXTERN t_macro *macros;
 EXTERN time_t connect_time;
+EXTERN time_t last_rx_time;
+EXTERN time_t last_tx_time;
 EXTERN int input_state;
 EXTERN int keyb_buffnum;
 EXTERN int from_buffnum;
@@ -214,10 +216,14 @@ EXTERN int menu_cursor_pos;
 EXTERN int menu_option_cnt;
 EXTERN int macro_cnt;
 EXTERN int macro_alloc;
+EXTERN int macro_append;
 EXTERN int raw_level;
+EXTERN u_long rx_bytes;
+EXTERN u_long rx_reads;
+EXTERN u_long tx_bytes;
+EXTERN u_long tx_writes;
 EXTERN char svc_time_str[9];
 EXTERN char nja_prev;
-EXTERN int macro_append;
 EXTERN char *save_filename;
 EXTERN char *menu_selection;
 EXTERN char **menu_options;
@@ -250,7 +256,6 @@ void printMesg(u_char *mesg, int len);
 void prettyPrint(t_iscp_data *pkt_data, int print_prompt);
 int  prettyPrintList(u_char *pat, int max);
 void printRXCommands(u_char *pat);
-void printTimes();
 
 /* buffer.c */
 void initBuffers();
@@ -311,10 +316,10 @@ int  findMacro(u_char *name);
 int   wildMatch(char *str, char *pat);
 int   isNumberWithLen(u_char *str, int len);
 int   isNumber(char *str);
+char *getTime();
+char *getTimeString(time_t tm);
 void  printPrompt();
 void  clearPrompt();
-char *getConnectTime();
-char *getTime();
 void  doExit(int code);
 void  sigHandler(int sig);
 void  version(int print_pid);

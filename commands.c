@@ -28,62 +28,63 @@ enum
 	COM_DISCON,
 
 	/* 15 */
+	COM_CONSTAT,
 	COM_HIST,
 	COM_CHIST,
 	COM_TITLES,
 	COM_XTITLES,
-	COM_WAIT,
 
 	/* 20 */
+	COM_WAIT,
 	COM_CLS,
 	COM_RXCOMS,
 	COM_TXCOMS,
 	COM_TIME,
-	COM_LIST,
 
 	/* 25 */
+	COM_LIST,
 	COM_SELECTED,
 	COM_ECHO,
 	COM_MADEF,
 	COM_MAAPP,
-	COM_MADEL,
 
 	/* 30 */
+	COM_MADEL,
 	COM_MACLEAR,
 	COM_MARUN,
 	COM_MAVRUN,
 	COM_MALIST,
-	COM_MALOAD,
 
 	/* 35 */
+	COM_MALOAD,
 	COM_MASAVA,
 	COM_MASAVC,
 
-	/* 37. Streamer commands */
+	/* 38. Streamer commands */
 	COM_MENU,
 	COM_UP,
-	COM_DN,
 
 	/* 40 */
+	COM_DN,
 	COM_EN,
 	COM_EX,
 	COM_MSTAT,
 	COM_FLIP,
-	COM_DS,
 
 	/* 45 */
+	COM_DS,
 	COM_DSD,
 	COM_DSSTAT,
 	COM_DF,
 	COM_ARTBMP,
-	COM_ARTURL,
 
 	/* 50 */
+	COM_ARTURL,
 	COM_SAVEART,
 
 	/* Enums beyond saveart not required except for these */
-	COM_SETNAME = 102,
-	COM_LRA     = 117
+	COM_SETNAME = 103,
+	COM_LRA     = 118
 };
 
 
@@ -116,34 +117,35 @@ static struct st_command
 	{ "discon", NULL },
 
 	/* 15 */
+	{ "constat",NULL },
 	{ "hist",   NULL },
 	{ "chist",  NULL },
 	{ "titles", NULL },
 	{ "xtitles",NULL },
-	{ "wait",   NULL },
 
 	/* 20 */
+	{ "wait",   NULL },
 	{ "cls",    NULL },
 	{ "rxcoms", NULL },
 	{ "txcoms", NULL },
 	{ "time",   NULL },
-	{ "list",   NULL },
 
 	/* 25 */
+	{ "list",   NULL },
 	{ "selected",NULL },
 	{ "echo",    NULL },
 	{ "madef",   NULL },
 	{ "maapp",   NULL },
-	{ "madel",   NULL },
 
 	/* 30 */
+	{ "madel",   NULL },
 	{ "maclear",NULL },
 	{ "marun",  NULL },
 	{ "mavrun", NULL },
 	{ "malist", NULL },
-	{ "maload", NULL },
 
 	/* 35 */
+	{ "maload", NULL },
 	{ "masava", NULL },
 	{ "masavc", NULL },
 
@@ -227,7 +229,7 @@ static struct st_command
 	{ "chrome",  "NSV400"  },
 	{ "spotify", "NSV0A0"  },
 	{ "airplay", "NSV180"  },
-	{ "netstat", "NSVQSTN" },
+	{ "svcstat", "NSVQSTN" },
 	{ "mrmstat", "MRMQSTN" },
 
 	/* Misc */
@@ -287,6 +289,8 @@ void printHistory();
 void clearHistory();
 int  doWait(u_char *param);
 void printTXCommands(u_char *pat);
+void printConstat();
+void printTimes();
 void doEcho(int cmd_word, int word_cnt, u_char **words);
 int  defineMacro(int cmd_word, int word_cnt, u_char **words);
 int  doAppendMacro(int cmd_word, int word_cnt, u_char **words);
@@ -828,6 +832,9 @@ int processBuiltInCommand(
 	case COM_TXCOMS:
 		printTXCommands(param);
 		break;
+	case COM_CONSTAT:
+		printConstat();
+		break;
 	case COM_TIME:
 		printTimes();
 		break;
@@ -1124,6 +1131,43 @@ void printTXCommands(u_char *pat)
 		printf("\n\n%d of %d commands.\n\n",cnt2,cnt1);
 	else
 		printf("\n\n%d commands.\n\n",cnt1);
+}
+
+
+
+
+void printConstat()
+{
+	t_iscp_data *pkt_data;
+
+	puts("\n*** Connection status and traffic ***\n");
+	printf("Streamer TCP: %s:%d\n",inet_ntoa(con_addr.sin_addr),tcp_port);
+	printf("Connection  : %sCONNECTED\n",tcp_sock ? "" : "DIS");
+	printf("Connect time: %s\n",getTimeString(connect_time));
+	printf("Last RX ago : %s\n",getTimeString(last_rx_time));
+	printf("Last TX ago : %s\n",getTimeString(last_tx_time));
+
+	if (buffer[BUFF_TCP].data)
+	{
+		pkt_data = (t_iscp_data *)(buffer[BUFF_TCP].data + pkt_hdr->hdr_len);
+		printf("Last RX com : %.3s\n",pkt_data->command);
+	}
+	else puts("Last RX com : ---");
+
+	printf("RX reads    : %lu\n",rx_reads);
+	printf("RX bytes    : %lu\n",rx_bytes);
+	printf("TX writes   : %lu\n",tx_writes);
+	printf("TX bytes    : %lu\n\n",tx_bytes);
+}
+
+
+
+
+void printTimes()
+{
+	printf("Local time  : %s\n",getTime());
+	printf("Connect time: %s\n",getTimeString(connect_time));
+	printf("Service time: %s\n",svc_time_str);
 }
 
 
