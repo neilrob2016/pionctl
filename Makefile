@@ -1,6 +1,6 @@
 CC=cc
 
-# For Helvar 950 Router build
+# ARM Linux
 #CC=aarch64-poky-linux-gcc --sysroot=/opt/fsl-imx-wayland/4.19-warrior/sysroots/aarch64-poky-linux
 
 ARGS=-Wall -pedantic -g -c

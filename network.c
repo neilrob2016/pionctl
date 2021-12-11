@@ -387,20 +387,27 @@ void readSocket(int print_prompt)
 		(char *)pkt_data->command,
 		pkt_data->mesg,pkt_hdr->data_len - (MESG_OFFSET + 3));
 
+	data_len = pkt_hdr->data_len - MESG_OFFSET;
+
 	/* NTM is sent every second */
 	if (!strncmp((char *)pkt_data->command,"NTM",3))
 	{
-		sprintf(svc_time_str,"%.8s",pkt_data->command+3);
+		if (data_len >= 8)
+			sprintf(track_time_str,"%.8s",pkt_data->command+3);
+		else
+			strcpy(track_time_str,TIME_DEF_STR);
+		if (data_len >= 20)
+			sprintf(track_len_str,"%.8s",pkt_data->command+12);
+		else
+			strcpy(track_len_str,TIME_DEF_STR);
 
 		/* Ignore unless told otherwise */
-		if (!FLAGISSET(FLAG_SHOW_SVC_TIME))
+		if (!FLAGISSET(FLAG_SHOW_TRACK_TIME))
 		{
 			clearBuffer(BUFF_TCP);
 			return;
 		}
 	}
-
-	data_len = pkt_hdr->data_len - MESG_OFFSET;
 
 	if (save_stage != SAVE_INACTIVE &&
 	    !strncmp((char *)pkt_data->command,"NJA",3))
@@ -585,7 +592,8 @@ void networkClear()
 	{
 		close(tcp_sock);
 		tcp_sock = 0;
-		strcpy(svc_time_str,TIME_DEF_STR);
+		strcpy(track_time_str,TIME_DEF_STR);
+		strcpy(track_len_str,TIME_DEF_STR);
 		puts("*** DISCONNECTED ***");
 	}
 	if (ipaddr)

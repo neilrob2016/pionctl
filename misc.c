@@ -5,7 +5,7 @@
 
 void printPromptLocalTime();
 void printPromptConnectTime();
-void printPromptServiceTime();
+void printPromptTrackTime();
 
 
 /*** Returns 1 if the string matches the pattern, else 0. Supports wildcard 
@@ -120,7 +120,7 @@ void printPrompt()
 		printPromptConnectTime();
 		break;
 	case PROMPT_S_TIME:
-		printPromptServiceTime();
+		printPromptTrackTime();
 		break;
 	case PROMPT_L_C_TIME:
 		printPromptLocalTime();
@@ -128,11 +128,11 @@ void printPrompt()
 		break;
 	case PROMPT_L_S_TIME:
 		printPromptLocalTime();
-		printPromptServiceTime();
+		printPromptTrackTime();
 		break;
 	case PROMPT_C_S_TIME:
 		printPromptConnectTime();
-		printPromptServiceTime();
+		printPromptTrackTime();
 		break;
 	default:
 		assert(0);
@@ -163,9 +163,9 @@ void printPromptConnectTime()
 
 
 
-void printPromptServiceTime()
+void printPromptTrackTime()
 {
-	printf(" S%s",svc_time_str);
+	printf(" T%s",track_time_str);
 }
 
 

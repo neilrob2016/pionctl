@@ -9,7 +9,7 @@ enum
 	/* 0. Client commands */
 	COM_EXIT,
 	COM_VER,
-	COM_SVCTM,
+	COM_TRACKTM,
 	COM_PROMPT,
 	COM_RAW,
 
@@ -98,7 +98,7 @@ static struct st_command
 	/* 0. Built in commands */
 	{ "exit",   NULL },
 	{ "ver",    NULL },
-	{ "svctm",  NULL },
+	{ "tracktm",NULL },
 	{ "prompt", NULL },
 	{ "raw",    NULL },
 
@@ -776,9 +776,9 @@ int processBuiltInCommand(
 	case COM_VER:
 		version(1);
 		break;
-	case COM_SVCTM:
-		FLIPFLAG(FLAG_SHOW_SVC_TIME);
-		printf("Show service time: %s\n",ONOFF(FLAG_SHOW_SVC_TIME));
+	case COM_TRACKTM:
+		FLIPFLAG(FLAG_SHOW_TRACK_TIME);
+		printf("Show track time: %s\n",ONOFF(FLAG_SHOW_TRACK_TIME));
 		break;
 	case COM_PROMPT:
 		return setPrompt(param);
@@ -1167,7 +1167,7 @@ void printTimes()
 {
 	printf("Local time  : %s\n",getTime());
 	printf("Connect time: %s\n",getTimeString(connect_time));
-	printf("Service time: %s\n",svc_time_str);
+	printTrackTime();
 }
 
 

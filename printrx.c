@@ -927,7 +927,7 @@ void printNTI(u_char *mesg, uint32_t len)
 
 void printNTM(u_char *mesg, uint32_t len)
 {
-	printf("Service time : %s\n",svc_time_str);
+	printTrackTime();
 }
 
 
@@ -1164,6 +1164,19 @@ void printRXCommands(u_char *pat)
 		printf("\n\n%d of %d commands.\n\n",cnt,i);
 	else
 		printf("\n\n%d commands.\n\n",cnt);
+}
+
+
+
+
+void printTrackTime()
+{
+	/* The 2 strings are set in readSocket() in network.c */
+	printf("Track time  : %s",track_time_str);
+	if (track_len_str[0] != '-')
+		printf(" of %s\n",track_len_str);
+	else
+		puts(" (no track length)");
 }
 
 

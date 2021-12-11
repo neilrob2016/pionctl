@@ -61,7 +61,7 @@ void parseCmdLine(int argc, char **argv)
 			SETFLAG(FLAG_OFFLINE);
 			continue;
 		case 't':
-			SETFLAG(FLAG_SHOW_SVC_TIME);
+			SETFLAG(FLAG_SHOW_TRACK_TIME);
 			continue;
 		case 'v':
 			version(0);
@@ -148,7 +148,7 @@ void parseCmdLine(int argc, char **argv)
 	       "       -o                       : Offline mode - don't listen for streamer.\n"
 	       "       -c                       : Translate HTML ampersand codes in album,\n"
 	       "                                  artist and title when pretty printing.\n"
-	       "       -t                       : Print NTM service time messages.\n"
+	       "       -t                       : Print NTM track time info.\n"
 	       "       -v                       : Print version then exit.\n"
 	       "All arguments are optional. If the -a option is not used then the streamer\n"
 	       "address is obtained by listening for an EZProxy UDP packet unless -o is.\n"
@@ -188,7 +188,8 @@ void init()
 		if (!FLAGISSET(FLAG_INTERRUPTED)) doExit(1);
 		UNSETFLAG(FLAG_INTERRUPTED);
 	}
-	strcpy(svc_time_str,TIME_DEF_STR);
+	strcpy(track_time_str,TIME_DEF_STR);
+	strcpy(track_len_str,TIME_DEF_STR);
 	printPrompt();
 }
 

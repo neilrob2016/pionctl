@@ -25,7 +25,7 @@
 #define EXTERN extern
 #endif
 
-#define VERSION "20211115"
+#define VERSION "20211211"
 
 #define STDIN          0
 #define STDOUT         1
@@ -113,7 +113,7 @@ enum
 
 enum
 {
-	FLAG_SHOW_SVC_TIME   = 1,
+	FLAG_SHOW_TRACK_TIME = 1,
 	FLAG_TRANS_HTML_AMPS = (1 << 1),
 	FLAG_OFFLINE         = (1 << 2),
 	FLAG_EXIT_AFTER_CMDS = (1 << 3),
@@ -222,7 +222,8 @@ EXTERN u_long rx_bytes;
 EXTERN u_long rx_reads;
 EXTERN u_long tx_bytes;
 EXTERN u_long tx_writes;
-EXTERN char svc_time_str[9];
+EXTERN char track_time_str[9];
+EXTERN char track_len_str[9];
 EXTERN char nja_prev;
 EXTERN char *save_filename;
 EXTERN char *menu_selection;
@@ -251,11 +252,12 @@ void readSocket(int print_prompt);
 int  writeSocket(u_char *write_data, int write_data_len);
 void networkClear();
 
-/* print.c */
+/* printrx.c */
 void printMesg(u_char *mesg, int len);
 void prettyPrint(t_iscp_data *pkt_data, int print_prompt);
 int  prettyPrintList(u_char *pat, int max);
 void printRXCommands(u_char *pat);
+void printTrackTime();
 
 /* buffer.c */
 void initBuffers();
