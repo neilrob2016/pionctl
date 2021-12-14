@@ -1190,7 +1190,7 @@ int defineMacro(int cmd_word, int word_cnt, u_char **words)
 	case 2:
 		return initMultiLineMacro(words[cmd_word+1]);
 	case 3:
-		return addMacro(words[cmd_word+1],words[cmd_word+2]);
+		return insertMacro(words[cmd_word+1],words[cmd_word+2]);
 	}
 	puts("Usage: madef <macro> [\"<macro command list>\"]");
 	return ERR_CMD_FAIL;
@@ -1206,7 +1206,7 @@ int doAppendMacro(int cmd_word, int word_cnt, u_char **words)
 	case 2:
 		return initMultiLineMacroAppend(words[cmd_word+1]);
 	case 3:
-		return appendMacro(words[cmd_word+1],words[cmd_word+2]);
+		return appendMacroComlist(words[cmd_word+1],words[cmd_word+2]);
 	}
 	puts("Usage: maapp <macro> [\"<macro command list>\"]");
 	return ERR_CMD_FAIL;

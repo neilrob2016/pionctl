@@ -25,7 +25,7 @@
 #define EXTERN extern
 #endif
 
-#define VERSION "20211211"
+#define VERSION "20211214"
 
 #define STDIN          0
 #define STDOUT         1
@@ -301,10 +301,10 @@ void initMacros();
 int  initMultiLineMacro(u_char *name);
 int  initMultiLineMacroAppend(u_char *name);
 void discardMultiLineMacro();
-int  addMacro(u_char *name, u_char *comlist);
+int  insertMacro(u_char *name, u_char *comlist);
 void addMacroLine(u_char *line, int len);
-int  appendMacro(u_char *name, u_char *comlist);
-void appendMacroComlist(int macro_num, u_char *comlist);
+int  appendMacroComlist(u_char *name, u_char *comlist);
+void appendMacroSlotComlist(int macro_num, u_char *comlist);
 int  deleteMacro(u_char *name);
 int  clearMacros();
 int  runMacro(u_char *name);

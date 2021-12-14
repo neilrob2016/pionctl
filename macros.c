@@ -1,6 +1,6 @@
 #include "globals.h"
 
-#define MAX_LINE_LEN 1000
+#define MAX_LINE_LEN 2000
 #define WRAP_COL     79
 #define INDENT       14
 #define ENTER_STR    "Enter macro lines, end with a '.' on its own..."
@@ -11,6 +11,7 @@ static char *home_dir;
 int     findEmptySlot();
 int     writeMacro(FILE *fp, int m, int append);
 int     clearMacro(int m);
+u_char *firstNonWhitespacePos(u_char *str);
 u_char *trim(u_char *name);
 char   *tildaToHomeDir(u_char *filename);
 
@@ -89,7 +90,8 @@ void discardMultiLineMacro()
 
 
 
-int addMacro(u_char *name, u_char *comlist)
+/*** Insert a macro into the macros array ***/
+int insertMacro(u_char *name, u_char *comlist)
 {
 	t_macro *macro;
 	int m;
@@ -138,6 +140,7 @@ int addMacro(u_char *name, u_char *comlist)
 
 
 
+/*** Add or append a command line to a macro ***/
 void addMacroLine(u_char *line, int len)
 {
 	u_char *ptr;
@@ -157,10 +160,10 @@ void addMacroLine(u_char *line, int len)
 		else switch(input_state)
 		{
 		case INPUT_MACRO_DEF:
-			addMacro(macro_name,(u_char *)macro_line_tmp);
+			insertMacro(macro_name,(u_char *)macro_line_tmp);
 			break;
 		case INPUT_MACRO_APP:
-			appendMacroComlist(macro_append,(u_char *)macro_line_tmp);
+			appendMacroSlotComlist(macro_append,(u_char *)macro_line_tmp);
 			macro_append = -1;
 			break;
 		default:
@@ -184,7 +187,8 @@ void addMacroLine(u_char *line, int len)
 
 
 
-int appendMacro(u_char *name, u_char *comlist)
+/*** Append the command list to the given macro ***/
+int appendMacroComlist(u_char *name, u_char *comlist)
 {
 	int m;
 
@@ -198,14 +202,15 @@ int appendMacro(u_char *name, u_char *comlist)
 		puts("ERROR: Empty command list.");
 		return ERR_MACRO;
 	}
-	appendMacroComlist(m,comlist);
+	appendMacroSlotComlist(m,comlist);
 	return OK;
 }
 
 
 
 
-void appendMacroComlist(int m, u_char *comlist)
+/*** Append commands to a macro command list in the given slot ***/
+void appendMacroSlotComlist(int m, u_char *comlist)
 {
 	t_macro *macro;
 	int len;
@@ -305,13 +310,15 @@ int runMacro(u_char *name)
 /*** Load all macros from the given file ***/
 int loadMacros(u_char *filename)
 {
-	/* If these arn't big enough too bad. It won't crash, it'll just
-	   read crap. */
+	/* Hopefully these are big enough. If not it'll read the rest of the
+	   commands as the next name etc. Too bad */
 	char name[MAX_LINE_LEN];
-	char comlist[MAX_LINE_LEN];
+	char line[MAX_LINE_LEN];
 	char *path;
+	u_char *ptr;
 	FILE *fp;
 	int cnt;
+	int get_name;
 
 	path = tildaToHomeDir(filename);
 	printf("Loading from file \"%s\"...\n",path);
@@ -323,20 +330,32 @@ int loadMacros(u_char *filename)
 		return ERR_MACRO;
 	}
 
-	fgets(name,sizeof(name),fp);
+	get_name = 1;
+	fgets(line,sizeof(line),fp);
 	for(cnt=0;!feof(fp);)
 	{
-		fgets(comlist,sizeof(comlist),fp);
-		if (feof(fp))
+		/* Skip empty lines and comments. Comments have to be added
+		   manually to the macro file and arn't saved */
+		if ((ptr = firstNonWhitespacePos((u_char *)line)))
 		{
-			puts("ERROR: Unexpected EOF.");
-			return ERR_MACRO;
+			if (*ptr == '#')
+			{
+				ptr = trim(ptr+1);
+				if (*ptr) printf("Comment: %s\n",ptr);
+			}
+			else
+			{
+				if (get_name)
+					strcpy(name,line);
+				else
+					cnt += (insertMacro((u_char *)name,(u_char *)line) == OK);
+				get_name = !get_name;
+			}
 		}
-		cnt += (addMacro((u_char *)name,(u_char *)comlist) == OK);
-		fgets(name,sizeof(name),fp);
-	}
-
+		fgets(line,sizeof(line),fp);
+	} 
 	fclose(fp);
+
 	printf("%d macros loaded.\n",cnt);
 	return OK;
 }
@@ -521,17 +540,25 @@ int clearMacro(int m)
 
 
 
+u_char *firstNonWhitespacePos(u_char *str)
+{
+	for(;*str && *str < 33;++str);
+	return *str ? str : NULL;
+}
+
+
+
 u_char *trim(u_char *str)
 {
 	u_char *end;
 
 	/* Trim start */
-	for(;*str && *str < 33;++str);
-	if (!*str) return NULL;
-
-	/* Trim end */
-	for(end=str+strlen((char *)str)-1;end > str && *end < 33;--end);
-	*++end = 0;
+	if ((str = firstNonWhitespacePos(str)))
+	{
+		/* Trim end */
+		for(end=str+strlen((char *)str)-1;end > str && *end < 33;--end);
+		*++end = 0;
+	}
 	return str;
 }
 
