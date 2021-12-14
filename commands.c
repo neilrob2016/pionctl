@@ -59,6 +59,7 @@ enum
 	COM_MALOAD,
 	COM_MASAVA,
 	COM_MASAVC,
+	LAST_CLIENT_COM = COM_MASAVC,
 
 	/* 38. Streamer commands */
 	COM_MENU,
@@ -938,7 +939,7 @@ void showHelp(int comnum, u_char *pat)
 		{
 			if (comnum == COM_XHELP)
 			{
-				if (i > COM_RXCOMS)
+				if (i > LAST_CLIENT_COM)
 				{
 					printf("   %-10s (%.3s)",
 						commands[i].com,
