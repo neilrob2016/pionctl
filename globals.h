@@ -1,6 +1,7 @@
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <string.h>
 #include <unistd.h>
 #include <termios.h>
@@ -16,6 +17,7 @@
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <arpa/inet.h>
 #include <netinet/tcp.h>
 
@@ -25,31 +27,19 @@
 #define EXTERN extern
 #endif
 
-#define VERSION "20211214"
+#define VERSION "20220105"
 
 #define STDIN          0
 #define STDOUT         1
-#define ALLOC_BLOCK    10
-#define READBUFF_SIZE  100
-#define START_CHAR     '!'
-#define MESG_OFFSET    5
-#define ADDR_LIST_SIZE 20
-#define MAX_WORDS      4
-#define SEPARATOR      ';'
-
-/* Cmd line defaults */
 #define UDP_PORT       10102
 #define TCP_PORT       60128
-#define DEVICE_CODE    '1'
-#define LISTEN_TIMEOUT 60
+#define ALLOC_BLOCK    10
+#define ADDR_LIST_SIZE 20
+#define MESG_OFFSET    5
+#define SAVE_TIMEOUT   5
 #define TIME_DEF_STR   "--:--:--"
 
 #define FREE(M) if (M) { free(M); M = NULL; }
-
-#define SETFLAG(F)   (flags |= F)
-#define UNSETFLAG(F) (flags &= ~(uint32_t)F)
-#define FLIPFLAG(F)  (flags ^= F)
-#define FLAGISSET(F) (flags & F)
 
 #ifdef __APPLE__
 /* Don't bitch about pragma pack every time it sees it */
@@ -82,19 +72,22 @@ enum
 	OK,
 	ERR_CMD_MISSING,
 	ERR_CMD_FAIL,
-	ERR_MACRO
+	ERR_MACRO,
+	ERR_FILE
 };
 
 
 enum
 {
 	PROMPT_BASE,
-	PROMPT_L_TIME,
+	PROMPT_NAME,
 	PROMPT_C_TIME,
-	PROMPT_S_TIME,
-	PROMPT_L_C_TIME,
-	PROMPT_L_S_TIME,
-	PROMPT_C_S_TIME,
+	PROMPT_T_TIME,
+	PROMPT_L_TIME,
+	PROMPT_C_T_TIME,
+	PROMPT_C_L_TIME,
+	PROMPT_T_L_TIME,
+	PROMPT_C_T_L_TIME,
 
 	NUM_PROMPTS
 };
@@ -109,21 +102,6 @@ enum
 	RAW_HIGH2,
 
 	NUM_RAW_LEVELS
-};
-
-enum
-{
-	FLAG_SHOW_TRACK_TIME = 1,
-	FLAG_TRANS_HTML_AMPS = (1 << 1),
-	FLAG_OFFLINE         = (1 << 2),
-	FLAG_EXIT_AFTER_CMDS = (1 << 3),
-	FLAG_PRETTY_PRINTING = (1 << 4),
-	FLAG_IN_MENU         = (1 << 5),
-	FLAG_COM_UP          = (1 << 6),
-	FLAG_COM_DN          = (1 << 7),
-	FLAG_MACRO_VERBOSE   = (1 << 8),
-	FLAG_MACRO_RUNNING   = (1 << 9),
-	FLAG_INTERRUPTED     = (1 << 10)
 };
 
 
@@ -141,24 +119,44 @@ typedef struct
 	char iscp[4];
 	uint32_t hdr_len;
 	uint32_t data_len;
-	u_char version;
-	u_char reserved[3];
+	char version;
+	char reserved[3];
 } t_iscp_hdr;
+
+
+struct st_flags
+{
+	/* User toggled flags */
+	unsigned show_track_time : 1;
+	unsigned trans_html_amps : 1;
+	unsigned use_colour      : 1;
+	unsigned macro_verbose   : 1;
+
+	/* System flags */
+	unsigned macro_running   : 1;
+	unsigned offline         : 1;
+	unsigned exit_after_cmds : 1;
+	unsigned pretty_printing : 1;
+	unsigned in_menu         : 1;
+	unsigned com_up          : 1;
+	unsigned com_dn          : 1;
+	unsigned interrupted     : 1;
+};
 
 
 typedef struct
 {
-	u_char start_char;
-	u_char device_code;
-	u_char command[3];
-	u_char mesg[1];
+	char start_char;
+	char device_code;
+	char command[3];
+	char mesg[1];
 } t_iscp_data;
 
 
 typedef struct st_entry
 {
 	char *key;
-	u_char *value;
+	char *value;
 	int val_len;
 	int unknown;
 	struct st_entry *next;
@@ -167,7 +165,7 @@ typedef struct st_entry
 
 typedef struct 
 {
-	u_char *data;
+	char *data;
 	int len;
 	int alloc;
 } t_buffer;
@@ -175,19 +173,19 @@ typedef struct
 
 typedef struct
 {
-	u_char *name;
-	u_char *comlist;
+	char *name;
+	char *comlist;
 	int len;
 	int running;
 } t_macro;
 
 
 /* Cmd line params */
+EXTERN struct st_flags flags;
 EXTERN char *ipaddr;
 EXTERN char device_code;
 EXTERN uint16_t udp_port;
 EXTERN uint16_t tcp_port;
-EXTERN uint32_t flags;
 EXTERN int listen_timeout;
 EXTERN int connect_timeout;
 
@@ -202,15 +200,16 @@ EXTERN t_macro *macros;
 EXTERN time_t connect_time;
 EXTERN time_t last_rx_time;
 EXTERN time_t last_tx_time;
+EXTERN time_t save_rx_time;
 EXTERN int input_state;
+EXTERN int save_state;
+EXTERN int save_fd;
 EXTERN int keyb_buffnum;
 EXTERN int from_buffnum;
 EXTERN int udp_sock;
 EXTERN int tcp_sock;
 EXTERN int addr_list_cnt;
 EXTERN int last_cmd_len;
-EXTERN int save_stage;
-EXTERN int save_fd;
 EXTERN int prompt_type;
 EXTERN int menu_cursor_pos;
 EXTERN int menu_option_cnt;
@@ -229,7 +228,7 @@ EXTERN char *save_filename;
 EXTERN char *menu_selection;
 EXTERN char **menu_options;
 EXTERN char *macro_line_tmp;
-EXTERN u_char *macro_name;
+EXTERN char *macro_name;
 
 /*** Forward declarations ***/
 
@@ -239,9 +238,9 @@ void readKeyboard();
 void resetKeyboard();
 
 /* commands.c */
-int  parseInputLine(u_char *data, int len);
-void sortCommands();
+int  parseInputLine(char *data, int len);
 int  getCommand(char *word, int len, int expmsg);
+void sortCommands();
 
 /* network.c */
 int  networkStart();
@@ -249,14 +248,14 @@ int  createUDPSocket();
 int  getStreamerAddress();
 int  connectToStreamer();
 void readSocket(int print_prompt);
-int  writeSocket(u_char *write_data, int write_data_len);
+int  writeSocket(char *write_data, int write_data_len);
 void networkClear();
 
 /* printrx.c */
-void printMesg(u_char *mesg, int len);
+void printMesg(char *mesg, int len);
 void prettyPrint(t_iscp_data *pkt_data, int print_prompt);
-int  prettyPrintList(u_char *pat, int max);
-void printRXCommands(u_char *pat);
+int  prettyPrintList(char *pat, int max);
+void printRXCommands(char *pat);
 void printTrackTime();
 
 /* buffer.c */
@@ -268,18 +267,18 @@ void clearBuffer(int buffnum);
 
 /* list.c */
 void initList();
-int  updateList(char *key, u_char *value, int val_len);
-void setEntryValue(t_entry *entry, u_char *value, int val_len);
+int  updateList(char *key, char *value, int val_len);
+void setEntryValue(t_entry *entry, char *value, int val_len);
 void setUnknownKey(char *key);
 void clearValueOfKey(char *key);
 void clearList();
-int  dumpList(u_char *pat, int max);
+int  dumpList(char *pat, int max);
 t_entry *findInList(char *key);
 
 /* titles.c */
 void initTitles();
-void addTitle(u_char *mesg, uint32_t len);
-int  printTitles(int xtitles, u_char *param, int max);
+void addTitle(char *mesg, uint32_t len);
+int  printTitles(int xtitles, char *param, int max);
 void clearTitles();
 
 /* menu.c */
@@ -293,35 +292,47 @@ void clearMenu();
 /* save.c */
 void initSave();
 void resetSave();
-void startSave(char *filename);
+void prepareSave(char *filename);
 void saveArtDataLine();
+void checkSaveTimeout();
 
 /* macros.c */
 void initMacros();
-int  initMultiLineMacro(u_char *name);
-int  initMultiLineMacroAppend(u_char *name);
+int  initMultiLineMacro(char *name);
+int  initMultiLineMacroAppend(char *name);
 void discardMultiLineMacro();
-int  insertMacro(u_char *name, u_char *comlist);
-void addMacroLine(u_char *line, int len);
-int  appendMacroComlist(u_char *name, u_char *comlist);
-void appendMacroSlotComlist(int macro_num, u_char *comlist);
-int  deleteMacro(u_char *name);
-int  clearMacros();
-int  runMacro(u_char *name);
-int  loadMacros(u_char *filename);
-int  saveMacro(u_char *filename, u_char *name, int append);
-int  saveAllMacros(u_char *filename, int append);
+int  insertMacro(char *name, char *comlist);
+void addMacroLine(char *line, int len);
+int  appendMacroComlist(char *name, char *comlist);
+void appendMacroSlotComlist(int macro_num, char *comlist);
+int  deleteMacro(char *name);
+int  runMacro(char *name);
+int  loadMacros(char *filename);
+int  saveMacro(char *filename, char *name, int append);
+int  saveAllMacros(char *filename, int append);
 void listMacros();
-int  findMacro(u_char *name);
+int  findMacro(char *name);
+
+/* printf.c */
+void errprintf(const char *fmt, ...);
+void nlerrprintf(const char *fmt, ...);
+void warnprintf(const char *fmt, ...);
+void nlwarnprintf(const char *fmt, ...);
+void usageprintf(const char *fmt, ...);
+void exitprintf(const char *fmt, ...);
+void colprintf(const char *fmt, ...);
+
+/* prompt.c */
+void  printPrompt();
+void  clearPrompt();
 
 /* misc.c */
 int   wildMatch(char *str, char *pat);
-int   isNumberWithLen(u_char *str, int len);
+int   isNumberWithLen(char *str, int len);
 int   isNumber(char *str);
 char *getTime();
 char *getTimeString(time_t tm);
-void  printPrompt();
-void  clearPrompt();
 void  doExit(int code);
 void  sigHandler(int sig);
 void  version(int print_pid);
+void  ok();

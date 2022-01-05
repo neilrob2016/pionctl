@@ -12,6 +12,8 @@ OBJS=\
 	commands.o \
 	network.o \
 	printrx.o \
+	printf.o \
+	prompt.o \
 	buffer.o \
 	list.o \
 	titles.o \
@@ -41,6 +43,12 @@ network.o: network.c $(DEPS)
 
 printrx.o: printrx.c $(DEPS)
 	$(COMP) printrx.c
+
+printf.o: printf.c $(DEPS)
+	$(COMP) printf.c
+
+prompt.o: prompt.c $(DEPS)
+	$(COMP) prompt.c
 
 buffer.o: buffer.c $(DEPS)
 	$(COMP) buffer.c

@@ -3,10 +3,6 @@
 
 #define TIMER_STR_LEN 8
 
-void printPromptLocalTime();
-void printPromptConnectTime();
-void printPromptTrackTime();
-
 
 /*** Returns 1 if the string matches the pattern, else 0. Supports wildcard 
      patterns containing '*' and '?'. Case insensitive. ***/
@@ -54,7 +50,7 @@ int isNumber(char *str)
 
 
 
-int isNumberWithLen(u_char *str, int len)
+int isNumberWithLen(char *str, int len)
 {
 	int i;
 	for(i=0;i < len && isdigit(str[i]);++i);
@@ -100,94 +96,6 @@ char *getTimeString(time_t tm)
 
 
 
-void printPrompt()
-{
-	if (input_state != INPUT_CMD)
-	{
-		write(STDOUT,"] ",2);
-		return;
-	}
-	printf("\rPIONCTL");
-
-	switch(prompt_type)
-	{
-	case PROMPT_BASE:
-		break;
-	case PROMPT_L_TIME:
-		printPromptLocalTime();
-		break;
-	case PROMPT_C_TIME:
-		printPromptConnectTime();
-		break;
-	case PROMPT_S_TIME:
-		printPromptTrackTime();
-		break;
-	case PROMPT_L_C_TIME:
-		printPromptLocalTime();
-		printPromptConnectTime();
-		break;
-	case PROMPT_L_S_TIME:
-		printPromptLocalTime();
-		printPromptTrackTime();
-		break;
-	case PROMPT_C_S_TIME:
-		printPromptConnectTime();
-		printPromptTrackTime();
-		break;
-	default:
-		assert(0);
-	}
-	putchar('>');
-	fflush(stdout);
-
-	if (buffer[keyb_buffnum].len)
-		write(STDOUT,buffer[keyb_buffnum].data,buffer[keyb_buffnum].len);
-}
-
-
-
-
-void printPromptLocalTime()
-{
-	printf(" L%s",getTime());
-}
-
-
-
-
-void printPromptConnectTime()
-{
-	printf(" C%s",getTimeString(connect_time));
-}
-
-
-
-
-void printPromptTrackTime()
-{
-	printf(" T%s",track_time_str);
-}
-
-
-
-
-void clearPrompt()
-{
-	int i;
-
-	/* Clear the prompt itself */
-	printf("\r                             ");
-
-	/* Clear anything in the keyboard buffer */
-	for(i=buffer[keyb_buffnum].len+1;i >= 0;--i) putchar(' ');
-
-	putchar('\r');
-	fflush(stdout);
-}
-
-
-
-
 void doExit(int code)
 {
 	resetKeyboard();
@@ -202,15 +110,15 @@ void sigHandler(int sig)
 	switch(sig)
 	{
 	case SIGINT:
-		puts("*** BREAK ***");
+		colprintf("~FY~OL*** BREAK ***\n");
 		clearBuffer(keyb_buffnum);
 		discardMultiLineMacro();
-		if (!FLAGISSET(FLAG_MACRO_RUNNING)) printPrompt();
-		SETFLAG(FLAG_INTERRUPTED);
+		if (!flags.macro_running) printPrompt();
+		flags.interrupted = 1;
 		break;
 	case SIGQUIT:
 	case SIGTERM:
-		printf("\n*** EXIT on signal %d ***\n",sig);
+		exitprintf("on signal %d",sig);
 		doExit(sig);
 	default:
 		assert(0);
@@ -222,10 +130,18 @@ void sigHandler(int sig)
 
 void version(int print_pid)
 {
-	puts("\n*** PIONCTL - Pioneer N-70AE control client ***\n");
-	puts("Copyright (C) Neil Robertson 2021\n");
-	printf("Version   : %s\n",VERSION);
-	printf("Build date: %s\n",BUILD_DATE);
-	if (print_pid) printf("PID       : %d\n",getpid());
+	colprintf("\n~BM*** PIONCTL - Pioneer N-70AE control client ***\n\n");
+	colprintf("~FTCopyright (C) Neil Robertson 2021-2022\n\n");
+	colprintf("~FGVersion~RS   : %s\n",VERSION);
+	colprintf("~FGBuild date~RS: %s\n",BUILD_DATE);
+	if (print_pid) colprintf("~FGPID~RS       : %d\n",getpid());
 	putchar('\n');
+}
+
+
+
+
+void ok()
+{
+	colprintf("~FGOK\n");
 }

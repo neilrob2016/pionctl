@@ -1,8 +1,11 @@
 #include "globals.h"
 
-#define COM_LEN      3
-#define MAX_ATTEMPTS (ADDR_LIST_SIZE * 2)
-#define PKT_HDR_LEN  (int)sizeof(t_iscp_hdr)
+#define READBUFF_SIZE  1000
+#define COM_LEN        3
+#define SAVE_TIMEOUT   5
+#define MAX_ATTEMPTS   (ADDR_LIST_SIZE * 2)
+#define PKT_HDR_LEN    (int)sizeof(t_iscp_hdr)
+#define START_CHAR     '!'
 
 int  resolveAddress();
 void printPacketDetails(t_iscp_hdr *hdr, t_iscp_data *data);
@@ -25,6 +28,7 @@ int networkStart()
 	rx_reads = 0;
 	tx_bytes = 0;
 	tx_writes = 0;
+	nja_prev = 0;
 
 	if (ipaddr)
 	{
@@ -32,7 +36,7 @@ int networkStart()
 		{
 			if ((tcp_port = atoi(ptr+1)) < 1)
 			{
-				puts("ERROR: Invalid port number.");
+				errprintf("Invalid port number.\n");
 				return 0;
 			}
 			*ptr = 0;
@@ -40,7 +44,7 @@ int networkStart()
 		if (!resolveAddress()) return 0;
 		if (!connectToStreamer())
 		{
-			puts("ERROR: Connect failed.");
+			errprintf("Connect failed.\n");
 			return 0;
 		}
 	}
@@ -53,7 +57,7 @@ int networkStart()
 
 			if (!getStreamerAddress())
 			{
-				puts("ERROR: Listen failed.");
+				errprintf("Listen failed.\n");
 				networkClear();
 				return 0;
 			}
@@ -62,7 +66,7 @@ int networkStart()
 
 		if (cnt == MAX_ATTEMPTS) 
 		{
-			puts("ERROR: Max connection attempts reached.");
+			errprintf("Max connection attempts reached.\n");
 			networkClear();
 			return 0;
 		}
@@ -87,7 +91,7 @@ int createUDPSocket()
 
 	if ((udp_sock = socket(AF_INET,SOCK_DGRAM,0)) == -1)
 	{
-		perror("ERROR: createUDPSocket(): socket()");
+		errprintf("createUDPSocket(): socket(): %s\n",strerror(errno));
 		return 0;
 	}
 
@@ -95,7 +99,8 @@ int createUDPSocket()
 	on = 1;
 	if (setsockopt(udp_sock,SOL_SOCKET,SO_BROADCAST,&on,sizeof(on)) == -1)
 	{
-		perror("ERROR: createUDPSocket(): setsockopt(SO_BROADCAST)");
+		errprintf("createUDPSocket(): setsockopt(SO_BROADCAST): %s\n",
+			strerror(errno));
 		return 0;
 	}
 
@@ -105,11 +110,11 @@ int createUDPSocket()
 	addr.sin_port = htons(udp_port);
 	if (bind(udp_sock,(struct sockaddr *)&addr,sizeof(addr)) == -1)
 	{
-		perror("ERROR: createUDPSocket(): bind()");
+		errprintf("createUDPSocket(): bind(): %s\n",strerror(errno));
 		return 0;
 	}
 	addr_list_cnt = 0;
-	puts("OK");
+	ok();
 	return 1;
 }
 
@@ -148,10 +153,11 @@ int getStreamerAddress()
 		switch(select(FD_SETSIZE,&mask,0,0,tvp))
 		{
 		case -1:
-			perror("ERROR: getStreamerAddress(): select()");
+			errprintf("getStreamerAddress(): select(): %s\n",
+				strerror(errno));
 			return 0;
 		case 0:
-			puts("TIMEOUT");
+			colprintf("~FYTIMEOUT\n");
 			networkClear();
 			return 0;
 		}
@@ -159,7 +165,8 @@ int getStreamerAddress()
 			udp_sock,
 			&dummy,1,0,(struct sockaddr *)&addr,&size) == -1)
 		{
-			perror("ERROR: getStreamerAddress(): recvfrom()");
+			errprintf("getStreamerAddress(): recvfrom(): %s\n",
+				strerror(errno));
 			networkClear();
 			return 0;
 		}
@@ -168,14 +175,14 @@ int getStreamerAddress()
 		{
 			if (addr_list[i].s_addr == addr.sin_addr.s_addr)
 			{
-				puts("Address already tried.");
+				puts("Address already tried");
 				break;
 			}
 		}
 		if (i == addr_list_cnt)
 		{
 			/* The count will be reset when we disconnect */
-			puts("New address.");
+			colprintf("~FMNew address\n");
 			addr_list[addr_list_cnt] = addr.sin_addr;
 			con_addr.sin_addr = addr.sin_addr;
 			addr_list_cnt = (addr_list_cnt + 1) % ADDR_LIST_SIZE;
@@ -199,7 +206,7 @@ int resolveAddress()
 		/* Not a numeric address, try to resolve DNS */
 		if (!(he = gethostbyname(ipaddr)))
 		{
-			puts("ERROR: Unknown host.");
+			errprintf("Unknown host.\n");
 			return 0;
 		}
 
@@ -226,14 +233,14 @@ int connectToStreamer()
 
 	if ((tcp_sock = socket(AF_INET,SOCK_STREAM,0)) == -1)
 	{
-		perror("ERROR: connectToStreamer(): socket()");
+		errprintf("connectToStreamer(): socket(): %s\n",strerror(errno));
 		return 0;
 	}
 
 	/* Set keepalive so if streamer is switched off we find out about it */
 	val = 1;
 	if (setsockopt(tcp_sock,SOL_SOCKET,SO_KEEPALIVE,&val,sizeof(val)) == -1)
-		perror("WARNING: connectToStreamer(): setsockopt(SO_KEEPALIVE)");
+		warnprintf("connectToStreamer(): setsockopt(SO_KEEPALIVE): %s\n",strerror(errno));
 	else
 	{
 		/* Set the time wait in seconds from the last packet until we 
@@ -241,10 +248,10 @@ int connectToStreamer()
 		val = 30; 
 #ifdef __APPLE__
 		if (setsockopt(tcp_sock,IPPROTO_TCP,TCP_KEEPALIVE,&val,sizeof(val)) == -1)
-			perror("WARNING: connectToStreamer(): setsockopt(TCP_KEEPALIVE)");
+			warnprintf("connectToStreamer(): setsockopt(TCP_KEEPALIVE): %s\n",strerror(errno));
 #else
 		if (setsockopt(tcp_sock,IPPROTO_TCP,TCP_KEEPIDLE,&val,sizeof(val)) == -1)
-			perror("WARNING: connectToStreamer(): setsockopt(TCP_KEEPIDLE)");
+			warnprintf("connectToStreamer(): setsockopt(TCP_KEEPIDLE): %s\n",strerror(errno));
 #endif
 	}
 
@@ -258,21 +265,20 @@ int connectToStreamer()
 		fcntl(tcp_sock,F_SETFL,sock_flags | O_NONBLOCK);
 	}
 
-	if (connect(
-		tcp_sock,(struct sockaddr *)&con_addr,sizeof(con_addr)) == -1)
+	if (connect(tcp_sock,(struct sockaddr *)&con_addr,sizeof(con_addr)) == -1)
 	{
 		switch(errno)
 		{
 		case EINPROGRESS:
 			break;	
 		case ECONNREFUSED:
-			puts("REFUSED");
+			colprintf("~FRREFUSED\n");
 			return 0;
 		case ETIMEDOUT:
-			puts("TIMEOUT");
+			colprintf("~FYTIMEOUT\n");
 			return 0;
 		default:
-			perror("ERROR: connectToStreamer(): connect()");
+			errprintf("connectToStreamer(): connect(): %s\n",strerror(errno));
 			return 0;
 		}
 	}
@@ -289,10 +295,11 @@ int connectToStreamer()
 		switch(select(FD_SETSIZE,0,&mask,0,&tvs))
 		{
 		case -1:
-			perror("ERROR: connectToStreamer(): select()");
+			errprintf("connectToStreamer(): select(): %s\n",
+				strerror(errno));
 			return 0;
 		case 0:
-			puts("TIMEOUT");
+			colprintf("~FYTIMEOUT\n");
 			return 0;
 		}
 
@@ -302,7 +309,7 @@ int connectToStreamer()
 
 		if (so_error)
 		{
-			printf("ERROR: connectToStreamer(): connect(): %s\n",
+			errprintf("connectToStreamer(): connect(): %s\n",
 				strerror(so_error));
 			return 0;
 		}
@@ -311,7 +318,7 @@ int connectToStreamer()
 		fcntl(tcp_sock,F_SETFL,sock_flags ^ O_NONBLOCK);
 	}
 
-	puts("CONNECTED");
+	colprintf("~FGCONNECTED\n");
 	connect_time = time(0);
 	return 1;
 }
@@ -339,7 +346,7 @@ void readSocket(int print_prompt)
 		if (!read_len) return;
 		if (read_len < 0)
 		{
-			puts("\nERROR: readSocket(): Bad data.");
+			nlerrprintf("readSocket(): Bad data.\n");
 			goto ERROR;
 		}
 	}
@@ -349,11 +356,11 @@ void readSocket(int print_prompt)
 	switch((len = read(tcp_sock,readbuff,read_len)))
 	{
 	case -1:
-		if (errno == EINTR && FLAGISSET(FLAG_INTERRUPTED)) goto READ;
-		perror("\nERROR: readSocket(): read()");
+		if (errno == EINTR && flags.interrupted) goto READ;
+		nlerrprintf("readSocket(): read(): %s\n",strerror(errno));
 		goto ERROR;
 	case 0:
-		puts("\n*** Connection closed by remote host ***");
+		colprintf("\n~BR*** Connection closed by remote host ***\n");
 		goto ERROR;
 	}
 	++rx_reads;
@@ -378,19 +385,19 @@ void readSocket(int print_prompt)
 	/* We do now */
 	pkt_data = (t_iscp_data *)(buffer[BUFF_TCP].data + pkt_hdr->hdr_len);
 	if (strncmp(pkt_hdr->iscp,"ISCP",4))
-		printf("\nWARNING: Unknown preamble: %.4s\n",pkt_hdr->iscp);
+		warnprintf("\nUnknown preamble: %.4s\n",pkt_hdr->iscp);
 	if (pkt_data->start_char != START_CHAR)
-		printf("\nWARNING: Unknown start char: %c\n",pkt_data->start_char);
+		warnprintf("\nUnknown start char: %c\n",pkt_data->start_char);
 
 	/* Add RX to list for recall later. Returns 1 if new data */
 	new_data = updateList(
-		(char *)pkt_data->command,
+		pkt_data->command,
 		pkt_data->mesg,pkt_hdr->data_len - (MESG_OFFSET + 3));
 
 	data_len = pkt_hdr->data_len - MESG_OFFSET;
 
 	/* NTM is sent every second */
-	if (!strncmp((char *)pkt_data->command,"NTM",3))
+	if (!strncmp(pkt_data->command,"NTM",3))
 	{
 		if (data_len >= 8)
 			sprintf(track_time_str,"%.8s",pkt_data->command+3);
@@ -402,18 +409,19 @@ void readSocket(int print_prompt)
 			strcpy(track_len_str,TIME_DEF_STR);
 
 		/* Ignore unless told otherwise */
-		if (!FLAGISSET(FLAG_SHOW_TRACK_TIME))
+		if (!flags.show_track_time)
 		{
 			clearBuffer(BUFF_TCP);
 			return;
 		}
 	}
 
-	if (save_stage != SAVE_INACTIVE &&
-	    !strncmp((char *)pkt_data->command,"NJA",3))
+	/* See if we're waiting for jacket art info */
+	if (save_state != SAVE_INACTIVE &&
+	    !strncmp(pkt_data->command,"NJA",3))
 	{
 		saveArtDataLine(data_len,pkt_data);
-		new_data = 0; /* Otherwise it'll try to pretty print it */
+		new_data = 0; /* Otherwise it'll try to pretty print */
 	}
 
 	/* Print raw RX. Show repeated data. */
@@ -423,12 +431,12 @@ void readSocket(int print_prompt)
 		if (raw_level >= RAW_HIGH1)
 		{
 			/* Header */
-			printf("\nRX %d bytes:\n",buffer[BUFF_TCP].len);
+			colprintf("\n~FGRX %d bytes:\n",buffer[BUFF_TCP].len);
 			printPacketDetails(pkt_hdr,pkt_data);
 		}
 		else
 		{
-			printf("RX: ");
+			colprintf("~FGRX:~RS ");
 			printMesg(
 				buffer[BUFF_TCP].data+PKT_HDR_LEN,
 				pkt_hdr->data_len);
@@ -462,12 +470,12 @@ void readSocket(int print_prompt)
 
 /*** Write whats in the keyboard buffer as data to the streamer. The data
      must start wth the 3 letter command, eg NTC ***/
-int writeSocket(u_char *write_data, int write_data_len)
+int writeSocket(char *write_data, int write_data_len)
 {
 	t_iscp_hdr hdr;
 	t_iscp_data *data;
-	u_char *pkt;
-	u_char *write_ptr;
+	char *pkt;
+	char *write_ptr;
 	int write_len;
 	int wrote_len;
 	int data_len;
@@ -492,14 +500,14 @@ int writeSocket(u_char *write_data, int write_data_len)
 	   over several writes so have to put everything in one lump of memory 
 	   then send it */
 	pkt_len = PKT_HDR_LEN + data_len;
-	if (!(pkt = (u_char *)malloc(pkt_len)))
+	if (!(pkt = (char *)malloc(pkt_len)))
 	{
-		perror("\nERROR: writeSocket(): malloc()");
+		nlerrprintf("writeSocket(): malloc(): %s\n",strerror(errno));
 		return 0;
 	}
 
 	/* Add header */
-	memcpy(pkt,(u_char *)&hdr,PKT_HDR_LEN);
+	memcpy(pkt,(char *)&hdr,PKT_HDR_LEN);
 
 	/* Add start char, device code then user input and \r */
 	write_data_len -= COM_LEN;
@@ -516,12 +524,12 @@ int writeSocket(u_char *write_data, int write_data_len)
 		break;
 	case RAW_LOW1:
 	case RAW_LOW2:
-		printf("TX: ");
-		printMesg((u_char *)data,data_len);
+		colprintf("~FRTX:~RS ");
+		printMesg((char *)data,data_len);
 		break;
 	case RAW_HIGH1:
 	case RAW_HIGH2:
-		printf("TX %d bytes:\n",pkt_len);
+		colprintf("~FRTX %d bytes:\n",pkt_len);
 		/* Reset back to host ordering before printing */
 		hdr.hdr_len = PKT_HDR_LEN;
 		hdr.data_len = data_len;
@@ -541,9 +549,9 @@ int writeSocket(u_char *write_data, int write_data_len)
 		WRITE:
 		if ((wrote_len = write(tcp_sock,write_ptr,write_len)) == -1)
 		{
-			if (errno == EINTR && FLAGISSET(FLAG_INTERRUPTED))
+			if (errno == EINTR && flags.interrupted)
 				goto WRITE;
-			perror("\nERROR: writeSocket(): write()");
+			nlerrprintf("writeSocket(): write(): %s\n",strerror(errno));
 			networkClear();
 			ret = 0;
 			break;
@@ -562,12 +570,12 @@ int writeSocket(u_char *write_data, int write_data_len)
 /*** Lengths must be in host byte order ***/
 void printPacketDetails(t_iscp_hdr *hdr, t_iscp_data *data)
 {
-	puts("   Header:");
+	colprintf("   ~FYHeader:\n");
 	printf("      Header length: %d bytes\n",hdr->hdr_len);
 	printf("      Data length  : %d bytes\n",hdr->data_len);
 	printf("      ISCP Version : %d\n",hdr->version);
 
-	puts("   Data:");
+	colprintf("   ~FMData:\n");
 	printf("      Start char  : %c\n",data->start_char);
 	printf("      Device code : %c\n",data->device_code);
 	printf("      Command     : %.3s\n",data->command);
@@ -594,7 +602,11 @@ void networkClear()
 		tcp_sock = 0;
 		strcpy(track_time_str,TIME_DEF_STR);
 		strcpy(track_len_str,TIME_DEF_STR);
-		puts("*** DISCONNECTED ***");
+		if (connect_time)
+		{
+			colprintf("~BM*** ~LIDISCONNECTED~RS~BM ***\n");
+			connect_time = 0;
+		}
 	}
 	if (ipaddr)
 	{

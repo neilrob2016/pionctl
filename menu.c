@@ -13,14 +13,14 @@ void initMenu()
 
 
 
-void addMenuOption(u_char *mesg, uint32_t len)
+void addMenuOption(char *mesg, uint32_t len)
 {
 	char *strm;
 
 	/* If we've received an option number thats less than the current
 	   count AND we're not still receiving the menu then reset */
 	if (isdigit(mesg[0]) &&
-	    (mesg[0] - '0') < menu_option_cnt && !FLAGISSET(FLAG_IN_MENU))
+	    (mesg[0] - '0') < menu_option_cnt && !flags.in_menu)
 	{
 		clearMenu();
 	}
@@ -68,7 +68,7 @@ void printMenuList()
 
 	if (menu_option_cnt)
 	{
-		puts("\n*** Menu list ***\n");
+		colprintf("\n~BB*** Menu list ***\n\n");
 		for(i=0;i < menu_option_cnt;++i)
 		{
 			printf("%s %-2d: %s\n",

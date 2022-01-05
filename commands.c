@@ -1,91 +1,62 @@
 #include "globals.h"
 
-#define ONOFF(F)      (flags & F) ? "ON" : "OFF"
-#define OFFLINE_ERROR "ERROR: Offline, command cannot be sent."
+#define MAX_WORDS       5
+#define CMD_SEPERATOR   ';'
+#define PRINT_ON_OFF(F) colprintf(F ? "~FGON\n" : "~FROFF\n");
+#define OFFLINE_ERROR   "Offline, command cannot be sent.\n"
 
 /* Built in commands apart from SAVEART */
 enum
 {
 	/* 0. Client commands */
 	COM_EXIT,
-	COM_VER,
-	COM_TRACKTM,
+	COM_TOGGLE,
 	COM_PROMPT,
 	COM_RAW,
+	COM_SHOW,
 
 	/* 5 */
-	COM_TAMP,
-	COM_SHOW,
-	COM_SHOWR,
 	COM_CLEAR,
-	COM_QMARK,
+	COM_HELP,
+	COM_CONNECT,
+	COM_DISCONNECT,
+	COM_HISTORY,
 
 	/* 10 */
-	COM_HELP,
-	COM_XHELP,
-	COM_SHELP,
-	COM_CON,
-	COM_DISCON,
-
-	/* 15 */
-	COM_CONSTAT,
-	COM_HIST,
-	COM_CHIST,
 	COM_TITLES,
-	COM_XTITLES,
-
-	/* 20 */
 	COM_WAIT,
 	COM_CLS,
-	COM_RXCOMS,
-	COM_TXCOMS,
-	COM_TIME,
-
-	/* 25 */
-	COM_LIST,
-	COM_SELECTED,
 	COM_ECHO,
-	COM_MADEF,
-	COM_MAAPP,
+	COM_MACRO,
+	LAST_CLIENT_COM = COM_MACRO,
 
-	/* 30 */
-	COM_MADEL,
-	COM_MACLEAR,
-	COM_MARUN,
-	COM_MAVRUN,
-	COM_MALIST,
-
-	/* 35 */
-	COM_MALOAD,
-	COM_MASAVA,
-	COM_MASAVC,
-	LAST_CLIENT_COM = COM_MASAVC,
-
-	/* 38. Streamer commands */
+	/* 15. Streamer commands */
 	COM_MENU,
+	COM_MENUSTAT,
 	COM_UP,
-
-	/* 40 */
 	COM_DN,
 	COM_EN,
-	COM_EX,
-	COM_MSTAT,
-	COM_FLIP,
 
-	/* 45 */
+	/* 20 */
+	COM_EX,
+	COM_FLIP,
 	COM_DS,
 	COM_DSD,
 	COM_DSSTAT,
-	COM_DF,
-	COM_ARTBMP,
 
-	/* 50 */
+	/* 25 */
+	COM_FILTER,
+	COM_FILSTAT,
+	COM_ARTBMP,
 	COM_ARTURL,
-	COM_SAVEART,
+	COM_ARTSTAT,
+
+	/* 30 */
+	COM_ARTSAVE,
 
 	/* Enums beyond saveart not required except for these */
-	COM_SETNAME = 103,
-	COM_LRA     = 118
+	COM_SETNAME = 82,
+	COM_LRA     = 97
 };
 
 
@@ -97,66 +68,33 @@ static struct st_command
 } commands[] =
 {
 	/* 0. Built in commands */
-	{ "exit",   NULL },
-	{ "ver",    NULL },
-	{ "tracktm",NULL },
-	{ "prompt", NULL },
-	{ "raw",    NULL },
+	{ "exit",  NULL },
+	{ "toggle",NULL },
+	{ "prompt",NULL },
+	{ "raw",   NULL },
+	{ "show",  NULL },
 
 	/* 5 */
-	{ "tamp",   NULL },
-	{ "show",   NULL },
-	{ "showr",  NULL },
-	{ "clear",  NULL },
-	{ "?",      NULL },
+	{ "clear",     NULL },
+	{ "help",      NULL },
+	{ "connect",   NULL },
+	{ "disconnect",NULL },
+	{ "history",   NULL },
 
 	/* 10 */
-	{ "help",   NULL },
-	{ "xhelp",  NULL },
-	{ "shelp",  NULL },
-	{ "con",    NULL },
-	{ "discon", NULL },
-
-	/* 15 */
-	{ "constat",NULL },
-	{ "hist",   NULL },
-	{ "chist",  NULL },
-	{ "titles", NULL },
-	{ "xtitles",NULL },
-
-	/* 20 */
-	{ "wait",   NULL },
-	{ "cls",    NULL },
-	{ "rxcoms", NULL },
-	{ "txcoms", NULL },
-	{ "time",   NULL },
-
-	/* 25 */
-	{ "list",   NULL },
-	{ "selected",NULL },
-	{ "echo",    NULL },
-	{ "madef",   NULL },
-	{ "maapp",   NULL },
-
-	/* 30 */
-	{ "madel",   NULL },
-	{ "maclear",NULL },
-	{ "marun",  NULL },
-	{ "mavrun", NULL },
-	{ "malist", NULL },
-
-	/* 35 */
-	{ "maload", NULL },
-	{ "masava", NULL },
-	{ "masavc", NULL },
+	{ "titles",NULL },
+	{ "wait",  NULL },
+	{ "cls",   NULL },
+	{ "echo",  NULL },
+	{ "macro", NULL },
 
 	/* Menu navigation */
 	{ "menu",    "NTCMENU"  },
+	{ "menustat","NMSQSTN"  },
 	{ "up",      "OSDUP"    }, 
 	{ "dn",      "OSDDOWN"  },
 	{ "en",      "OSDENTER" },
 	{ "ex",      "OSDEXIT"  }, 
-	{ "mstat",   "NMSQSTN"  },
 	{ "flip",    "NTCLIST"  },
 
 	/* It seems the display command system is broken - you can dim the 
@@ -167,12 +105,14 @@ static struct st_command
 	{ "dsstat",  "DIMQSTN" }, 
 
 	/* Digital filter */
-	{ "df",      "DGF" },
+	{ "filter",  "DGF"     },
+	{ "filstat", "DGFQSTN" },
 
 	/* Content */
 	{ "artbmp",  "NJABMP"         },
 	{ "arturl",  "NJALINK;NJAREQ" },
-	{ "saveart", "NJABMP;NJAREQ"  },
+	{ "artstat", "NJAQSTN"        },
+	{ "artsave", "NJABMP;NJAREQ"  },
 	{ "album",   "NALQSTN"        },
 	{ "artist",  "NATQSTN"        },
 	{ "title",   "NTIQSTN"        },
@@ -190,9 +130,9 @@ static struct st_command
 	{ "sbstat" , "NSBQSTN" },
 
 	/* Upsampling (called music optimisation in the docs) */
-	{ "upon",    "UPS03"   },
-	{ "upoff",   "UPS00"   },
-	{ "upstat",  "UPSQSTN" },
+	{ "upson",   "UPS03"   },
+	{ "upsoff",  "UPS00"   },
+	{ "upsstat", "UPSQSTN" },
 
 	/* Hi bit */
 	{ "hbon",    "HBT01" },
@@ -247,9 +187,9 @@ static struct st_command
 	{ "name",    "NFNQSTN" },
 	{ "setname", "NFN"     },  /* NFN only here for help print out */
 	{ "setup",   "NRIQSTN" },
-	{ "ustat",   "UPDQSTN" },
+	{ "updstat", "UPDQSTN" },
 	{ "codec",   "NFIQSTN" },
-	{ "pstat",   "NSTQSTN" },
+	{ "playstat","NSTQSTN" },
 	{ "reset",   "RSTALL"  },
 	{ "mgver",   "MGVQSTN" },
 
@@ -275,56 +215,58 @@ static struct st_command
 
 char *sorted_commands[NUM_COMMANDS];
 
-int  parseCommand(u_char *buff, int bufflen);
-int  sendCommand(int repeat_cnt, u_char *cmd, int cmd_len);
+int  parseCommand(char *buff, int bufflen);
+int  sendCommand(int repeat_cnt, char *cmd, int cmd_len);
 int  copyHistoryBuffer(int buffnum);
 int  processBuiltInCommand(
-	int comnum, int cmd_word, int word_cnt, u_char **words);
-int  setPrompt(u_char *param);
-int  setRaw(u_char *param);
-void showHelp(int conmum, u_char *pat);
-void showSortedHelp(u_char *pat);
-int  doConnect(u_char *param);
-int  doDisconnect();
-void printHistory();
-void clearHistory();
-int  doWait(u_char *param);
-void printTXCommands(u_char *pat);
-void printConstat();
-void printTimes();
-void doEcho(int cmd_word, int word_cnt, u_char **words);
-int  defineMacro(int cmd_word, int word_cnt, u_char **words);
-int  doAppendMacro(int cmd_word, int word_cnt, u_char **words);
-int  doDeleteMacro(u_char *name);
-int  doRunMacro(int comnum, u_char *name);
-int  doLoadMacros(u_char *filename);
-int  doSaveMacro(int comnum, int cmd_word, int word_cnt, u_char **words);
+	int comnum, int cmd_word, int word_cnt, char **words);
 
-int   compareComs(const void *addr1, const void *addr2);
+int  comToggle(char *opt);
+int  comPrompt(char *param);
+int  comRaw(char *param);
+int  comShow(char *opt, char *pat, int max);
+void optShowFlags();
+void optShowTXCommands(char *pat);
+void optShowTimes();
+void optShowConStat();
+
+int  comHelp(char *opt, char *pat);
+void optHelpMain(int extra, char *pat);
+void optHelpSorted(char *pat);
+void optHelpNotes();
+
+int  comConnect(char *param);
+int  comDisconnect();
+int  comHistory(char *opt);
+int  comTitles(char *opt, char *pat, int max);
+void comClearHistory();
+int  comWait(char *param);
+void comEcho(int cmd_word, int word_cnt, char **words);
+
+int  comMacro(char *opt, char *name, int cmd_word, int word_cnt, char **words);
+int  optMacroDefine(int cmd_word, int word_cnt, char **words);
+int  optMacroAppend(int cmd_word, int word_cnt, char **words);
+int  optMacroSave(int append, int cmd_word, int word_cnt, char **words);
+
+void printFlagTrackTime();
+void printFlagColour();
+void printFlagHTML();
+void printFlagVerb();
+
+void  clearHistory();
 u_int getUsecTime();
 
-
-void sortCommands()
-{
-	int i;
-
-	for(i=0;i < NUM_COMMANDS;++i)
-		sorted_commands[i] = commands[i].com;
-	qsort(sorted_commands,NUM_COMMANDS,sizeof(char *),compareComs);
-}
-
-
-
+/***************************** COM RUN FUNCTIONS ****************************/
 
 /*** Parse a line from the user or a macro ***/
-int parseInputLine(u_char *data, int len)
+int parseInputLine(char *data, int len)
 {
-	u_char *separator;
-	u_char *ptr;
-	u_char *ptr2;
-	u_char *end;
-	u_char q_char;
-	u_char c;
+	char *separator;
+	char *ptr;
+	char *ptr2;
+	char *end;
+	char q_char;
+	char c;
 	int in_quotes;
 	int ret;
 
@@ -360,12 +302,12 @@ int parseInputLine(u_char *data, int len)
 					q_char = c;
 				}
 			}
-			else if (c == SEPARATOR && !in_quotes) break;
+			else if (c == CMD_SEPERATOR && !in_quotes) break;
 		}
 		if (in_quotes)
 		{
-			puts("ERROR: Unterminated quotes.");
-			if (!FLAGISSET(FLAG_MACRO_RUNNING))
+			errprintf("Unterminated quotes.\n");
+			if (!flags.macro_running)
 				keyb_buffnum = (keyb_buffnum + 1) % MAX_HIST_BUFFERS;
 			break;
 		}
@@ -377,13 +319,13 @@ int parseInputLine(u_char *data, int len)
 
 		if (len)
 		{
-			if (FLAGISSET(FLAG_MACRO_RUNNING))
+			if (flags.macro_running)
 			{
 				/* Skip initial whitespace */
 				for(ptr2=ptr;*ptr2 < 33;++ptr2);
-				if (FLAGISSET(FLAG_MACRO_VERBOSE))
+				if (flags.macro_verbose)
 				{
-					printf("Exec cmd: %.*s\n",
+					colprintf("~FB~OLExec cmd:~RS %.*s\n",
 						len - (int)(ptr2-ptr),ptr2);
 				}
 			}
@@ -391,7 +333,7 @@ int parseInputLine(u_char *data, int len)
 			if ((ret = parseCommand(ptr,len)) != ERR_CMD_MISSING)
 				keyb_buffnum = (keyb_buffnum + 1) % MAX_HIST_BUFFERS;
 			if (ret != OK) return ret;
-			if (FLAGISSET(FLAG_INTERRUPTED)) return ERR_CMD_FAIL;
+			if (flags.interrupted) return ERR_CMD_FAIL;
 			if (!separator) break;
 		}
 	}
@@ -403,14 +345,14 @@ int parseInputLine(u_char *data, int len)
 
 /*** Parse the command which can either be a built in command or a raw server
      command, eg NJAREQ  ***/
-int parseCommand(u_char *buff, int bufflen)
+int parseCommand(char *buff, int bufflen)
 {
-	u_char *words[MAX_WORDS];
-	u_char *comword;
-	u_char *end;
-	u_char *s;
-	u_char c;
-	u_char q_char;
+	char *words[MAX_WORDS];
+	char *comword;
+	char *end;
+	char *s;
+	char c;
+	char q_char;
 	char *separator;
 	char *cmd;
 	int word_len[MAX_WORDS];
@@ -439,12 +381,12 @@ int parseCommand(u_char *buff, int bufflen)
 		for(s=buff+1;s < end && isdigit(*s);++s);
 		if (s < end)
 		{
-			puts("ERROR: '!' requires a number.");
+			errprintf("'!' requires a number.\n");
 			return ERR_CMD_MISSING;
 		}
-		if (!copyHistoryBuffer(atoi((char *)(buff + 1))))
+		if (!copyHistoryBuffer(atoi((buff + 1))))
 		{
-			puts("ERROR: Invalid or empty history buffer.");
+			errprintf("Invalid or empty history buffer.\n");
 			return ERR_CMD_MISSING;
 		}
 		putchar('\n');
@@ -461,7 +403,7 @@ int parseCommand(u_char *buff, int bufflen)
 	q_char = 0;
 
 	/* Parse buffer */
-	for(s=buff,i=inc=0;s < end && i < MAX_WORDS;++s)
+	for(s=buff,i=inc=0;s < end;++s)
 	{
 		c = *s;
 		if (c == '"' || c == '\'')
@@ -488,11 +430,16 @@ int parseCommand(u_char *buff, int bufflen)
 			inc = 0;
 			continue;
 		}
+		if (i == MAX_WORDS)
+		{
+			errprintf("Too many words or strings. Maximum is %d.\n",MAX_WORDS);
+			return ERR_CMD_FAIL;
+		}
 
 		/* Just add 1 char at a time. Could allocate memory in blocks
 		   but overkill for this as efficiency is not important */
 		++word_len[i];
-		words[i] = (u_char *)realloc(words[i],word_len[i]+1);
+		words[i] = (char *)realloc(words[i],word_len[i]+1);
 		words[i][word_len[i]-1] = c;
 		words[i][word_len[i]] = '\0';
 		inc = 1;
@@ -506,15 +453,15 @@ int parseCommand(u_char *buff, int bufflen)
 	for(s=words[0];*s && isdigit(*s);++s);
 	if (!*s)
 	{
-		if (!(repeat_cnt = atoi((char *)words[0]))) 
+		if (!(repeat_cnt = atoi(words[0]))) 
 		{
-			puts("ERROR: Repeat count must be > 0.");
+			errprintf("Repeat count must be > 0.\n");
 			ret = ERR_CMD_FAIL;
 			goto FREE;
 		}
 		if (!word_len[1])
 		{
-			puts("ERROR: Missing command.");
+			errprintf("Missing command.\n");
 			ret = ERR_CMD_FAIL;
 			goto FREE;
 		}
@@ -528,19 +475,19 @@ int parseCommand(u_char *buff, int bufflen)
 	{
 		if (!tcp_sock)
 		{
-			puts(OFFLINE_ERROR);
+			errprintf(OFFLINE_ERROR);
 			ret = ERR_CMD_FAIL;
 			goto FREE;
 		}
 		if (word_len[cmd_word] < 3)
 		{
-			puts("ERROR: Raw streamer commands need a minimum of 3 letters. eg: NTC");
+			errprintf("Raw streamer commands need a minimum of 3 letters. eg: NTC\n");
 			ret = ERR_CMD_FAIL;
 			goto FREE;
 		}
 		/* Clear value so its seen as a new value on RX so will get
 		   printed out */
-		clearValueOfKey((char *)comword);
+		clearValueOfKey(comword);
 
 		if (sendCommand(repeat_cnt,comword,word_len[cmd_word]))
 			ret = OK;
@@ -550,15 +497,15 @@ int parseCommand(u_char *buff, int bufflen)
 	}
 
 	/* Look for a command. If we can't find one try a macro */
-	if ((comnum = getCommand((char *)comword,word_len[cmd_word],1)) == -1)
+	if ((comnum = getCommand(comword,word_len[cmd_word],1)) == -1)
 	{
 		if (findMacro(comword) != -1)
 		{
-			ret = doRunMacro(comnum,comword);
+			ret = runMacro(comword);
 			goto FREE;
 		}
-		printf("ERROR: Unknown command or macro \"%s\". Type '?' or 'help' for a list of\n",comword);
-		puts("       commands or 'malist' for a list of macros.");
+		errprintf("Unknown command or macro \"%s\". Type \"help std\" for a list of\n",comword);
+		puts("       commands or \"macro list\" for a list of macros.");
 		ret = ERR_CMD_FAIL;
 		goto FREE;
 	}
@@ -579,7 +526,7 @@ int parseCommand(u_char *buff, int bufflen)
 	}
 	if (!tcp_sock)
 	{
-		puts(OFFLINE_ERROR);
+		errprintf(OFFLINE_ERROR);
 		ret = ERR_CMD_FAIL;
 		goto FREE;
 	}
@@ -588,11 +535,11 @@ int parseCommand(u_char *buff, int bufflen)
 	switch(comnum)
 	{
 	case COM_UP:
-		SETFLAG(FLAG_COM_UP);
+		flags.com_up = 1;
 		break;
 
 	case COM_DN:
-		SETFLAG(FLAG_COM_DN);
+		flags.com_dn = 1;
 		break;
 
 	case COM_EX:
@@ -605,59 +552,56 @@ int parseCommand(u_char *buff, int bufflen)
 		menu_cursor_pos = -1;
 		break;
 
-	case COM_SAVEART:
-		if (save_stage != SAVE_INACTIVE)
+	case COM_ARTSAVE:
+		if (save_state != SAVE_INACTIVE)
 		{
 			/* Should never happen, just in case */
-			puts("WARNING: Currently saving - resetting.");
+			warnprintf("Currently saving - resetting.\n");
 		}
-		/* Ignore repeat_cnt */
-		startSave(word_cnt > cmd_word ? 
-		          (char *)words[cmd_word+1] : NULL);
+		/* Ignore repeat_cnt in preparing */
+		prepareSave(word_cnt > cmd_word ? words[cmd_word+1] : NULL);
 		break;
 
 	case COM_SETNAME:
 		/* Setname requires an argument */
 		if (word_cnt < cmd_word + 2)
 		{
-			puts("Usage: setname <name>");
+			usageprintf("setname <name>\n");
 			ret = ERR_CMD_FAIL;
 			goto FREE;
 		}
 
 		clearValueOfKey("NFN");
 		cmd_len = asprintf(&cmd,"NFN%s",words[cmd_word+1]);
-		if (!sendCommand(repeat_cnt,(u_char *)cmd,cmd_len))
-			ret = ERR_CMD_FAIL;
+		if (!sendCommand(repeat_cnt,cmd,cmd_len)) ret = ERR_CMD_FAIL;
 		free(cmd);
 		goto FREE;
 
 	case COM_DS:
-	case COM_DF:
+	case COM_FILTER:
 	case COM_LRA:
 		/* Commands that take a numeric argument */
 		if (word_cnt < cmd_word + 2 || 
-		    !isNumber((char *)words[cmd_word+1]) || 
-		    (val = atoi((char *)words[cmd_word+1])) > 99)
+		    !isNumber(words[cmd_word+1]) || 
+		    (val = atoi(words[cmd_word+1])) > 99)
 		{
-			printf("Usage: %s <number>\n",commands[comnum].com);
+			usageprintf("%s <number>\n",commands[comnum].com);
 			ret = ERR_CMD_FAIL;
 			goto FREE;
 		}
 		clearValueOfKey(commands[comnum].data);
 		cmd_len = asprintf(&cmd,"%s%02d",commands[comnum].data,val);
-		if (!sendCommand(repeat_cnt,(u_char *)cmd,cmd_len))
-			ret = ERR_CMD_FAIL;
+		if (!sendCommand(repeat_cnt,cmd,cmd_len)) ret = ERR_CMD_FAIL;
 		free(cmd);
 		goto FREE;
 	}
 
-	/* Send command(s) to the streamer */
+	/* Send translated command(s) to the streamer */
 	for(cmd=commands[comnum].data;;cmd=separator+1)
 	{
 		/* Separator in .data is for consistency the same as for 
 		   commands entered by the user which is a semi colon */
-		if ((separator = strchr(cmd,SEPARATOR)))
+		if ((separator = strchr(cmd,CMD_SEPERATOR)))
 			cmd_len = (int)(separator - cmd);
 		else
 			cmd_len = strlen(cmd);
@@ -666,7 +610,7 @@ int parseCommand(u_char *buff, int bufflen)
 		clearValueOfKey(cmd);
 
 		/* Send command the given count times */
-		if (!sendCommand(repeat_cnt,(u_char *)cmd,cmd_len))
+		if (!sendCommand(repeat_cnt,cmd,cmd_len))
 		{
 			ret = ERR_CMD_FAIL;
 			break;
@@ -676,8 +620,8 @@ int parseCommand(u_char *buff, int bufflen)
 
 	FREE:
 	for(i=0;i <= cmd_word;++i) free(words[i]);
-	if (comnum != COM_UP) UNSETFLAG(FLAG_COM_UP);
-	if (comnum != COM_DN) UNSETFLAG(FLAG_COM_DN);
+	if (comnum != COM_UP) flags.com_up = 0;
+	if (comnum != COM_DN) flags.com_dn = 0;
 	return ret;
 }
 
@@ -703,7 +647,7 @@ int getCommand(char *word, int len, int expmsg)
 	if (comnum < NUM_COMMANDS)
 	{
 		if (expmsg)
-			printf("Expanded to: \"%s\"\n",commands[comnum].com);
+			colprintf("~FTExpanded to:~RS \"%s\"\n",commands[comnum].com);
 		return comnum;
 	}
 	return -1;
@@ -712,7 +656,7 @@ int getCommand(char *word, int len, int expmsg)
 
 
 
-int sendCommand(int repeat_cnt, u_char *cmd, int cmd_len)
+int sendCommand(int repeat_cnt, char *cmd, int cmd_len)
 {
 	int i;
 	for(i=0;i < repeat_cnt;++i) if (!writeSocket(cmd,cmd_len)) return 0;
@@ -751,122 +695,66 @@ int copyHistoryBuffer(int buffnum)
 
 /*** A command not sent to the server ***/
 int processBuiltInCommand(
-	int comnum, int cmd_word, int word_cnt, u_char **words)
+	int comnum, int cmd_word, int word_cnt, char **words)
 {
-	u_char *param;
+	char *param1 = NULL;
+	char *param2 = NULL;
 	char *end;
 	int max = 0;
 	
 	if (word_cnt > cmd_word)
 	{
-		param = words[cmd_word+1];
-		if (word_cnt > cmd_word + 2)
+		param1 = words[cmd_word+1];
+		if (word_cnt > cmd_word + 1)
 		{
-			end = NULL;
-			max = strtol((char *)words[cmd_word+2],&end,10);
-			if (end && *end) max = -1;
+			param2 = words[cmd_word+2];
+			if (word_cnt > cmd_word + 3)
+			{
+				end = NULL;
+				max = strtol(words[cmd_word+3],&end,10);
+				if (end && *end) max = -1;
+			}
 		}
 	}
-	else param = NULL;
 
 	switch(comnum)
 	{
 	case COM_EXIT:
-		puts("*** EXIT by command ***");
+		exitprintf("by command");
 		doExit(0);
-	case COM_VER:
-		version(1);
-		break;
-	case COM_TRACKTM:
-		FLIPFLAG(FLAG_SHOW_TRACK_TIME);
-		printf("Show track time: %s\n",ONOFF(FLAG_SHOW_TRACK_TIME));
-		break;
+	case COM_TOGGLE:
+		return comToggle(param1);
 	case COM_PROMPT:
-		return setPrompt(param);
+		return comPrompt(param1);
 	case COM_RAW:
-		return setRaw(param);
-	case COM_TAMP:
-		FLIPFLAG(FLAG_TRANS_HTML_AMPS);
-		printf("Translate HTML amp codes: %s\n",
-			ONOFF(FLAG_TRANS_HTML_AMPS));
-		break;
+		return comRaw(param1);
 	case COM_SHOW:
-		nja_prev = 0;
-		return prettyPrintList(param,max);
-	case COM_SHOWR:
-		return dumpList(param,max);
+		return comShow(param1,param2,max);
 	case COM_CLEAR:
 		clearList();
 		clearTitles();
 		clearHistory();
 		break;
-	case COM_QMARK:
 	case COM_HELP:
-	case COM_XHELP:
-		showHelp(comnum,param);
-		break;
-	case COM_SHELP:
-		showSortedHelp(param);
-		break;
-	case COM_CON:
-		return doConnect(param);
-	case COM_DISCON:
-		return doDisconnect();
-	case COM_HIST:
-		printHistory();
-		break;
-	case COM_CHIST:
-		clearHistory();
-		break;
+		return comHelp(param1,param2);
+	case COM_CONNECT:
+		return comConnect(param1);
+	case COM_DISCONNECT:
+		return comDisconnect();
+	case COM_HISTORY:
+		return comHistory(param1);
 	case COM_TITLES:
-		return printTitles(0,param,max);
-	case COM_XTITLES:
-		return printTitles(1,param,max);
+		return comTitles(param1,param2,max);
 	case COM_WAIT:
-		return doWait(param);
+		return comWait(param1);
 	case COM_CLS:
 		write(STDOUT,"\033[2J\033[H",7);
 		break;
-	case COM_RXCOMS:
-		printRXCommands(param);
-		break;
-	case COM_TXCOMS:
-		printTXCommands(param);
-		break;
-	case COM_CONSTAT:
-		printConstat();
-		break;
-	case COM_TIME:
-		printTimes();
-		break;
-	case COM_LIST:
-		printMenuList();
-		break;
-	case COM_SELECTED:
-		printMenuSelection();
-		break;
 	case COM_ECHO:
-		doEcho(cmd_word,word_cnt,words);
+		comEcho(cmd_word,word_cnt,words);
 		break;
-	case COM_MADEF:
-		return defineMacro(cmd_word,word_cnt,words);
-	case COM_MADEL:
-		return doDeleteMacro(param);
-	case COM_MAAPP:
-		return doAppendMacro(cmd_word,word_cnt,words);
-	case COM_MACLEAR:
-		return clearMacros();
-	case COM_MARUN:
-	case COM_MAVRUN:
-		return doRunMacro(comnum,param);
-	case COM_MALIST:
-		listMacros();
-		break;
-	case COM_MALOAD:
-		return doLoadMacros(param);
-	case COM_MASAVA:
-	case COM_MASAVC:
-		return doSaveMacro(comnum,cmd_word,word_cnt,words);
+	case COM_MACRO:
+		return comMacro(param1,param2,cmd_word,word_cnt,words);
 	default:
 		assert(0);
 	}
@@ -874,50 +762,314 @@ int processBuiltInCommand(
 }
 
 
-/****************************** BUILT IN COMMANDS *****************************/
+/***************************** COMMAND FUNCTIONS *****************************/
 
-int setPrompt(u_char *param)
+int comToggle(char *opt)
+{
+	char *options[4] =
+	{
+		"tracktm",
+		"colour",
+		"htmlamp",
+		"verbmacro"
+	};
+	int len;
+	int i;
+
+	if (!opt) goto USAGE;
+	len = strlen(opt);
+	for(i=0;i < 4;++i)
+	{
+		if (strncmp(opt,options[i],len)) continue;
+
+		switch(i)
+		{
+		case 0:
+			flags.show_track_time = !flags.show_track_time;
+			printFlagTrackTime();
+			return OK;
+		case 1:
+			flags.use_colour = !flags.use_colour;
+			printFlagColour();
+			return OK;
+		case 2:
+			flags.trans_html_amps = !flags.trans_html_amps;
+			printFlagHTML();
+			return OK;
+		case 3:
+			flags.macro_verbose = !flags.macro_verbose;
+			printFlagVerb();
+			return OK;
+		}
+	}
+	USAGE:
+	usageprintf("toggle tracktm/colour/htmlamp/verbmacro\n");
+	return ERR_CMD_FAIL;
+}
+
+
+
+
+int comPrompt(char *param)
 {
 	int val;
 
 	if (param)
 	{
-		val = atoi((char *)param);
-		if (isNumber((char *)param) && val >= 0 && val < NUM_PROMPTS)
+		val = atoi(param);
+		if (isNumber(param) && val >= 0 && val < NUM_PROMPTS)
 		{
 			prompt_type = val;
 			return OK;
 		}
 	}
-	printf("Usage: prompt [0 to %d]\n",NUM_PROMPTS-1);
+	usageprintf("prompt [0 to %d]\n",NUM_PROMPTS-1);
 	return ERR_CMD_FAIL;
 }
 
 
 
 
-int setRaw(u_char *param)
+int comRaw(char *param)
 {
 	int val;
 
 	if (param)
 	{
-		val = atoi((char *)param);
-		if (isNumber((char *)param) && val >= 0 && val < NUM_RAW_LEVELS)
+		val = atoi(param);
+		if (isNumber(param) && val >= 0 && val < NUM_RAW_LEVELS)
 		{
 			raw_level = val;
-			puts("OK");
+			ok();
 			return OK;
 		}
 	}
-	printf("Usage: raw [0 to %d]\n",NUM_RAW_LEVELS-1);
+	usageprintf("raw [0 to %d]\n",NUM_RAW_LEVELS-1);
 	return ERR_CMD_FAIL;
 }
 
 
 
 
-void showHelp(int comnum, u_char *pat)
+int comShow(char *opt, char *pat, int max)
+{
+	char *options[10] =
+	{
+		/* 0 */
+		"rx",
+		"rawrx",
+		"rxcoms",
+		"txcoms",
+		"times",
+
+		/* 5 */
+		"flags",
+		"menu",
+		"selected",
+		"connection",
+		"version"
+	};
+	int len;
+	int i;
+
+	if (!opt) goto USAGE;
+	len = strlen(opt);
+	for(i=0;i < 10;++i)
+	{
+		if (strncmp(opt,options[i],len)) continue;
+
+		switch(i)
+		{
+		case 0:
+			return prettyPrintList(pat,max);
+		case 1:
+			return dumpList(pat,max);
+		case 2:
+			printRXCommands(pat);
+			break;
+		case 3:
+			optShowTXCommands(pat);
+			break;
+		case 4:
+			optShowTimes();
+			break;
+		case 5:
+			optShowFlags();
+			break;
+		case 6:
+			printMenuList();
+			break;
+		case 7:
+			printMenuSelection();
+			break;
+		case 8:
+			optShowConStat();
+			break;
+		case 9:
+			version(1);
+			break;
+		}
+		return OK;
+	}
+
+	USAGE:
+	usageprintf("show rx     [<pattern> [<count>]]\n");
+	puts("            rawrx  [<pattern> [<count>]]");
+	puts("            rxcoms [<pattern>]");
+	puts("            txcoms [<pattern>]");
+	puts("            times");
+	puts("            flags");
+	puts("            menu");
+	puts("            selected");
+	puts("            connection");
+	puts("            version");
+	return ERR_CMD_FAIL;
+}
+
+
+
+
+void optShowFlags()
+{
+	colprintf("\n~BB*** Toggle flags ***\n\n");
+	printFlagTrackTime();
+	printFlagColour();
+	printFlagHTML();
+	printFlagVerb();
+	putchar('\n');
+}
+
+
+
+
+void optShowTXCommands(char *pat)
+{
+	int cnt1;
+	int cnt2;
+	int i;
+
+	colprintf("\n~BG*** TX streamer command mappings ***\n\n");
+	for(i=cnt1=cnt2=0;i < NUM_COMMANDS;++i)
+	{
+		if (commands[i].data)
+		{
+			++cnt1;
+			if (!pat || wildMatch(commands[i].com,pat))
+			{
+				if (cnt2 && !(cnt2 % 3)) putchar('\n');
+				colprintf("%-8s = ~FT%-15s~RS",
+					commands[i].com,commands[i].data);
+				++cnt2;
+			}
+		}
+	}
+	if (pat)
+		printf("\n\n%d of %d commands.\n\n",cnt2,cnt1);
+	else
+		printf("\n\n%d commands.\n\n",cnt1);
+}
+
+
+
+
+void optShowTimes()
+{
+	printf("Local time  : %s\n",getTime());
+	printf("Connect time: %s\n",getTimeString(connect_time));
+	printTrackTime();
+}
+
+
+
+
+void optShowConStat()
+{
+	t_iscp_data *pkt_data;
+
+	colprintf("\n~BB*** Connection status and traffic ***\n\n");
+	printf("Streamer TCP: %s:%d\n",inet_ntoa(con_addr.sin_addr),tcp_port);
+	printf("Status      : ");
+	colprintf(connect_time ? "~FGCONNECTED\n" : "~FRDISCONNECTED\n");
+	printf("Connect time: %s\n",getTimeString(connect_time));
+	printf("Last RX ago : %s\n",getTimeString(last_rx_time));
+	printf("Last TX ago : %s\n",getTimeString(last_tx_time));
+
+	if (buffer[BUFF_TCP].data)
+	{
+		pkt_data = (t_iscp_data *)(buffer[BUFF_TCP].data + pkt_hdr->hdr_len);
+		colprintf("Last RX com : ~FT%.3s\n",pkt_data->command);
+	}
+	else puts("Last RX com : ---");
+
+	printf("RX reads    : %lu\n",rx_reads);
+	printf("RX data     : ");
+	if (rx_bytes < 1e4) 
+		printf("%lu bytes\n",rx_bytes);
+	else if (rx_bytes < 1e6)
+		printf("%.1fK\n",(double)rx_bytes / 1e3);
+	else 
+		printf("%.1fM\n",(double)rx_bytes / 1e6);
+
+	printf("TX writes   : %lu\n",tx_writes);
+	printf("TX data     : ");
+	if (tx_bytes < 1e4) 
+		printf("%lu bytes\n\n",tx_bytes);
+	else if (tx_bytes < 1e6)
+		printf("%.1fK\n\n",(double)tx_bytes / 1e3);
+	else 
+		printf("%.1fM\n\n",(double)tx_bytes / 1e6);
+}
+
+
+
+
+int comHelp(char *opt, char *pat)
+{
+	char *options[4] =
+	{
+		"std",
+		"extra",
+		"sorted",
+		"notes"
+	};
+	int len;
+	int i;
+
+	if (!opt) goto USAGE;
+	len = strlen(opt);
+	for(i=0;i < 4;++i)
+	{
+		if (strncmp(opt,options[i],len)) continue;
+
+		switch(i)
+		{
+		case 0:
+			optHelpMain(0,pat);
+			return OK;
+		case 1:
+			optHelpMain(1,pat);
+			return OK;
+		case 2:
+			optHelpSorted(pat);
+			return OK;
+		case 3:
+			optHelpNotes();
+			return OK;
+		}
+	}
+
+	USAGE:
+	usageprintf("help std    [<pattern>]\n");
+	puts("            extra  [<pattern>]");
+	puts("            sorted [<pattern>]");
+	puts("            notes");
+	return ERR_CMD_FAIL;
+}
+
+
+
+
+void optHelpMain(int extra, char *pat)
 {
 	int nlafter;
 	int cnt;
@@ -925,19 +1077,19 @@ void showHelp(int comnum, u_char *pat)
 
 	nlafter = 5;
 
-	puts("\n*** Client commands ***\n");
+	colprintf("\n~BG*** Client commands ***\n\n");
 	for(i=cnt=0;i < NUM_COMMANDS;++i)
 	{
 		if (i && commands[i].data && !commands[i-1].data)
 		{
 			if (cnt % nlafter) putchar('\n');
-			puts("\n*** Streamer commands ***\n");
-			if (comnum == COM_XHELP) nlafter = 4;
+			colprintf("\n~BB*** Streamer commands ***\n\n");
+			if (extra) nlafter = 4;
 			cnt = 0;
 		}
-		if (!pat || wildMatch(commands[i].com,(char *)pat))
+		if (!pat || wildMatch(commands[i].com,pat))
 		{
-			if (comnum == COM_XHELP)
+			if (extra)
 			{
 				if (i > LAST_CLIENT_COM)
 				{
@@ -952,45 +1104,52 @@ void showHelp(int comnum, u_char *pat)
 		}
 	}
 	if (cnt % nlafter) putchar('\n');
-	if (comnum != COM_XHELP)
-	{
-		puts("\nType 'xhelp' for more help information or 'shelp' for a sorted list.\n");
-		return;
-	}
-	puts("\nUsage: [<repeat count>] <client/streamer command>   eg: 3 up");
-	puts("                                                        con 192.168.0.1");
-	puts("       [<repeat count>] <raw streamer command>      eg: 3 OSDUP\n");
 
-	puts("Notes:");
+	if (extra)
+	{
+		colprintf("\n~FMUsage:~RS [<repeat count>] <client/streamer command>   eg: 3 up\n");
+		puts("                                                        con 192.168.0.1");
+		puts("       [<repeat count>] <raw streamer command>      eg: 3 OSDUP\n");
+	}
+	else putchar('\n');
+}
+
+
+
+void optHelpNotes()
+{
+	colprintf("\n~BB*** Help notes ***\n\n");
 	puts("1) Any commands starting with a capital letter are passed to the streamer");
 	puts("   unchanged as raw commands. eg: OSDUP\n");
-	puts("2) Built in and raw commands can be chained with semicolon separators.");
-	puts("   eg: tunein; 3 OSDDOWN; wait; en\n");
-	puts("   commands take an optional wildcard pattern to limit the number of returned");
-	puts("   results. Eg: help *stat\n");
-	puts("4) The 'titles', 'xtitles', 'show' and 'showr' commands can take a 2nd");
-	puts("   parameter which is the number of entries to print from the start of the");
-	puts("   list. Eg: 'titles * 5' to show the first 5 titles.\n");
-	puts("5) Either double or single quotes can be used to pass whitespace as data.");
+	puts("2) Commands and their sub options can be shortened to any matching substring"); 
+	puts("   depending on the internal order of the commands and options.");
+	puts("   Eg: \"help notes\" can be shortened to \"h n\", \"show version\" to \"s v\"\n");
+	puts("3) Built in, raw commands and macros can be chained with semicolon separators.");
+	puts("   eg: \"tunein; 3 OSDDOWN; wait 2; en\"\n");
+	puts("4) Some commands take an optional wildcard pattern to limit the number of");
+	puts("   results. Eg: \"help std *stat\" (or \"h s *stat\" shorthand)\n");
+	puts("5) The \"titles\" and \"show\" commands can take a 3rd parameter which is the");
+	puts("   number of entries to print from the start of the list.");
+	puts("   Eg: \"titles std * 5\" to show the first 5 titles (or \"ti s * 5\").\n");
+	puts("6) Either double or single quotes can be used to pass whitespace as data.");
 	puts("   eg: setname \"Neil's streamer\"");
 	puts("       setname 'Pass double\"quote'\n");
-	puts("6) Commands can be shortened to any matching substring depending on the");
-	puts("   internal order of the commands. Eg: 'xtitles' can be shortened to 'xt'");
-	puts("   and 'prompt' to just 'p'.\n");
+	puts("7) Macros can be run either using \"macro run <macro name>\" or simply just by");
+	puts("   entering the macro name.\n");
 }
 
 
 
 
-void showSortedHelp(u_char *pat)
+void optHelpSorted(char *pat)
 {
 	int cnt;
 	int i;
 
-	puts("\n*** Sorted commands ***\n");
+	colprintf("\n~BG*** Sorted commands ***\n\n");
 	for(i=cnt=0;i < NUM_COMMANDS;++i)
 	{
-		if (!pat || wildMatch(sorted_commands[i],(char *)pat))
+		if (!pat || wildMatch(sorted_commands[i],pat))
 		{
 			printf("   %-10s",sorted_commands[i]);
 			if (!(++cnt % 5)) putchar('\n');
@@ -1003,16 +1162,20 @@ void showSortedHelp(u_char *pat)
 
 
 
-int doConnect(u_char *param)
+int comConnect(char *param)
 {
 	if (tcp_sock)
 	{
-		puts("ERROR: Already connected.");
-		return ERR_CMD_FAIL;
+		if (connect_time)
+		{
+			errprintf("Already connected.\n");
+			return ERR_CMD_FAIL;
+		}
+		networkClear();
 	}
 	/* Could have:       con [address]
 	               <cnt> con [address]  - pointless to do but... */
-	if (param) ipaddr = strdup((char *)param);
+	if (param) ipaddr = strdup(param);
 	if (!networkStart()) networkClear();
 	return OK;
 }
@@ -1020,49 +1183,72 @@ int doConnect(u_char *param)
 
 
 
-int doDisconnect()
+int comDisconnect()
 {
 	if (tcp_sock)
 	{
 		networkClear();
 		return OK;
 	}
-	puts("ERROR: Not connected.");
+	errprintf("Not connected.\n");
 	return ERR_CMD_FAIL;
 }
 
 
 
 
-/*** Prints the command history ***/
-void printHistory()
+/*** Prints or clears the command history ***/
+int comHistory(char *opt)
 {
-	int bn = (keyb_buffnum + 2) % MAX_HIST_BUFFERS;
-	int num = 0;
 	int cnt;
+	int bn;
+	int i;
 
-	for(cnt=0;cnt < MAX_HIST_BUFFERS-1;++cnt)
+	if (opt)
 	{
-		if (buffer[bn].len) printf("%3d  %s\n",++num,buffer[bn].data);
+		if (!strncmp(opt,"clear",strlen(opt)))
+		{
+			clearHistory();
+			return OK;
+		}
+		usageprintf("history [clear]\n");
+		return ERR_CMD_FAIL;
+	}
+
+	bn = (keyb_buffnum + 2) % MAX_HIST_BUFFERS;
+	for(i=cnt=0;i < MAX_HIST_BUFFERS-1;++i)
+	{
+		if (buffer[bn].len)
+			colprintf("~FB~OL%3d~RS %s\n",++cnt,buffer[bn].data);
 		bn = (bn + 1) % MAX_HIST_BUFFERS;
 	}
 	puts("Enter !<number> or up/down arrow keys to select.");
+	return OK;
 }
 
 
 
 
-void clearHistory()
+int comTitles(char *opt, char *pat, int max)
 {
-	int i;
-	for(i=0;i < MAX_HIST_BUFFERS;++i) clearBuffer(i);
-	puts("History cleared.");
+	int len;
+
+	if (opt && max >= 0)
+	{
+		len = strlen(opt);
+		if (!strncmp(opt,"std",len))
+			return printTitles(0,pat,max);
+		if (!strncmp(opt,"extra",len))
+			return printTitles(1,pat,max);
+	}
+	usageprintf("titles std/extra [<pattern> [<count>]]\n");
+	return ERR_CMD_FAIL;
 }
 
 
 
 
-int doWait(u_char *param)
+int comWait(char *param)
 {
 	struct timeval tv;
 	fd_set mask;
@@ -1070,7 +1256,7 @@ int doWait(u_char *param)
 	u_int usecs;
 	u_int end;
 
-	if (param && (secs = atof((char *)param)) > 0)
+	if (param && (secs = atof(param)) > 0)
 	{
 		usecs = (u_int)(secs * 1000000);
 		if (tcp_sock)
@@ -1101,203 +1287,227 @@ int doWait(u_char *param)
 
 		return OK;
 	}
-	puts("Usage: wait <seconds>");
+	usageprintf("wait <seconds>\n");
 	return ERR_CMD_FAIL;
 }
 
 
 
 
-void printTXCommands(u_char *pat)
+void comEcho(int cmd_word, int word_cnt, char **words)
 {
-	int cnt1;
-	int cnt2;
+	char *ptr;
 	int i;
 
-	puts("\n*** TX streamer command mappings ***\n");
-	for(i=cnt1=cnt2=0;i < NUM_COMMANDS;++i)
+	for(i=cmd_word+1;i < word_cnt;++i)
 	{
-		if (commands[i].data)
-		{
-			++cnt1;
-			if (!pat || wildMatch(commands[i].com,(char *)pat))
-			{
-				if (cnt2 && !(cnt2 % 3)) putchar('\n');
-				printf("%-8s = %-15s",commands[i].com,commands[i].data);
-				++cnt2;
-			}
-		}
+		/* Put words in a string first so colour codes get passed to
+		   colprintf in the format, not the arguments where they won't
+		   be interpreted */
+		assert(asprintf(&ptr,"%s ",words[i]) != -1);
+		colprintf(ptr);
+		free(ptr);
 	}
-	if (pat)
-		printf("\n\n%d of %d commands.\n\n",cnt2,cnt1);
-	else
-		printf("\n\n%d commands.\n\n",cnt1);
+	/* Sends an ansi reset code along with nl */
+	colprintf("\n"); 
 }
 
 
 
 
-void printConstat()
+int comMacro(char *opt, char *name, int cmd_word, int word_cnt, char **words)
 {
-	t_iscp_data *pkt_data;
-
-	puts("\n*** Connection status and traffic ***\n");
-	printf("Streamer TCP: %s:%d\n",inet_ntoa(con_addr.sin_addr),tcp_port);
-	printf("Connection  : %sCONNECTED\n",tcp_sock ? "" : "DIS");
-	printf("Connect time: %s\n",getTimeString(connect_time));
-	printf("Last RX ago : %s\n",getTimeString(last_rx_time));
-	printf("Last TX ago : %s\n",getTimeString(last_tx_time));
-
-	if (buffer[BUFF_TCP].data)
+	char *options[8] =
 	{
-		pkt_data = (t_iscp_data *)(buffer[BUFF_TCP].data + pkt_hdr->hdr_len);
-		printf("Last RX com : %.3s\n",pkt_data->command);
-	}
-	else puts("Last RX com : ---");
+		/* 0 */
+		"define",
+		"append",
+		"delete",
+		"run",
+		"load",
 
-	printf("RX reads    : %lu\n",rx_reads);
-	printf("RX bytes    : %lu\n",rx_bytes);
-	printf("TX writes   : %lu\n",tx_writes);
-	printf("TX bytes    : %lu\n\n",tx_bytes);
-}
-
-
-
-
-void printTimes()
-{
-	printf("Local time  : %s\n",getTime());
-	printf("Connect time: %s\n",getTimeString(connect_time));
-	printTrackTime();
-}
-
-
-
-
-void doEcho(int cmd_word, int word_cnt, u_char **words)
-{
-	int i;
-	for(i=cmd_word+1;i < word_cnt;++i) printf("%s ",words[i]);
-	putchar('\n');
-}
-
-
-
-
-int defineMacro(int cmd_word, int word_cnt, u_char **words)
-{
-	switch(word_cnt - cmd_word)
-	{
-	case 2:
-		return initMultiLineMacro(words[cmd_word+1]);
-	case 3:
-		return insertMacro(words[cmd_word+1],words[cmd_word+2]);
-	}
-	puts("Usage: madef <macro> [\"<macro command list>\"]");
-	return ERR_CMD_FAIL;
-}
-
-
-
-
-int doAppendMacro(int cmd_word, int word_cnt, u_char **words)
-{
-	switch(word_cnt - cmd_word)
-	{
-	case 2:
-		return initMultiLineMacroAppend(words[cmd_word+1]);
-	case 3:
-		return appendMacroComlist(words[cmd_word+1],words[cmd_word+2]);
-	}
-	puts("Usage: maapp <macro> [\"<macro command list>\"]");
-	return ERR_CMD_FAIL;
-}
-
-
-
-
-int doDeleteMacro(u_char *name)
-{
-	if (name) return deleteMacro(name);
-	puts("Usage: madel <macro>");
-	return ERR_CMD_FAIL;
-}
-
-
-
-
-int doRunMacro(int comnum, u_char *name)
-{
-	static int recurse = 0;
+		/* 5 */
+		"save",
+		"sava",
+		"list"
+	};
+	int len;
 	int ret;
+	int i;
 
-	if (name)
+	if (!opt) goto USAGE;
+	len = strlen(opt);
+	ret = ERR_CMD_FAIL;
+
+	for(i=0;i < 8;++i)
 	{
-		/* Check recurse because want verbosity to continue even if a 
-		   macro calls MARUN itself */
-		if (comnum == COM_MAVRUN)
-			SETFLAG(FLAG_MACRO_VERBOSE);
-		else if (!recurse)
-			UNSETFLAG(FLAG_MACRO_VERBOSE);
-		++recurse;
-		ret = runMacro(name);
-		--recurse;
-		return ret;
-	}
-	puts("Usage: marun <macro>");
-	return ERR_CMD_FAIL;
-}
+		if (strncmp(opt,options[i],len)) continue;
 
-
-
-
-int doLoadMacros(u_char *filename)
-{
-	if (filename) return loadMacros(filename);
-	puts("Usage: maload <filename>");
-	return ERR_CMD_FAIL;
-}
-
-
-
-
-/*** Save one or save all macros, either Append or Create ***/
-int doSaveMacro(int comnum, int cmd_word, int word_cnt, u_char **words)
-{
-	u_char *filename;
-	int append;
-
-	if (word_cnt - cmd_word >= 2)
-	{
-		filename = words[cmd_word+1];
-		if (comnum == COM_MASAVC && !access((char *)filename,F_OK))
+		switch(i)
 		{
-			printf("ERROR: File \"%s\" already exists, cannot create. Use MASAVA instead to append,\n",filename);
-			puts("       or delete the file first.");
-			return ERR_CMD_FAIL;
+		case 0:
+			ret = optMacroDefine(cmd_word,word_cnt,words);
+			break;
+		case 1:
+			ret = optMacroAppend(cmd_word,word_cnt,words);
+			break;
+		case 2:
+			if (name) return deleteMacro(name);
+			goto USAGE;
+		case 3:
+			if (name) return runMacro(name);
+			goto USAGE;
+		case 4:
+			if (name) return loadMacros(name);
+			goto USAGE;
+		case 5:
+			ret = optMacroSave(0,cmd_word,word_cnt,words);
+			break;
+		case 6:
+			ret = optMacroSave(1,cmd_word,word_cnt,words);
+			break;
+		case 7:
+			listMacros();
+			return OK;
+		}
+	}
+	if (ret != ERR_CMD_FAIL) return ret;
+
+	USAGE:
+	usageprintf("macro define <macro name>   [\"<macro command list>\"]\n");
+	puts("             append <macro name>   [\"<macro command list>\"]");
+	puts("             delete <macro name>/*");
+	puts("             run    <macro name>");
+	puts("             load   <filename>");
+	puts("             save   <filename>     [<macro name>]");
+	puts("             sava   <filename>     [<macro name>]");
+	puts("             list");
+	return ERR_CMD_FAIL;
+}
+
+
+
+
+int optMacroDefine(int cmd_word, int word_cnt, char **words)
+{
+	switch(word_cnt - cmd_word)
+	{
+	case 3:
+		return initMultiLineMacro(words[cmd_word+2]);
+	case 4:
+		return insertMacro(words[cmd_word+2],words[cmd_word+3]);
+	}
+	return ERR_CMD_FAIL;
+}
+
+
+
+
+int optMacroAppend(int cmd_word, int word_cnt, char **words)
+{
+	switch(word_cnt - cmd_word)
+	{
+	case 3:
+		return initMultiLineMacroAppend(words[cmd_word+2]);
+	case 4:
+		return appendMacroComlist(words[cmd_word+2],words[cmd_word+3]);
+	}
+	return ERR_CMD_FAIL;
+}
+
+
+
+
+int optMacroSave(int append, int cmd_word, int word_cnt, char **words)
+{
+	char *filename;
+
+	if (word_cnt - cmd_word >= 3)
+	{
+		filename = words[cmd_word+2];
+		if (!append && !access(filename,F_OK))
+		{
+			errprintf("File \"%s\" already exists.\n",filename);
+			return ERR_FILE;
 		}
 
-		append = (comnum == COM_MASAVA);
 		switch(word_cnt - cmd_word)
 		{
-		case 2:
-			return saveAllMacros(filename,append);
 		case 3:
-			return saveMacro(filename,words[cmd_word+2],append);
+			return saveAllMacros(filename,append);
+		case 4:
+			return saveMacro(filename,words[cmd_word+3],append);
 		}
 	}
-	puts("Usage: masava/masavc <filename> [<macro>]");
 	return ERR_CMD_FAIL;
 }
 
 
-/******************************** SUPPORT ************************************/
+/********************************** FLAGS *************************************/
+
+void printFlagTrackTime()
+{
+	printf("Show track time : ");
+	PRINT_ON_OFF(flags.show_track_time);
+}
+
+
+
+
+void printFlagColour()
+{
+	printf("Ansi colour     : ");
+	PRINT_ON_OFF(flags.use_colour);
+}
+
+
+
+
+void printFlagHTML()
+{
+	printf("Trans HTML codes: ");
+	PRINT_ON_OFF(flags.trans_html_amps);
+}
+
+
+
+
+void printFlagVerb()
+{
+	printf("Verbose macros  : ");
+	PRINT_ON_OFF(flags.macro_verbose);
+}
+
+/********************************** MISC *************************************/
 
 /*** addr1 and addr2 contain the array element memory location, not the
      pointer values stored at the location, so they have to be deref'd ***/
 int compareComs(const void *addr1, const void *addr2)
 {
 	return strcmp(*(char **)addr1,*(char **)addr2);
+}
+
+
+
+
+/*** Sort the commands into alphabetic order for 'shelp' ***/
+void sortCommands()
+{
+	int i;
+
+	for(i=0;i < NUM_COMMANDS;++i)
+		sorted_commands[i] = commands[i].com;
+	qsort(sorted_commands,NUM_COMMANDS,sizeof(char *),compareComs);
+}
+
+
+
+
+void clearHistory()
+{
+	int i;
+	for(i=0;i < MAX_HIST_BUFFERS;++i) clearBuffer(i);
+	colprintf("History ~FYcleared.\n");
 }
 
 

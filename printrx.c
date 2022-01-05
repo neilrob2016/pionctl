@@ -1,59 +1,60 @@
 #include "globals.h"
 
 #define PRINT_ON_OFF() \
-	if (!memcmp(mesg,"00",2)) puts("OFF"); \
-	else if (!memcmp(mesg,"01",2)) puts("ON"); \
+	if (!memcmp(mesg,"00",2)) colprintf("~FROFF\n"); \
+	else if (!memcmp(mesg,"01",2)) colprintf("~FGON\n"); \
 	else printMesg(mesg,len);
 
 /* Forward declarations */
-void printAMT(u_char *mesg, uint32_t len);
-void printDGF(u_char *mesg, uint32_t len);
-void printDIR(u_char *mesg, uint32_t len);
-void printEDF(u_char *mesg, uint32_t len);
-void printEDV(u_char *mesg, uint32_t len);
-void printIFA(u_char *mesg, uint32_t len);
-void printFWV(u_char *mesg, uint32_t len);
-void printHBT(u_char *mesg, uint32_t len);
-void printMDI(u_char *mesg, uint32_t len);
-void printMOT(u_char *mesg, uint32_t len);
-void printPWR(u_char *mesg, uint32_t len);
-void printAPD(u_char *mesg, uint32_t len);
-void printNAL(u_char *mesg, uint32_t len);
-void printNAT(u_char *mesg, uint32_t len);
-void printNCP(u_char *mesg, uint32_t len);
-void printNDN(u_char *mesg, uint32_t len);
-void printNDS(u_char *mesg, uint32_t len);
-void printNFI(u_char *mesg, uint32_t len);
-void printNFN(u_char *mesg, uint32_t len);
-void printNJA(u_char *mesg, uint32_t len);
-void printNLS(u_char *mesg, uint32_t len);
-void printNMS(u_char *mesg, uint32_t len);
-void printNLT(u_char *mesg, uint32_t len);
-void printNRI(u_char *mesg, uint32_t len);
-void printNSB(u_char *mesg, uint32_t len);
-void printNST(u_char *mesg, uint32_t len);
-void printNTI(u_char *mesg, uint32_t len);
-void printNTM(u_char *mesg, uint32_t len);
-void printNTR(u_char *mesg, uint32_t len);
-void printNLU(u_char *mesg, uint32_t len);
-void printSLI(u_char *mesg, uint32_t len);
-void printUPD(u_char *mesg, uint32_t len);
-void printUPS(u_char *mesg, uint32_t len);
-void printPPS(u_char *mesg, uint32_t len);
-void printDIM(u_char *mesg, uint32_t len);
-void printLRA(u_char *mesg, uint32_t len);
-void printMGV(u_char *mesg, uint32_t len);
-void printMRM(u_char *mesg, uint32_t len);
-void printTranslatedMesg(u_char *mesg, uint32_t len, int add_title);
-u_char *replaceAmpCodes(u_char *str, uint32_t *len);
-u_char translateAmpCode(char *code);
-long hexToInt(u_char *str, int len);
+void printAMT(char *mesg, uint32_t len);
+void printDGF(char *mesg, uint32_t len);
+void printDIR(char *mesg, uint32_t len);
+void printEDF(char *mesg, uint32_t len);
+void printEDV(char *mesg, uint32_t len);
+void printIFA(char *mesg, uint32_t len);
+void printFWV(char *mesg, uint32_t len);
+void printHBT(char *mesg, uint32_t len);
+void printMDI(char *mesg, uint32_t len);
+void printMOT(char *mesg, uint32_t len);
+void printPWR(char *mesg, uint32_t len);
+void printAPD(char *mesg, uint32_t len);
+void printNAL(char *mesg, uint32_t len);
+void printNAT(char *mesg, uint32_t len);
+void printNCP(char *mesg, uint32_t len);
+void printNDN(char *mesg, uint32_t len);
+void printNDS(char *mesg, uint32_t len);
+void printNFI(char *mesg, uint32_t len);
+void printNFN(char *mesg, uint32_t len);
+void printNJA(char *mesg, uint32_t len);
+void printNLS(char *mesg, uint32_t len);
+void printNMS(char *mesg, uint32_t len);
+void printNLT(char *mesg, uint32_t len);
+void printNRI(char *mesg, uint32_t len);
+void printNSB(char *mesg, uint32_t len);
+void printNST(char *mesg, uint32_t len);
+void printNTI(char *mesg, uint32_t len);
+void printNTM(char *mesg, uint32_t len);
+void printNTR(char *mesg, uint32_t len);
+void printNLU(char *mesg, uint32_t len);
+void printSLI(char *mesg, uint32_t len);
+void printUPD(char *mesg, uint32_t len);
+void printUPS(char *mesg, uint32_t len);
+void printPPS(char *mesg, uint32_t len);
+void printDIM(char *mesg, uint32_t len);
+void printLRA(char *mesg, uint32_t len);
+void printMGV(char *mesg, uint32_t len);
+void printMRM(char *mesg, uint32_t len);
+void printRST(char *mesg, uint32_t len);
+void printTranslatedMesg(char *mesg, uint32_t len, int add_title);
+char *replaceAmpCodes(char *str, uint32_t *len);
+char translateAmpCode(char *code);
+long hexToInt(char *str, int len);
 
 /* Map of 3 character server commands/replies to functions ***/
 static struct st_comfunc
 {
 	char *com;
-	void (*func)(u_char *mesg, uint32_t);
+	void (*func)(char *mesg, uint32_t);
 } comfunc[] =
 {
 	/* 0 */
@@ -109,6 +110,7 @@ static struct st_comfunc
 	{ "LRA", printLRA },
 	{ "MGV", printMGV },
 	{ "MRM", printMRM },
+	{ "RST", printRST },
 	{ "", NULL }
 };
 
@@ -118,7 +120,7 @@ static struct st_comfunc
 /***************************** External functions ****************************/
 
 /*** Prints out message buffer data translating non printing characters ***/
-void printMesg(u_char *mesg, int len)
+void printMesg(char *mesg, int len)
 {
 	int i;
 	for(i=0;i < len;++i) putchar(mesg[i] < 32 ?  '.' : mesg[i]);
@@ -140,11 +142,10 @@ void prettyPrint(t_iscp_data *pkt_data, int print_prompt)
 	/* Look for matching key in print function list */
 	for(i=0;comfunc[i].func;++i)
 	{
-		if (!strncmp((char *)pkt_data->command,comfunc[i].com,3))
+		if (!strncmp(pkt_data->command,comfunc[i].com,3))
 		{
 			if (i != RX_COM_NJA) nja_prev = 0;
-			if (i != RX_COM_NLS && FLAGISSET(FLAG_IN_MENU))
-				flags ^= FLAG_IN_MENU;
+			if (i != RX_COM_NLS && flags.in_menu) flags.in_menu = 0;
 
 			/* Call print function */
 			comfunc[i].func(pkt_data->mesg,mesg_len);
@@ -154,9 +155,9 @@ void prettyPrint(t_iscp_data *pkt_data, int print_prompt)
 
 	if (!comfunc[i].func)
 	{
-		printf("Unknown response: %.3s",pkt_data->command);
+		colprintf("~FYUnknown response:~RS %.3s",pkt_data->command);
 		printMesg(pkt_data->mesg,mesg_len);
-		setUnknownKey((char *)pkt_data->command);
+		setUnknownKey(pkt_data->command);
 	}
 
 	if (print_prompt) printPrompt();
@@ -167,10 +168,10 @@ void prettyPrint(t_iscp_data *pkt_data, int print_prompt)
 
 
 /*** Pretty print the RX commands and data stored in the list ***/
-int prettyPrintList(u_char *pat, int max)
+int prettyPrintList(char *pat, int max)
 {
 	t_entry *entry;
-	u_char *value;
+	char *value;
 	int total;
 	int len;
 	int cnt;
@@ -179,14 +180,14 @@ int prettyPrintList(u_char *pat, int max)
 
 	if (max < 0)
 	{
-		puts("Usage: show [<pattern> [<count>]]");
+		usageprintf("show [<pattern> [<count>]]\n");
 		return ERR_CMD_FAIL;
 	}
 
-	printf("\n*** Processed streamer RX (%s : %sCONNECTED) ***\n\n",
+	colprintf("\n~BB*** Processed streamer RX (%s : %sCONNECTED) ***\n\n",
 		inet_ntoa(con_addr.sin_addr),tcp_sock ? "" : "DIS");
 
-	SETFLAG(FLAG_PRETTY_PRINTING);
+	flags.pretty_printing = 1;
 	for(i=cnt=total=0;i < 256;++i)
 	{
 		for(entry=list[i];entry;entry=entry->next)
@@ -202,7 +203,7 @@ int prettyPrintList(u_char *pat, int max)
 			}
 			else
 			{
-				value = (u_char *)"";
+				value = (char *)"";
 				len = 0;
 			}
 
@@ -211,8 +212,8 @@ int prettyPrintList(u_char *pat, int max)
 
 			/* Match on raw command and value */
 			if (pat && 
-			    !wildMatch(entry->key,(char *)pat) &&
-			    !wildMatch((char *)value,(char *)pat))
+			    !wildMatch(entry->key,pat) &&
+			    !wildMatch(value,pat))
 			{
 				continue;
 			}
@@ -233,15 +234,60 @@ int prettyPrintList(u_char *pat, int max)
 		printf("\n%d of %d entries.\n\n",cnt,total);
 	else
 		printf("\n%d entries.\n\n",cnt);
-	flags ^= FLAG_PRETTY_PRINTING;
+	flags.pretty_printing = !flags.pretty_printing;
 
 	return OK;
 }
 
 
+
+
+/*** Not an RX decoder but needs the comfunc[] array ***/
+void printRXCommands(char *pat)
+{
+	int cnt;
+	int i;
+
+	colprintf("\n~BG*** RX streamer commands parsed by this client ***\n\n");
+	for(i=cnt=0;comfunc[i].func;++i)
+	{
+		if (!pat || wildMatch(comfunc[i].com,pat))
+		{
+			if (cnt && !(cnt % 10)) putchar('\n');
+			printf("%s  ",comfunc[i].com);
+			++cnt;
+		}
+	}
+	if (pat)
+		printf("\n\n%d of %d commands.\n\n",cnt,i);
+	else
+		printf("\n\n%d commands.\n\n",cnt);
+}
+
+
+
+
+void printTrackTime()
+{
+	int i;
+	int cnt;
+
+	/* The 2 strings are set in readSocket() in network.c */
+	printf("Track time  : %s",track_time_str);
+
+	/* Streamer normally sends --:--:-- for unknown track length but do
+	   sanity check for numbers anyway */
+	for(i=cnt=0;i < 8;++i) cnt += isdigit(track_len_str[i]);
+	if (cnt >= 6)
+		printf(" of %s\n",track_len_str);
+	else
+		puts(" (no track length)");
+}
+
+
 /****************************** Print functions ****************************/
 
-void printAMT(u_char *mesg, uint32_t len)
+void printAMT(char *mesg, uint32_t len)
 {
 	printf("Muting: ");
 	PRINT_ON_OFF();
@@ -251,7 +297,7 @@ void printAMT(u_char *mesg, uint32_t len)
 
 
 /*** Digital filter ***/
-void printDGF(u_char *mesg, uint32_t len)
+void printDGF(char *mesg, uint32_t len)
 {
 	printf("Filter: ");
 
@@ -260,9 +306,9 @@ void printDGF(u_char *mesg, uint32_t len)
 	{
 		switch(mesg[1])
 		{
-		case '0': puts("SLOW");  return;
-		case '1': puts("SHARP"); return;
-		case '2': puts("SHORT"); return;
+		case '0': colprintf("~FMSLOW\n");     return;
+		case '1': colprintf("~FB~OLSHARP\n"); return;
+		case '2': colprintf("~FGSHORT\n");    return;
 		}
 	}
 	printMesg(mesg,len);
@@ -271,7 +317,7 @@ void printDGF(u_char *mesg, uint32_t len)
 
 
 
-void printDIR(u_char *mesg, uint32_t len)
+void printDIR(char *mesg, uint32_t len)
 {
 	printf("Direct: ");
 	PRINT_ON_OFF();
@@ -280,7 +326,7 @@ void printDIR(u_char *mesg, uint32_t len)
 
 
 
-void printEDF(u_char *mesg, uint32_t len)
+void printEDF(char *mesg, uint32_t len)
 {
 	printf("Memory: ");
 	if (len < 8)
@@ -292,11 +338,11 @@ void printEDF(u_char *mesg, uint32_t len)
 
 
 
-void printEDV(u_char *mesg, uint32_t len)
+void printEDV(char *mesg, uint32_t len)
 {
 	printf("Action: ");
-	if (!memcmp(mesg,"00",2)) puts("Not approved");
-	else if (!memcmp(mesg,"01",2)) puts("Approved");
+	if (!memcmp(mesg,"00",2)) colprintf("~FRNot approved\n");
+	else if (!memcmp(mesg,"01",2)) colprintf("~FGApproved\n");
 	else printMesg(mesg,len);
 }
 
@@ -306,7 +352,7 @@ void printEDV(u_char *mesg, uint32_t len)
 /*** Message is CSV, eg: NETWORK,,,,Stereo,,,0 ms,Normal, 
      N-70AE only seems to use some of the fields and it doesn't quite match
      with the documentation as PQLS field appears to be missing. ***/
-void printIFA(u_char *mesg, uint32_t len)
+void printIFA(char *mesg, uint32_t len)
 {
 	char *field[10] =
 	{
@@ -329,13 +375,13 @@ void printIFA(u_char *mesg, uint32_t len)
 	
 	c1 = mesg[len];
 	mesg[len] = 0;
-	puts("Audio info: ");
+	colprintf("~FTAudio info:\n");
 
 	/* Not using strtok() because it modifies the string it searches */
-	for(i=0,ptr=(char *)mesg-1;i< 10 && ptr;++i,ptr=end)
+	for(i=0,ptr=mesg-1;i< 10 && ptr;++i,ptr=end)
 	{
 		++ptr;
-		if ((end = (char *)strchr(ptr,SEPARATOR)))
+		if ((end = (char *)strchr(ptr,',')))
 		{
 			c2 = *end;
 			*end = 0;
@@ -349,7 +395,7 @@ void printIFA(u_char *mesg, uint32_t len)
 
 
 
-void printFWV(u_char *mesg, uint32_t len)
+void printFWV(char *mesg, uint32_t len)
 {
 	printf("Firmware vers: ");
 	printMesg(mesg,len);
@@ -358,7 +404,7 @@ void printFWV(u_char *mesg, uint32_t len)
 
 
 
-void printHBT(u_char *mesg, uint32_t len)
+void printHBT(char *mesg, uint32_t len)
 {
 	printf("Hi-bit: ");
 	PRINT_ON_OFF();
@@ -367,16 +413,16 @@ void printHBT(u_char *mesg, uint32_t len)
 
 
 
-void printMDI(u_char *mesg, uint32_t len)
+void printMDI(char *mesg, uint32_t len)
 {
-	puts("\n*** Streamer info ***\n");
+	colprintf("\n~BB*** Streamer info ***\n\n");
 	printMesg(mesg,len);
 }
 
 
 
 
-void printMOT(u_char *mesg, uint32_t len)
+void printMOT(char *mesg, uint32_t len)
 {
 	printf("ASR   : ");
 	PRINT_ON_OFF();
@@ -385,7 +431,7 @@ void printMOT(u_char *mesg, uint32_t len)
 
 
 
-void printNAL(u_char *mesg, uint32_t len)
+void printNAL(char *mesg, uint32_t len)
 {
 	printf("Album : ");
 	printTranslatedMesg(mesg,len,0);
@@ -394,7 +440,7 @@ void printNAL(u_char *mesg, uint32_t len)
 
 
 
-void printNAT(u_char *mesg, uint32_t len)
+void printNAT(char *mesg, uint32_t len)
 {
 	printf("Artist: ");
 	printTranslatedMesg(mesg,len,0);
@@ -404,7 +450,7 @@ void printNAT(u_char *mesg, uint32_t len)
 
 
 /*** Usually returned after an NSV command, eg NSV1B0 for Tidal ***/
-void printNCP(u_char *mesg, uint32_t len)
+void printNCP(char *mesg, uint32_t len)
 {
 	const char *popup_type[6] =
 	{ 
@@ -457,7 +503,7 @@ void printNCP(u_char *mesg, uint32_t len)
 
 /*** NDNQSTN always returns empty string but apparently this is another
      device name command. Perhaps for other models only ***/
-void printNDN(u_char *mesg, uint32_t len)
+void printNDN(char *mesg, uint32_t len)
 {
 	printf("Device: ");
 	printMesg(mesg,len);
@@ -466,11 +512,11 @@ void printNDN(u_char *mesg, uint32_t len)
 
 
 
-void printNDS(u_char *mesg, uint32_t len)
+void printNDS(char *mesg, uint32_t len)
 {
 	int i;
 
-	puts("Connector status:");
+	colprintf("~FTConnector status:\n");
 	printf("   Network  : ");
 
 	switch(mesg[0])
@@ -502,7 +548,7 @@ void printNDS(u_char *mesg, uint32_t len)
 
 
 
-void printNFI(u_char *mesg, uint32_t len)
+void printNFI(char *mesg, uint32_t len)
 {
 	printf("Codec : ");
 	printMesg(mesg,len);
@@ -511,9 +557,9 @@ void printNFI(u_char *mesg, uint32_t len)
 
 
 
-void printNFN(u_char *mesg, uint32_t len)
+void printNFN(char *mesg, uint32_t len)
 {
-	puts("Unit info:");
+	colprintf("~FTUnit info:\n");
 	/* No lookup table in docs */
 	printf("   Manufacturer ID: %d\n",mesg[0]); 
 	printf("   Friendly name  : ");
@@ -524,7 +570,7 @@ void printNFN(u_char *mesg, uint32_t len)
 
 
 /*** This command sends several bits of info ***/
-void printNJA(u_char *mesg, uint32_t len)
+void printNJA(char *mesg, uint32_t len)
 {
 	if (!len) return;
 
@@ -546,23 +592,23 @@ void printNJA(u_char *mesg, uint32_t len)
 		printMesg(mesg+2,len-2);
 		break;
 	case 'B':
-		puts("Enabled as BMP");
+		colprintf("~FGEnabled~RS as BMP\n");
 		break;
 	case 'D':
-		puts("Disabled");
+		colprintf("~FRDisabled\n");
 		break;
 	case 'E':
-		puts("Enabled");
+		colprintf("~FGEnabled\n");
 		break;
 	case 'L':
-		puts("Enabled as URL");
+		colprintf("~FGEnabled~RS as URL\n");
 		break;
 	case 'n':
 		/* Sends 'n' when switched off */
-		puts("Image not available");
+		colprintf("~FRImage not available\n");
 		break;
 	default:
-		printf("Unknown response '%c'\n",mesg[0]);
+		printf("Unknown response \"%c\"\n",mesg[0]);
 	}
 	nja_prev = mesg[0];
 }
@@ -570,7 +616,7 @@ void printNJA(u_char *mesg, uint32_t len)
 
 
 
-void printNLS(u_char *mesg, uint32_t len)
+void printNLS(char *mesg, uint32_t len)
 {
 	int prev_menu_cursor_pos;
 	int rx_cursor_pos;
@@ -610,7 +656,7 @@ void printNLS(u_char *mesg, uint32_t len)
 
 		/* Don't recalculate cursor pos if pretty printing due to
 		   the show command */
-		if (!FLAGISSET(FLAG_PRETTY_PRINTING) && isdigit(mesg[1]))
+		if (!flags.pretty_printing && isdigit(mesg[1]))
 		{
 			/* Deal with streamer sending 10+ as 0+ if more than
 			   10 items (0 - 9) in the menu. Sadly there's no way
@@ -623,14 +669,14 @@ void printNLS(u_char *mesg, uint32_t len)
 
 			if (!menu_cursor_pos &&
 			    prev_menu_cursor_pos < menu_option_cnt - 1 &&
-			    FLAGISSET(FLAG_COM_DN))
+			    flags.com_dn)
 			{
 				menu_cursor_pos = prev_menu_cursor_pos + 1;
 			}
 			else
 			if (!prev_menu_cursor_pos &&
 			    menu_cursor_pos < menu_option_cnt - 1 &&
-			    FLAGISSET(FLAG_COM_UP))
+			    flags.com_up)
 			{
 				menu_cursor_pos = menu_option_cnt - 1;
 			}
@@ -645,42 +691,42 @@ void printNLS(u_char *mesg, uint32_t len)
 	case 'U':
 		++mesg;
 		printMesg(mesg,len-1);
-		if (!FLAGISSET(FLAG_PRETTY_PRINTING)) addMenuOption(mesg,len-3);
-		SETFLAG(FLAG_IN_MENU);
+		if (!flags.pretty_printing) addMenuOption(mesg,len-3);
+		flags.in_menu = 1;
 		return;
 	default:
 		printMesg(mesg,len);
 		break;
 	}
-	UNSETFLAG(FLAG_IN_MENU);
+	flags.in_menu = 0;
 }
 
 
 
 
 /*** NET/USB menu status ***/
-void printNMS(u_char *mesg, uint32_t len)
+void printNMS(char *mesg, uint32_t len)
 {
 	int val;
 	int i;
 
-	puts("Net/USB menu status:");	
+	colprintf("~FTNet/USB menu status:\n");
 
 	printf("   Track menu    : ");
 	switch(mesg[0])
 	{
-	case 'M': printf("Enabled");  break;
-	case 'x': printf("Disabled"); break;
+	case 'M': colprintf("~FGEnabled");  break;
+	case 'x': colprintf("~FRDisabled"); break;
 	default : printf("?");
 	}
-	printf(" (%c)\n",mesg[0]);
+	colprintf("~RS (%c)\n",mesg[0]);
 
 	printf("   F1 button icon: ");
 	for(i=1;i < 5;i+=2)
 	{
 		/* Seems to be disabled with streamer but put options here
 		   anyway. God knows what half of them mean. */
-		if (!memcmp(mesg+1,"xx",2)) printf("Disabled");
+		if (!memcmp(mesg+1,"xx",2)) colprintf("~FRDisabled~RS");
 		else
 		{
 			switch(hexToInt(mesg+i,2))
@@ -706,21 +752,21 @@ void printNMS(u_char *mesg, uint32_t len)
 	printf("   Time seek     : ");
 	switch(mesg[5])
 	{
-	case 'S': printf("Enabled "); break;
-	case 'x': printf("Disabled"); break;
+	case 'S': colprintf("~FGEnabled "); break;
+	case 'x': colprintf("~FRDisabled"); break;
 	default : printf("?");
 	}
-	printf(" (%c)\n",mesg[5]);
+	colprintf("~RS (%c)\n",mesg[5]);
 
 	printf("   Time display  : ");
 	switch(mesg[6])
 	{
 	case '1': printf("Elapsed/total time"); break;
 	case '2': printf("Elapsed time");       break;
-	case 'x': printf("Disabled");           break;
+	case 'x': colprintf("~FRDisabled");     break;
 	default : printf("?");
 	}
-	printf(" (%c)\n",mesg[6]);
+	colprintf("~RS (%c)\n",mesg[6]);
 
 	printf("   Service icon  : ");
 	switch((val = (int)hexToInt(mesg+7,2)))
@@ -763,7 +809,7 @@ void printNMS(u_char *mesg, uint32_t len)
 
 
 /*** Current network selection info. First 2 hex digits give the service ***/
-void printNLT(u_char *mesg, uint32_t len)
+void printNLT(char *mesg, uint32_t len)
 {
 	const char *status[15] =
 	{
@@ -790,7 +836,7 @@ void printNLT(u_char *mesg, uint32_t len)
 	};	
 	int val;
 
-	puts("Net/USB screen:");
+	colprintf("~FTNet/USB screen:\n");
 
 	/* Info in what seems like a sane order to me, not the order its
 	   presented in the string */
@@ -856,16 +902,16 @@ void printNLT(u_char *mesg, uint32_t len)
 
 
 
-void printNRI(u_char *mesg, uint32_t len)
+void printNRI(char *mesg, uint32_t len)
 {
-	puts("\n*** Device setup ***\n");
+	colprintf("\n~BB*** Device setup ***\n\n");
 	printMesg(mesg,len);
 }
 
 
 
 
-void printNSB(u_char *mesg, uint32_t len)
+void printNSB(char *mesg, uint32_t len)
 {
 	printf("Network standby: ");
 	printMesg(mesg,len);
@@ -874,41 +920,41 @@ void printNSB(u_char *mesg, uint32_t len)
 
 
 
-void printNST(u_char *mesg, uint32_t len)
+void printNST(char *mesg, uint32_t len)
 {
-	puts("Net/USB play status:");
+	colprintf("~FTNet/USB play status:\n");
 
 	printf("   Play   : ");
 	switch(mesg[0])
 	{
-	case 'S': puts("STOPPED"); break;
-	case 'P': puts("PLAYING"); break;
-	case 'p': puts("PAUSED");  break;
-	case 'F': puts("FF");      break;
-	case 'R': puts("FR");      break;
-	case 'E': puts("EOF");     break;
+	case 'S': colprintf("~FRSTOPPED\n"); break;
+	case 'P': colprintf("~FGPLAYING\n"); break;
+	case 'p': colprintf("~FYPAUSED\n");  break;
+	case 'F': colprintf("~FB~OLFF\n");   break;
+	case 'R': colprintf("~FMFR\n");      break;
+	case 'E': colprintf("~FYEOF\n");     break;
 	default : printf("%c\n",mesg[0]);
 	}
 
 	printf("   Repeat : ");
 	switch(mesg[1])
 	{
-	case '-': puts("OFF");      break;
-	case 'R': puts("ALL");      break;
-	case 'F': puts("FOLDER");   break;
-	case '1': puts("REPEAT");   break;
-	case 'x': puts("DISABLED"); break;
+	case '-': colprintf("~FMOFF\n");       break;
+	case '1': colprintf("~FB~OLREPEAT\n"); break;
+	case 'F': colprintf("~FYFOLDER\n");    break;
+	case 'R': colprintf("~FGALL\n");       break;
+	case 'x': colprintf("~FRDISABLED\n");  break;
 	default : printf("%c\n",mesg[1]);
 	}
 
 	printf("   Shuffle: ");
 	switch(mesg[2])
 	{
-	case '-': puts("OFF");      break;
-	case 'S': puts("ALL");      break;
-	case 'A': puts("ALBUM");    break;
-	case 'F': puts("FOLDER");   break;
-	case 'x': puts("DISABLED"); break;
+	case '-': colprintf("~FMOFF\n");      break;
+	case 'A': colprintf("~FB~OLALBUM\n"); break;
+	case 'F': colprintf("~FYFOLDER\n");   break;
+	case 'S': colprintf("~FGALL\n");      break;
+	case 'x': colprintf("~FRDISABLED\n"); break;
 	default : printf("%c\n",mesg[2]);
 	}
 }
@@ -916,7 +962,7 @@ void printNST(u_char *mesg, uint32_t len)
 
 
 
-void printNTI(u_char *mesg, uint32_t len)
+void printNTI(char *mesg, uint32_t len)
 {
 	printf("Title : ");
 	printTranslatedMesg(mesg,len,1);
@@ -925,7 +971,7 @@ void printNTI(u_char *mesg, uint32_t len)
 
 
 
-void printNTM(u_char *mesg, uint32_t len)
+void printNTM(char *mesg, uint32_t len)
 {
 	printTrackTime();
 }
@@ -933,9 +979,9 @@ void printNTM(u_char *mesg, uint32_t len)
 
 
 
-void printNTR(u_char *mesg, uint32_t len)
+void printNTR(char *mesg, uint32_t len)
 {
-	puts("Tracks: ");
+	colprintf("~FTTracks:\n");
 	if (len > 3)
 	{
 		printf("   Current: ");
@@ -953,9 +999,9 @@ void printNTR(u_char *mesg, uint32_t len)
 
 
 
-void printNLU(u_char *mesg, uint32_t len)
+void printNLU(char *mesg, uint32_t len)
 {
-	puts("Net/USB list info: ");	
+	colprintf("~FTNet/USB list info:\n");
 	if (len != 8)
 	{
 		printMesg(mesg,len);
@@ -968,7 +1014,7 @@ void printNLU(u_char *mesg, uint32_t len)
 
 
 
-void printPWR(u_char *mesg, uint32_t len)
+void printPWR(char *mesg, uint32_t len)
 {
 	printf("Power : ");
 	PRINT_ON_OFF();
@@ -977,7 +1023,7 @@ void printPWR(u_char *mesg, uint32_t len)
 
 
 
-void printAPD(u_char *mesg, uint32_t len)
+void printAPD(char *mesg, uint32_t len)
 {
 	printf("Auto power down: ");
 	PRINT_ON_OFF();
@@ -987,7 +1033,7 @@ void printAPD(u_char *mesg, uint32_t len)
 
 
 /*** Received when some hardware inputs are selected ***/
-void printSLI(u_char *mesg, uint32_t len)
+void printSLI(char *mesg, uint32_t len)
 {
 	int val;
 
@@ -1009,7 +1055,7 @@ void printSLI(u_char *mesg, uint32_t len)
 
 
 
-void printUPD(u_char *mesg, uint32_t len)
+void printUPD(char *mesg, uint32_t len)
 {
 	printf("Update status: ");
 	switch(mesg[0])
@@ -1046,7 +1092,7 @@ void printUPD(u_char *mesg, uint32_t len)
 
 
 
-void printUPS(u_char *mesg, uint32_t len)
+void printUPS(char *mesg, uint32_t len)
 {
 	printf("Upsampling: ");
 	if (mesg[0] == '0')
@@ -1055,21 +1101,21 @@ void printUPS(u_char *mesg, uint32_t len)
 		   for completeness */
 		switch(mesg[1])
 		{
-		case '0': printf("OFF"); break;
-		case '1': printf("ON x2");  break;
-		case '2': printf("ON x4");  break;
-		case '3': printf("ON x8");  break;
-		default : printf("?");
+		case '0': colprintf("~FROFF"); break;
+		case '1': colprintf("~FMON x2");  break;
+		case '2': colprintf("~FYON x4");  break;
+		case '3': colprintf("~FGON x8");  break;
+		default : colprintf("?");
 		}
 	}
 	else printf("?");
-	printf(" (%.2s)\n",mesg);
+	colprintf("~RS (%.2s)\n",mesg);
 }
 
 
 
 
-void printPPS(u_char *mesg, uint32_t len)
+void printPPS(char *mesg, uint32_t len)
 {
 	printf("Privacy policy status: ");
 	switch(mesg[0])
@@ -1088,18 +1134,18 @@ void printPPS(u_char *mesg, uint32_t len)
 
 
 
-void printDIM(u_char *mesg, uint32_t len)
+void printDIM(char *mesg, uint32_t len)
 {
 	printf("Dimmer: ");
 	if (mesg[0] == '0')
 	{
 		switch(mesg[1])
 		{
-		case '0': printf("Bright");   break;
-		case '1': printf("Dim");      break;
-		case '2': printf("Dark");     break;
-		case '3': printf("Shut-off"); break;
-		case '8': printf("LED-OFF");  break;
+		case '0': colprintf("~FGBright~RS");   break;
+		case '1': colprintf("~FYDim~RS");      break;
+		case '2': colprintf("~FMDark~RS");     break;
+		case '3': colprintf("~FRShut-off~RS"); break;
+		case '8': colprintf("~FRLED-OFF~RS");  break;
 		default : printf("?");
 		}
 	}
@@ -1110,7 +1156,7 @@ void printDIM(u_char *mesg, uint32_t len)
 
 
 
-void printLRA(u_char *mesg, uint32_t len)
+void printLRA(char *mesg, uint32_t len)
 {
 	printf("LRA   : %.*s\n",len,mesg);
 }
@@ -1118,7 +1164,7 @@ void printLRA(u_char *mesg, uint32_t len)
 
 
 
-void printMGV(u_char *mesg, uint32_t len)
+void printMGV(char *mesg, uint32_t len)
 {
 	printf("Multiroom group version: ");
 	if (len > 2 && isNumberWithLen(mesg,len))
@@ -1132,7 +1178,7 @@ void printMGV(u_char *mesg, uint32_t len)
 
 /*** The bits have meaning but never seem to be set on the N-70 so just
      print the hex ***/
-void printMRM(u_char *mesg, uint32_t len)
+void printMRM(char *mesg, uint32_t len)
 {
 	printf("Multiroom info: ");
 	if (len > 1)
@@ -1144,50 +1190,21 @@ void printMRM(u_char *mesg, uint32_t len)
 
 
 
-/*** Not an RX decoder but needs the comfunc[] array ***/
-void printRXCommands(u_char *pat)
+/*** Will only normally get a RST response if you manually send RSTQSTN ***/
+void printRST(char *mesg, uint32_t len)
 {
-	int cnt;
-	int i;
-
-	puts("\n*** RX streamer commands parsed by this client ***\n");
-	for(i=cnt=0;comfunc[i].func;++i)
-	{
-		if (!pat || wildMatch(comfunc[i].com,(char *)pat))
-		{
-			if (cnt && !(cnt % 10)) putchar('\n');
-			printf("%s  ",comfunc[i].com);
-			++cnt;
-		}
-	}
-	if (pat)
-		printf("\n\n%d of %d commands.\n\n",cnt,i);
-	else
-		printf("\n\n%d commands.\n\n",cnt);
+	printf("Reset : %.*s\n",len,mesg);
 }
 
 
-
-
-void printTrackTime()
-{
-	/* The 2 strings are set in readSocket() in network.c */
-	printf("Track time  : %s",track_time_str);
-	if (track_len_str[0] != '-')
-		printf(" of %s\n",track_len_str);
-	else
-		puts(" (no track length)");
-}
-
-
-/***************************** Internal functions *****************************/
+/**************************** Internal functions *****************************/
 
 /*** Translate HTML ampersand codes if flag set ***/
-void printTranslatedMesg(u_char *mesg, uint32_t len, int add_title)
+void printTranslatedMesg(char *mesg, uint32_t len, int add_title)
 {
-	u_char *tstr;
+	char *tstr;
 
-	if (len && FLAGISSET(FLAG_TRANS_HTML_AMPS)) 
+	if (len && flags.trans_html_amps)
 	{
 		tstr = replaceAmpCodes(mesg,&len);
 		printMesg(tstr,len);
@@ -1207,18 +1224,18 @@ void printTranslatedMesg(u_char *mesg, uint32_t len, int add_title)
 /*** Replace all the known HTML ampersand codes in the string and return a
      new string - ie don't change the original so we don't muck up data 
      stored in the RX list ***/
-u_char *replaceAmpCodes(u_char *mesg, uint32_t *len)
+char *replaceAmpCodes(char *mesg, uint32_t *len)
 {
-	u_char *str;
-	u_char *ptr;
-	u_char *ptr2;
-	u_char c;
+	char *str;
+	char *ptr;
+	char *ptr2;
+	char c;
 	uint32_t i;
 	uint32_t j;
 	int reduce;
 	int movelen;
 
-	assert((str = (u_char *)malloc(*len)));
+	assert((str = (char *)malloc(*len)));
 	memcpy(str,mesg,*len);
 
 	for(ptr=str,i=0;i < *len;++ptr,++i)
@@ -1232,7 +1249,7 @@ u_char *replaceAmpCodes(u_char *mesg, uint32_t *len)
 
 			/* Translate code */
 			*ptr2 = 0;
-			c = translateAmpCode((char *)ptr+1);
+			c = translateAmpCode(ptr+1);
 
 			/* Get rid of code from string */
 			reduce = (int)(ptr2 - ptr);
@@ -1252,7 +1269,7 @@ u_char *replaceAmpCodes(u_char *mesg, uint32_t *len)
 
 
 /*** Only translates to single ascii characters, not unicode ***/
-u_char translateAmpCode(char *code)
+char translateAmpCode(char *code)
 {
 	/* Only need a few
 	   https://dev.w3.org/html5/html-author/charref */
@@ -1289,14 +1306,14 @@ u_char translateAmpCode(char *code)
 
 
 /*** Convert hex characters to their integer value. String must be writable ***/
-long hexToInt(u_char *str, int len)
+long hexToInt(char *str, int len)
 {
-	u_char c;
+	char c;
 	long val;
 
 	c = str[len];
 	str[len] = 0;
-	val = strtol((char *)str,NULL,16);
+	val = strtol(str,NULL,16);
 	str[len] = c;
 	return val;
 }

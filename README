@@ -10,23 +10,23 @@ suggest you download the Onkyo excel spreadsheet (there are quite a few
 versions) that lists these commands. Conversely some pionctl commands may not
 be relevant to your system, eg: tunein, airplay.
 
-Some of this client may appear a bit rough and ready but it was never intended
-for public release though in the end I decided why not when I chose to use
-gitlab as a cloud backup. Anyway, if you think something may be a bit buggy
-then it probably is and please email me about it.
-
 The client should connect automatically to the streamer but if not you can
 use the -a command line option to set the IP address manually.
 
-On the command line type "help" or just "?" to get a list of commands. The rest
-you'll have to work out for yourself as I haven't got around to any 
-documentation though to navigate the menus use "up","dn","ex" for exit and "en"
-for enter and commands and macros can be run multiple times by putting a number
-in front, eg "2 dn". See macros/* for examples.
+Commands are divided into client (local) commands and streamer commands. Most
+of the streamer commands are a 1 -> 1 mapping of raw ISCP commands whereas
+some of the client commands - eg show, macro, toggle - have multiple sub
+options.
+
+On the command line type "help" or just "?" to get a list of commands but the 
+rest you'll have to work out for yourself as I haven't got around to any 
+documentation however to navigate the streamer menus use "up","dn","ex" for 
+exit and "en" for enter and commands and macros can be run multiple times by 
+putting a number in front, eg "2 dn". See macros/* for examples.
 
 I retain the copyright to this code but feel free to use and modify it however
 you see fit so long as my original copyright message remains.
 
-Neil Robertson, 2021
+Neil Robertson, 2022
 
 neilrob2016@gmail.com

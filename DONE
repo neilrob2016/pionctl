@@ -1,0 +1,39 @@
+ansi colour
+consolidation of a lot of client local commands.
+commands added:
+	toggle
+	filstat
+	artstat
+streamer command name changes:
+	pstat   -> playstat
+	ustat   -> updstat
+	upon    -> upson
+	upoff   -> upsoff
+	upstat  -> upsstat
+	df      -> filter
+	mstat   -> menustat
+	saveart -> artsave (for consistency with other art* commands)
+local commands changed:
+	hist   -> history
+	con    -> connect
+	discon -> disconnect
+local commands removed:
+	?        -> help std
+	xhelp    -> help extra
+	shelp    -> help sorted
+	chist    -> history clear
+	tracktm  -> toggle tracktm
+	tamp     -> toggle htmlamp
+	mavrun   -> toggle verbmacro (toggles verbosity only, use marun to run)
+	ma*      -> macro
+	xtitles  -> titles extra
+	showr    -> show raw
+	time     -> show time
+	constat  -> show connection
+	selected -> show connection
+	list     -> show menu
+	rxcoms   -> show rxcoms
+	txcoms   -> show txcoms
+	version  -> show version	
+fixed broken auinfo command
+more prompts

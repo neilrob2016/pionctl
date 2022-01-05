@@ -14,7 +14,7 @@ void copyBuffer(int buff_from, int buff_to)
 
 	if (buffer[buff_from].alloc > buffer[buff_to].alloc)
 	{
-		buffer[buff_to].data = (u_char *)realloc(
+		buffer[buff_to].data = (char *)realloc(
 			buffer[buff_to].data,datalen);
 		buffer[buff_to].alloc = buffer[buff_from].alloc;
 	}
@@ -39,9 +39,10 @@ void addToBuffer(int buffnum, char *data, int data_len)
 	{
 		mult = (len - alloc) / ALLOC_BLOCK + 1;
 		alloc += (ALLOC_BLOCK * mult);
-		if (!(buffer[buffnum].data = (u_char *)realloc(
+		if (!(buffer[buffnum].data = (char *)realloc(
 			buffer[buffnum].data,alloc+1)))
 		{
+			/* Don't use errprintf as colprintf allocs too */
 			perror("ERROR: realloc()");
 			doExit(1);
 		}

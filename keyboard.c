@@ -15,7 +15,7 @@ void initKeyboard()
 	/* Get current state */
 	if (tcgetattr(STDIN,&tio) == -1)
 	{
-		perror("ERROR: initKeyboard(): tcgetattr()");
+		errprintf("initKeyboard(): tcgetattr(): %s\n",strerror(errno));
 		doExit(1);
 	}
 	saved_tio = tio;
@@ -31,14 +31,14 @@ void initKeyboard()
 	/* Set new state */
 	if (tcsetattr(STDIN,TCSANOW,&tio) == -1)
 	{
-		perror("ERROR: initKeyboard(): tcsetattr()");
+		errprintf("initKeyboard(): tcsetattr()\n",strerror(errno));
 		doExit(1);
 	}
 
 	keyb_buffnum = BUFF_KEYB_FIRST;
 	from_buffnum = BUFF_KEYB_FIRST;
 
-	puts("OK");
+	ok();
 }
 
 
@@ -73,7 +73,7 @@ void readKeyboard()
 	   1 read hence reading in an array not just a single character */
 	if ((len = read(STDIN,s,sizeof(s)-1)) == -1)
 	{
-		perror("ERROR: readKeyboard(): read()");
+		errprintf("readKeyboard(): read()\n",strerror(errno));
 		return;
 	}
 	switch(s[0])
@@ -87,7 +87,7 @@ void readKeyboard()
 		break;
 
 	case CONTROL_D:
-		puts("\n*** EXIT by Control-D ***");
+		exitprintf("by Control-D");
 		doExit(0);
 
 	case ESC:

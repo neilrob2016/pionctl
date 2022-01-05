@@ -3,7 +3,7 @@
 #define TIME_POS 20
 #define TEXT_POS 37
 
-static u_char **titles;
+static char **titles;
 static int titles_pos;
 static int titles_alloc;
 
@@ -18,15 +18,19 @@ void initTitles()
 
 
 
-void addTitle(u_char *mesg, uint32_t len)
+void addTitle(char *mesg, uint32_t len)
 {
 	int prev_pos;
+	int i;
+
+	/* Remove non printing */
+	for(i=0;i < len;++i) if (mesg[i] < 32) mesg[i] = '.';
 
 	/* See if last title was the same, if so ignore */
 	if (len && titles_pos)
 	{
 		prev_pos = titles_pos - 1;
-		if (strlen((char *)titles[prev_pos]) == len + TEXT_POS &&
+		if (strlen(titles[prev_pos]) == len + TEXT_POS &&
 		    !memcmp(titles[prev_pos]+TEXT_POS,mesg,len)) 
 		{
 			return;
@@ -38,8 +42,8 @@ void addTitle(u_char *mesg, uint32_t len)
 	if (titles_pos >= titles_alloc)
 	{
 		titles_alloc += ALLOC_BLOCK;
-		titles = (u_char **)realloc(
-			titles,titles_alloc * sizeof(u_char **));
+		titles = (char **)realloc(
+			titles,titles_alloc * sizeof(char **));
 		assert(titles);
 	}
 
@@ -54,17 +58,10 @@ void addTitle(u_char *mesg, uint32_t len)
 
 
 
-int printTitles(int xtitles, u_char *pat, int max)
+int printTitles(int xtitles, char *pat, int max)
 {
 	int pos;
 	int cnt;
-
-	if (max < 0)
-	{
-		printf("Usage: %stitles [<pattern> [<count>]]\n",
-			xtitles ? "x" : "");
-		return ERR_CMD_FAIL;
-	}
 
 	if (!titles_pos)
 	{
@@ -72,26 +69,25 @@ int printTitles(int xtitles, u_char *pat, int max)
 		return OK;
 	}
 
-	puts("\n*** Titles ***\n");
+	colprintf("\n~BB*** Titles ***\n\n");
 	if (xtitles) 
 	{
-		puts("C time    T time    L time    Bytes  Text");
-		puts("--------  --------  --------  -----  ----");
+		colprintf("~FRCon time~RS  ~FGTrk time~RS  ~FBLoc time~RS  Bytes  Text\n");
+		colprintf("~FT--------  --------  --------  -----  ----\n");
 	}
 	else
 	{
-		puts("Time      Bytes  Text");
-		puts("--------  -----  ----");
+		colprintf("~FBLoc time~RS  Bytes  Text\n");
+		colprintf("~FT--------  -----  ----\n");
 	}
 	for(pos=cnt=0;pos < titles_pos && (!max || cnt < max);++pos)
 	{
-		if (!pat || 
-		    wildMatch((char *)titles[pos]+TEXT_POS,(char *)pat))
+		if (!pat || wildMatch(titles[pos]+TEXT_POS,pat))
 		{
 			if (xtitles)
-				puts((char *)titles[pos]);
+				puts(titles[pos]);
 			else
-				puts((char *)titles[pos] + TIME_POS);
+				puts(titles[pos] + TIME_POS);
 			++cnt;
 		}
 	}
@@ -111,5 +107,5 @@ void clearTitles()
 	for(i=0;i < titles_pos;++i) free(titles[i]);
 	free(titles);
 	initTitles();
-	puts("Titles cleared.");
+	colprintf("Titles ~FYcleared.\n");
 }

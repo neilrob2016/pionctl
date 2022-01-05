@@ -2,22 +2,24 @@
 tin
 tunein; wait 5; en; wait 3
 tuned
-wait 0.5; en; echo "***** Tuned *****"
+wait 0.5; en; echo "~BM***** ~LITuned~RS~BM *****"
 rap
-echo ">>> Tuning Rapture..."; tin; tuned
+echo "~BM>>>~RS Tuning ~FRRapture~RS..."; tin; tuned
 amb
-echo ">>> Tuning Ambient..."; tin; 1 dn; tuned 
+echo "~BM>>>~RS Tuning ~FGAmbient~RS..."; tin; 1 dn; tuned 
 poly
-echo ">>> Tuning Polymer..."; tin; 2 dn; tuned
+echo "~BM>>>~RS Tuning ~FBPolymer~RS..."; tin; 2 dn; tuned
 chill
-echo ">>> Tuning Chill..."; tin; 3 dn; tuned
+echo "~BM>>>~RS Tuning ~FYChill~RS..."; tin; 3 dn; tuned
 jazz
-echo ">>> Tuning JazzFM..."; tin; 4 dn; tuned
+echo "~BM>>>~RS Tuning ~FMJazzFM~RS..."; tin; 4 dn; tuned
 ocean
-echo ">>> Tuning Ocean Radio..."; tin; 3 dn; wait 0.5; 2 dn; tuned
+echo "~BM>>>~RS Tuning ~FTOcean Radio~RS..."; tin; 3 dn; wait 0.5; 2 dn; tuned
 moon
-echo ">>> Tuning Moon Phase..."; tin; 3 dn; wait 0.5; 3 dn; tuned
+echo "~BM>>>~RS Tuning ~FGMoon Phase~RS..."; tin; 3 dn; wait 0.5; 3 dn; tuned
 talk
-echo ">>> Tuning talkRadio..."; tin; 3 dn; wait 0.5; 2 dn; wait 0.5; 2 dn; tuned
+echo "~BM>>>~RS Tuning ~FRtalkRadio~RS..."; tin; 3 dn; wait 0.5; 2 dn; wait 0.5; 2 dn; tuned
 times
-echo ">>> Tuning Times Radio..."; tin; 3 dn; wait 0.5; 2 dn; wait 0.5; 3 dn; tuned
+echo "~BM>>>~RS Tuning ~FYTimes Radio~RS..."; tin; 3 dn; wait 0.5; 2 dn; wait 0.5; 3 dn; tuned
+lbc
+echo "~BM>>>~RS Tuning ~FBLBC~RS..."; tin; 3 dn; wait 0.5; 3 dn; wait 0.5; 3 dn; tuned

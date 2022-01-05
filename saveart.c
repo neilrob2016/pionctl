@@ -5,9 +5,10 @@
 
 void initSave()
 {
-	save_stage = SAVE_INACTIVE;
+	save_state = SAVE_INACTIVE;
 	save_fd = 0;
 	save_filename = NULL;
+	save_rx_time = time(0);
 }
 
 
@@ -15,7 +16,7 @@ void initSave()
 
 void resetSave()
 {
-	if (save_stage != SAVE_INACTIVE)
+	if (save_state != SAVE_INACTIVE)
 	{
 		if (save_fd) close(save_fd);
 		free(save_filename);
@@ -26,11 +27,11 @@ void resetSave()
 
 
 
-void startSave(char *filename)
+void prepareSave(char *filename)
 {
-	if (save_stage != SAVE_INACTIVE) resetSave();
+	resetSave();
 	save_filename = strdup(filename ? filename : "art");
-	save_stage = SAVE_START;
+	save_state = SAVE_START;
 }
 
 
@@ -38,11 +39,11 @@ void startSave(char *filename)
 
 void saveArtDataLine(uint32_t data_len, t_iscp_data *pkt_data)
 {
-	u_char *cmd = pkt_data->command + 3;
-	u_char *ptr;
-	u_char *end;
-	u_char c;
-	u_char byte;
+	char *cmd = pkt_data->command + 3;
+	char *ptr;
+	char *end;
+	char c;
+	char byte;
 	char *tmp;
 	char *ext;
 	int len;
@@ -53,7 +54,7 @@ void saveArtDataLine(uint32_t data_len, t_iscp_data *pkt_data)
 		if (data_len > 1 && cmd[0] == 'n')
 			puts("\nArtwork is not available.");
 		else
-			puts("\nERROR: Bad art data.");
+			nlerrprintf("Bad art data.\n");
 		goto DONE;
 	}
 
@@ -61,9 +62,9 @@ void saveArtDataLine(uint32_t data_len, t_iscp_data *pkt_data)
 	switch(cmd[1])
 	{
 	case '0':
-		if (save_stage > SAVE_START)
+		if (save_state > SAVE_START)
 		{
-			printf("\nERROR: Invalid state %c\n",cmd[1]);
+			nlerrprintf("Invalid state %c\n",cmd[1]);
 			goto DONE;
 		}
 
@@ -82,7 +83,7 @@ void saveArtDataLine(uint32_t data_len, t_iscp_data *pkt_data)
 				ext = "jpg";
 				break;
 			default:
-				printf("\nERROR: Invalid image format %c\n",cmd[0]);
+				nlerrprintf("Invalid image format %c\n",cmd[0]);
 				goto DONE;
 			}
 			asprintf(&tmp,"%s.%s",save_filename,ext);
@@ -90,21 +91,21 @@ void saveArtDataLine(uint32_t data_len, t_iscp_data *pkt_data)
 			save_filename = tmp;
 		}
 
-		printf("\nSaving to '%s'...\n",save_filename);
+		printf("\nSaving to image file \"%s\"...\n",save_filename);
 		if ((save_fd = open(
 			save_filename,O_WRONLY|O_CREAT|O_TRUNC,0666)) == -1)
 		{
-			printf("ERROR: saveArtDataLine(): open(): %s\n",
+			errprintf("saveArtDataLine(): open(): %s\n",
 				strerror(errno));
 			goto DONE;
 		}
-		save_stage = SAVE_NEXT;
+		save_state = SAVE_NEXT;
 		break;
 
 	case '1':		
-		if (save_stage != SAVE_NEXT)
+		if (save_state != SAVE_NEXT)
 		{
-			printf("\nERROR: Invalid state %c",cmd[1]);
+			nlerrprintf("Invalid state %c\n",cmd[1]);
 			goto DONE;
 		}
 		break;
@@ -113,25 +114,26 @@ void saveArtDataLine(uint32_t data_len, t_iscp_data *pkt_data)
 		break;
 
 	default:
-		if (!strncmp((char *)cmd,"BMP",3)) return;
-		printf("\nERROR: Invalid state %c",cmd[1]);
+		if (!strncmp(cmd,"BMP",3)) return;
+		nlerrprintf("Invalid state %c\n",cmd[1]);
 		goto DONE;
 	}
 
 	/* Convert hex data to binary and write to file */
+	save_rx_time = time(0);
 	end = cmd + data_len;
 	for(ptr=cmd+2;ptr < end;ptr+=2)
 	{
 		c = ptr[2];
 		ptr[2] = 0;
-		if (!(byte = (u_char)strtol((char *)ptr,NULL,16)) && 
+		if (!(byte = (char)strtol(ptr,NULL,16)) && 
 		    errno == EINVAL)
 		{
 			goto DONE;
 		}
 		if (write(save_fd,&byte,1) != 1) 
 		{
-			printf("\nERROR: saveArt(): write(): %s\n",strerror(errno));
+			nlerrprintf("saveArt(): write(): %s\n",strerror(errno));
 			goto DONE;
 		}
 		ptr[2] = c;
@@ -146,4 +148,19 @@ void saveArtDataLine(uint32_t data_len, t_iscp_data *pkt_data)
 	DONE:
 	printPrompt();
 	resetSave();
+}
+
+
+
+
+/*** For some reason it sometimes simply won't send us the image data ***/
+void checkSaveTimeout()
+{
+	if (save_state != SAVE_INACTIVE &&
+	    time(0) - save_rx_time >= SAVE_TIMEOUT)
+	{
+		nlwarnprintf("Save timeout - some or all image data not received.\n");
+		resetSave();
+		printPrompt();
+	}
 }

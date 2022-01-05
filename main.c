@@ -4,10 +4,13 @@
  A command line control client for the Pioneer N-70AE streamer using the 
  Onkyo ISCP protocol.
 
- Initial version December 2019
+ Initial non public version December 2019
 *****************************************************************************/
 #define MAINFILE
 #include "globals.h"
+
+#define DEVICE_CODE    '1'
+#define LISTEN_TIMEOUT 60
 
 char *cmd_list;
 
@@ -40,10 +43,11 @@ void parseCmdLine(int argc, char **argv)
 	device_code = DEVICE_CODE;
 	listen_timeout = LISTEN_TIMEOUT;
 	connect_timeout = 0;
-	flags = 0;
 	cmd_list = NULL;
-	prompt_type = PROMPT_BASE;
+	prompt_type = PROMPT_NAME;
 	raw_level = 0;
+	bzero(&flags,sizeof(flags));
+	flags.use_colour = 1;
 
 	for(i=1;i < argc;++i)
 	{
@@ -52,16 +56,19 @@ void parseCmdLine(int argc, char **argv)
 		switch((c = argv[i][1]))
 		{
 		case 'c':
-			SETFLAG(FLAG_TRANS_HTML_AMPS);
+			flags.use_colour = 0;
 			continue;
 		case 'e':
-			SETFLAG(FLAG_EXIT_AFTER_CMDS);
+			flags.exit_after_cmds = 1;
 			continue;
 		case 'o':
-			SETFLAG(FLAG_OFFLINE);
+			flags.offline = 1;
+			continue;
+		case 's':
+			flags.trans_html_amps = 1;
 			continue;
 		case 't':
-			SETFLAG(FLAG_SHOW_TRACK_TIME);
+			flags.show_track_time = 1;
 			continue;
 		case 'v':
 			version(0);
@@ -121,12 +128,12 @@ void parseCmdLine(int argc, char **argv)
 			goto USAGE;
 		}
 	}
-	if (ipaddr && FLAGISSET(FLAG_OFFLINE))
+	if (ipaddr && flags.offline)
 	{
 		puts("ERROR: The -a and -o options are mutually exclusive.");
 		exit(1);
 	}
-	if (FLAGISSET(FLAG_EXIT_AFTER_CMDS) && !cmd_list)
+	if (flags.exit_after_cmds && !cmd_list)
 	{
 		puts("ERROR: The -e option requires -i.");
 		exit(1);
@@ -144,9 +151,10 @@ void parseCmdLine(int argc, char **argv)
 	       "                                  immediately. Eg: tunein;3 dn;en\n"
 	       "       -p [0 to %d]              : Prompt type. Default = %d.\n"
 	       "       -r [0 to %d]              : Raw RX/TX print level. Default = %d.\n"
+	       "       -c                       : Do NOT use ansi colour.\n"
 	       "       -e                       : Exit after immediate commands run.\n"
-	       "       -o                       : Offline mode - don't listen for streamer.\n"
-	       "       -c                       : Translate HTML ampersand codes in album,\n"
+	       "       -o                       : Offline mode, ie don't listen for streamer.\n"
+	       "       -s                       : Translate HTML ampersand codes in album,\n"
 	       "                                  artist and title when pretty printing.\n"
 	       "       -t                       : Print NTM track time info.\n"
 	       "       -v                       : Print version then exit.\n"
@@ -176,17 +184,17 @@ void init()
 	menu_selection = NULL;
 	input_state = INPUT_CMD;
 	macro_append = -1;
+	connect_time = 0;
 
 	signal(SIGINT,sigHandler);
 	signal(SIGQUIT,sigHandler);
 	signal(SIGTERM,sigHandler);
-	connect_time = 0;
 
-	if (FLAGISSET(FLAG_OFFLINE)) puts("Offline mode.\n");
+	if (flags.offline) puts("Offline mode.\n");
 	else if (!networkStart())
 	{
-		if (!FLAGISSET(FLAG_INTERRUPTED)) doExit(1);
-		UNSETFLAG(FLAG_INTERRUPTED);
+		if (!flags.interrupted) doExit(1);
+		flags.interrupted = 0;
 	}
 	strcpy(track_time_str,TIME_DEF_STR);
 	strcpy(track_len_str,TIME_DEF_STR);
@@ -198,30 +206,40 @@ void init()
 
 void mainloop()
 {
+	struct timeval tvs;
+	struct timeval *tvp;
 	fd_set mask;
 
 	if (cmd_list) runImmediate();
 
 	while(1)
 	{
-		UNSETFLAG(FLAG_INTERRUPTED);
+		flags.interrupted = 0;
 		FD_ZERO(&mask);
 		FD_SET(STDIN,&mask);
 		if (tcp_sock) FD_SET(tcp_sock,&mask);
+		if (save_state != SAVE_INACTIVE)
+		{
+			tvs.tv_sec = SAVE_TIMEOUT;
+			tvs.tv_usec = 0;
+			tvp = &tvs;
+		}
+		else tvp = NULL;
 
-		switch(select(FD_SETSIZE,&mask,0,0,0))
+		switch(select(FD_SETSIZE,&mask,0,0,tvp))
 		{
 		case -1:
-			if (FLAGISSET(FLAG_INTERRUPTED)) continue;
-			perror("ERROR: mainLoop(): select()");
+			if (flags.interrupted) continue;
+			errprintf("mainLoop(): select(): %s\n",strerror(errno));
 			doExit(1);
 		case 0:
-			/* Timeout, should never happen */
-			puts("ERROR: mainLoop(): select() timeout");
+			/* Timeout */
+			checkSaveTimeout();
 			continue;
 		}
 		if (tcp_sock && FD_ISSET(tcp_sock,&mask)) readSocket(1);
 		if (FD_ISSET(STDIN,&mask)) readKeyboard();
+		checkSaveTimeout();
 	}
 }
 
@@ -236,9 +254,9 @@ void runImmediate()
 	parseInputLine(buffer[keyb_buffnum].data,buffer[keyb_buffnum].len);
 	printPrompt();
 
-	if (FLAGISSET(FLAG_EXIT_AFTER_CMDS))
+	if (flags.exit_after_cmds)
 	{
-		puts("\n*** EXIT after immediate commands ***");
+		exitprintf("after immediate commands");
 		doExit(0);
 	}
 }

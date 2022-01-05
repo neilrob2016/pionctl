@@ -10,7 +10,7 @@ void initList()
 
 
 /*** Add data to the list. Returns 1 if new entry or updated value ***/
-int updateList(char *key, u_char *value, int val_len)
+int updateList(char *key, char *value, int val_len)
 {
 	t_entry *entry;
 	t_entry *end;
@@ -59,12 +59,12 @@ int updateList(char *key, u_char *value, int val_len)
 
 
 
-void setEntryValue(t_entry *entry, u_char *value, int val_len)
+void setEntryValue(t_entry *entry, char *value, int val_len)
 {
 	FREE(entry->value);
 	if (val_len)
 	{
-		assert((entry->value = (u_char *)malloc(val_len+1)));
+		assert((entry->value = (char *)malloc(val_len+1)));
 		memcpy(entry->value,value,val_len);
 		entry->value[val_len] = 0;
 	}
@@ -118,13 +118,13 @@ void clearList()
 		FREE(list[i]);
 	}
 	bzero(list,sizeof(list));
-	puts("RX list cleared.");
+	colprintf("RX list ~FYcleared.\n");
 }
 
 
 
 
-int dumpList(u_char *pat, int max)
+int dumpList(char *pat, int max)
 {
 	t_entry *entry;
 	int total;
@@ -134,14 +134,14 @@ int dumpList(u_char *pat, int max)
 
 	if (max < 0)
 	{
-		puts("Usage: showr [<pattern> [<count>]]");
+		usageprintf("showr [<pattern> [<count>]]\n");
 		return ERR_CMD_FAIL;
 	}
 
-	printf("\n*** Raw streamer RX (%s : %sCONNECTED) ***\n\n",
+	colprintf("\n~BB*** Raw streamer RX (%s : %sCONNECTED) ***\n\n",
 		inet_ntoa(con_addr.sin_addr),tcp_sock ? "" : "DIS");
-	puts("Com   Bytes   Message");
-	puts("---   -----   -------");
+	colprintf("~FRCom   ~FGBytes   ~FBMessage\n");
+	colprintf("~FT---   -----   -------\n");
 	for(i=unknown_cnt=entry_cnt=total=0;i < 256;++i)
 	{
 		for(entry=list[i];entry;entry=entry->next)
@@ -156,8 +156,8 @@ int dumpList(u_char *pat, int max)
 			if (max && entry_cnt == max) continue;
 
 			if (!pat || 
-			     wildMatch(entry->key,(char *)pat) ||
-			     (entry->value && wildMatch((char *)entry->value,(char *)pat)))
+			     wildMatch(entry->key,pat) ||
+			     (entry->value && wildMatch(entry->value,pat)))
 			{
 				printf("%s %c %-6d  ",
 					entry->key,

@@ -1,19 +1,22 @@
 #include "globals.h"
 
 #define MAX_LINE_LEN 2000
+#define MAX_BAD      5
 #define WRAP_COL     79
 #define INDENT       14
 #define ENTER_STR    "Enter macro lines, end with a '.' on its own..."
-#define CMDERR_STR   "ERROR: Macros cannot have the same name or substring as a command."
+#define CMDERR_STR   "Macros cannot have the same name or substring as a command.\n"
 
 static char *home_dir;
 
-int     findEmptySlot();
-int     writeMacro(FILE *fp, int m, int append);
-int     clearMacro(int m);
-u_char *firstNonWhitespacePos(u_char *str);
-u_char *trim(u_char *name);
-char   *tildaToHomeDir(u_char *filename);
+int   deleteAllMacros();
+int   findEmptySlot();
+int   writeMacro(FILE *fp, int m, int append);
+int   clearMacro(int m);
+char *firstNonWhitespacePos(char *str);
+char *trim(char *name);
+char *tildaToHomeDir(char *filename);
+int   validName(char *name);
 
 
 void initMacros()
@@ -34,19 +37,29 @@ void initMacros()
 
 
 
-int initMultiLineMacro(u_char *name)
+int initMultiLineMacro(char *name)
 {
 	if (!(name = trim(name)))
 	{
-		puts("ERROR: Empty macro name.");
+		errprintf("Empty macro name.\n");
 		return ERR_MACRO;
 	}
-	if (getCommand((char *)name,strlen((char *)name),0) != -1)
+	if (!validName(name))
 	{
-		puts(CMDERR_STR);
+		errprintf("Invalid macro name.\n");
 		return ERR_MACRO;
 	}
-	macro_name = (u_char *)strdup((char *)name);
+	if (findMacro(name) != -1)
+	{
+		errprintf("Macro \"%s\" already exists.\n",name);
+		return ERR_MACRO;
+	}
+	if (getCommand(name,strlen(name),0) != -1)
+	{
+		errprintf(CMDERR_STR);
+		return ERR_MACRO;
+	}
+	macro_name = strdup(name);
 	assert(macro_name);
 	macro_line_tmp = NULL;
 	input_state = INPUT_MACRO_DEF;
@@ -57,11 +70,11 @@ int initMultiLineMacro(u_char *name)
 
 
 
-int initMultiLineMacroAppend(u_char *name)
+int initMultiLineMacroAppend(char *name)
 {
 	if ((macro_append = findMacro(name)) == -1)
 	{
-		printf("ERROR: Macro \"%s\" does not exist.\n",name);
+		errprintf("Macro \"%s\" does not exist.\n",name);
 		return ERR_MACRO;
 	}
 	macro_line_tmp = NULL;
@@ -91,29 +104,34 @@ void discardMultiLineMacro()
 
 
 /*** Insert a macro into the macros array ***/
-int insertMacro(u_char *name, u_char *comlist)
+int insertMacro(char *name, char *comlist)
 {
 	t_macro *macro;
 	int m;
 
 	if (!(name = trim(name)))
 	{
-		puts("ERROR: Empty macro name.");
+		errprintf("Empty macro name.\n");
 		return ERR_MACRO;
 	}
-	if (!(comlist = trim(comlist))) 
+	if (!validName(name))
 	{
-		puts("ERROR: Empty command list.");
+		errprintf("Invalid macro name.\n");
 		return ERR_MACRO;
 	}
 	if (findMacro(name) != -1)
 	{
-		printf("ERROR: Duplicate macro name \"%s\".\n",name);
+		errprintf("Macro \"%s\" already exists.\n",name);
 		return ERR_MACRO;
 	}
-	if (getCommand((char *)name,strlen((char *)name),0) != -1)
+	if (!(comlist = trim(comlist))) 
 	{
-		puts(CMDERR_STR);
+		errprintf("Empty command list.\n");
+		return ERR_MACRO;
+	}
+	if (getCommand(name,strlen(name),0) != -1)
+	{
+		errprintf(CMDERR_STR);
 		return ERR_MACRO;
 	}
 	if ((m = findEmptySlot()) == -1)
@@ -128,12 +146,12 @@ int insertMacro(u_char *name, u_char *comlist)
 		m = macro_cnt++;
 	}
 	macro = &macros[m];
-	macro->name = (u_char *)strdup((char *)name);
-	macro->comlist = (u_char *)strdup((char *)comlist);
+	macro->name = strdup(name);
+	macro->comlist = strdup(comlist);
 	assert(macro->name && macro->comlist);
-	macro->len = strlen((char *)comlist);
+	macro->len = strlen(comlist);
 	macro->running = 0;
-	printf("Macro \"%s\" added.\n",name);
+	colprintf("Macro \"%s\" ~FGadded.\n",name);
 	return OK;
 }
 
@@ -141,10 +159,10 @@ int insertMacro(u_char *name, u_char *comlist)
 
 
 /*** Add or append a command line to a macro ***/
-void addMacroLine(u_char *line, int len)
+void addMacroLine(char *line, int len)
 {
-	u_char *ptr;
-	u_char *end;
+	char *ptr;
+	char *end;
 	char *tmp;
 	int ret;
 
@@ -156,14 +174,14 @@ void addMacroLine(u_char *line, int len)
 	if (*line == '.' && *(line+1) < 33)
 	{
 		/* Done */
-		if (!macro_line_tmp) puts("ERROR: Empty macro.");
+		if (!macro_line_tmp) errprintf("Empty macro.\n");
 		else switch(input_state)
 		{
 		case INPUT_MACRO_DEF:
-			insertMacro(macro_name,(u_char *)macro_line_tmp);
+			insertMacro(macro_name,macro_line_tmp);
 			break;
 		case INPUT_MACRO_APP:
-			appendMacroSlotComlist(macro_append,(u_char *)macro_line_tmp);
+			appendMacroSlotComlist(macro_append,macro_line_tmp);
 			macro_append = -1;
 			break;
 		default:
@@ -178,7 +196,7 @@ void addMacroLine(u_char *line, int len)
 	{
 		ret = asprintf(&tmp,"%s; %.*s",macro_line_tmp,len,line);
 		free(macro_line_tmp);
-		macro_line_tmp = (char *)tmp;
+		macro_line_tmp = tmp;
 	}
 	else ret = asprintf(&macro_line_tmp,"%.*s",len,line);
 	assert(ret != -1);
@@ -188,18 +206,18 @@ void addMacroLine(u_char *line, int len)
 
 
 /*** Append the command list to the given macro ***/
-int appendMacroComlist(u_char *name, u_char *comlist)
+int appendMacroComlist(char *name, char *comlist)
 {
 	int m;
 
 	if ((m = findMacro(name)) == -1)
 	{
-		printf("ERROR: Macro \"%s\" does not exist.\n",name);
+		errprintf("Macro \"%s\" does not exist.\n",name);
 		return ERR_MACRO;
 	}
 	if (!(comlist = trim(comlist))) 
 	{
-		puts("ERROR: Empty command list.");
+		errprintf("Empty command list.\n");
 		return ERR_MACRO;
 	}
 	appendMacroSlotComlist(m,comlist);
@@ -210,17 +228,17 @@ int appendMacroComlist(u_char *name, u_char *comlist)
 
 
 /*** Append commands to a macro command list in the given slot ***/
-void appendMacroSlotComlist(int m, u_char *comlist)
+void appendMacroSlotComlist(int m, char *comlist)
 {
 	t_macro *macro;
 	int len;
 
 	macro = &macros[m];
-	len = macro->len + strlen((char *)comlist) + 2; /* +2 for "; " */
-	macro->comlist = (u_char *)realloc(macro->comlist,len + 1); 
+	len = macro->len + strlen(comlist) + 2; /* +2 for "; " */
+	macro->comlist = (char *)realloc(macro->comlist,len + 1); 
 	assert(macro->comlist);
-	strcat((char *)macro->comlist,"; ");
-	strcat((char *)macro->comlist,(char *)comlist);
+	strcat(macro->comlist,"; ");
+	strcat(macro->comlist,comlist);
 	macro->len = len;
 	printf("Macro \"%s\" appended.\n",macro->name);
 }
@@ -228,18 +246,19 @@ void appendMacroSlotComlist(int m, u_char *comlist)
 
 
 
-int deleteMacro(u_char *name)
+int deleteMacro(char *name)
 {
 	int m;
 
+	if (!strcmp(name,"*")) return deleteAllMacros();
 	if ((m = findMacro(name)) == -1)
 	{
-		printf("ERROR: Macro \"%s\" does not exist.\n",name);
+		errprintf("Macro \"%s\" does not exist.\n",name);
 		return ERR_MACRO;
 	}
 	if (clearMacro(m))
 	{
-		printf("Macro \"%s\" deleted.\n",name);
+		colprintf("Macro \"%s\" ~FRdeleted.\n",name);
 		return OK;
 	}
 	return ERR_MACRO;
@@ -248,10 +267,11 @@ int deleteMacro(u_char *name)
 
 
 
-int clearMacros()
+int deleteAllMacros()
 {
 	int m;
 	int cnt = 0;
+
 	if (macros)
 	{
 		for(m=0;m < macro_cnt;++m) cnt += clearMacro(m);
@@ -261,14 +281,14 @@ int clearMacros()
 			initMacros();
 		}
 	}
-	printf("%d macros deleted.\n",cnt);
+	colprintf("%d macros ~FRdeleted.\n",cnt);
 	return (cnt == macro_cnt) ? OK : ERR_MACRO;
 }
 
 
 
 
-int runMacro(u_char *name)
+int runMacro(char *name)
 {
 	static int recurse = 0;
 	t_macro *macro;
@@ -277,7 +297,7 @@ int runMacro(u_char *name)
 
 	if ((m = findMacro(name)) == -1)
 	{
-		printf("ERROR: Macro \"%s\" does not exist.\n",name);
+		errprintf("Macro \"%s\" does not exist.\n",name);
 		return ERR_MACRO;
 	}
 	macro = &macros[m];
@@ -286,69 +306,94 @@ int runMacro(u_char *name)
 	   loop */
 	if (macro->running)
 	{
-		puts("ERROR: Macro recursion.");
+		errprintf("Macro recursion.\n");
 		return ERR_MACRO;
 	}
 
-	SETFLAG(FLAG_MACRO_RUNNING);
+	flags.macro_running = 1;
 	recurse++;
 	macro->running = 1; 
 
-	printf("Running macro: \"%s\"\n",name);
+	colprintf("~FMRunning macro:~RS \"%s\"\n",name);
 	ret = parseInputLine(macros[m].comlist,macros[m].len);
 
 	macro->running = 0;
-	if (!--recurse) UNSETFLAG(FLAG_MACRO_RUNNING);
+	if (!--recurse) flags.macro_running = 0;
 
-	if (ret != OK) printf("ERROR: Macro \"%s\" FAILED\n",macro->name);
-	return ret;
+	if (ret != OK)
+	{
+		errprintf("Macro \"%s\" FAILED\n",macro->name);
+		return ERR_MACRO;
+	}
+	return OK;
 }
 
 
 
 
 /*** Load all macros from the given file ***/
-int loadMacros(u_char *filename)
+int loadMacros(char *filename)
 {
+	struct stat st;
 	/* Hopefully these are big enough. If not it'll read the rest of the
 	   commands as the next name etc. Too bad */
 	char name[MAX_LINE_LEN];
 	char line[MAX_LINE_LEN];
 	char *path;
-	u_char *ptr;
+	char *ptr;
 	FILE *fp;
-	int cnt;
 	int get_name;
+	int good;
+	int bad;
 
 	path = tildaToHomeDir(filename);
 	printf("Loading from file \"%s\"...\n",path);
-	fp = fopen(path,"r");
-	free(path);
-	if (!fp)
+
+	/* Annoyingly fopen() will happily open a directory to read if in
+	   read only mode. Don't want to use r+ as it'll fail if a file doesn't
+	   have write permission so have to fuck about with lstat() */
+	if (lstat(path,&st) == -1)
 	{
-		printf("ERROR: Can't open file to read: %s\n",strerror(errno));
+		errprintf("Can't stat file: %s\n",strerror(errno));
+		free(path);
+		return ERR_MACRO;
+	}
+	if (!S_ISREG(st.st_mode))
+	{
+		errprintf("Not a regular file.\n");
+		free(path);
+		return ERR_MACRO;
+	}
+	if (!(fp = fopen(path,"r")))
+	{
+		errprintf("Can't open file to read: %s\n",strerror(errno));
+		free(path);
 		return ERR_MACRO;
 	}
 
 	get_name = 1;
 	fgets(line,sizeof(line),fp);
-	for(cnt=0;!feof(fp);)
+	for(good=bad=0;!feof(fp);)
 	{
 		/* Skip empty lines and comments. Comments have to be added
 		   manually to the macro file and arn't saved */
-		if ((ptr = firstNonWhitespacePos((u_char *)line)))
+		if ((ptr = firstNonWhitespacePos(line)))
 		{
 			if (*ptr == '#')
 			{
 				ptr = trim(ptr+1);
-				if (*ptr) printf("Comment: %s\n",ptr);
+				if (*ptr) colprintf("~FMComment:~RS %s\n",ptr);
 			}
 			else
 			{
-				if (get_name)
-					strcpy(name,line);
-				else
-					cnt += (insertMacro((u_char *)name,(u_char *)line) == OK);
+				if (get_name) strcpy(name,line);
+				else if (insertMacro(name,line) == OK)
+					++good;
+				else if (++bad == MAX_BAD)
+				{
+					errprintf("Too many load errors.\n");
+					return ERR_MACRO;
+				}
 				get_name = !get_name;
 			}
 		}
@@ -356,7 +401,7 @@ int loadMacros(u_char *filename)
 	} 
 	fclose(fp);
 
-	printf("%d macros loaded.\n",cnt);
+	printf("%d macros loaded, %d bad.\n",good,bad);
 	return OK;
 }
 
@@ -364,7 +409,7 @@ int loadMacros(u_char *filename)
 
 
 /*** Save a single macro to a file ***/
-int saveMacro(u_char *filename, u_char *name, int append)
+int saveMacro(char *filename, char *name, int append)
 {
 	FILE *fp;
 	char *path;
@@ -373,7 +418,7 @@ int saveMacro(u_char *filename, u_char *name, int append)
 
 	if ((m = findMacro(name)) == -1)
 	{
-		printf("ERROR: Macro \"%s\" does not exist.\n",name);
+		errprintf("Macro \"%s\" does not exist.\n",name);
 		return ERR_MACRO;
 	}
 	path = tildaToHomeDir(filename);
@@ -382,7 +427,7 @@ int saveMacro(u_char *filename, u_char *name, int append)
 	free(path);
 	if (!fp)
 	{
-		printf("ERROR: Can't open file to write: %s\n",strerror(errno));
+		errprintf("Can't open file to write: %s\n",strerror(errno));
 		return ERR_MACRO;
 	}
 	ret = writeMacro(fp,m,append);
@@ -393,7 +438,7 @@ int saveMacro(u_char *filename, u_char *name, int append)
 
 
 
-int saveAllMacros(u_char *filename, int append)
+int saveAllMacros(char *filename, int append)
 {
 	FILE *fp;
 	char *path;
@@ -411,7 +456,7 @@ int saveAllMacros(u_char *filename, int append)
 	free(path);
 	if (!fp)
 	{
-		printf("ERROR: Can't open file to write: %s\n",strerror(errno));
+		errprintf("Can't open file to write: %s\n",strerror(errno));
 		return ERR_MACRO;
 	}
 
@@ -433,8 +478,8 @@ int saveAllMacros(u_char *filename, int append)
 
 void listMacros()
 {
-	u_char *ptr;
-	u_char *ptr2;
+	char *ptr;
+	char *ptr2;
 	int cnt;
 	int wlen;
 	int m;
@@ -446,9 +491,9 @@ void listMacros()
 		return;
 	}
 
-	puts("\n*** Macros ***\n");
-	puts("Name          Commands");
-	puts("----          --------");
+	colprintf("\n~BM*** Macros ***\n\n");
+	colprintf("~FB~OLName          ~FGCommands\n");
+	colprintf("~FT----          --------\n");
 	for(m=cnt=0;m < macro_cnt;++m)
 	{
 		if (!macros[m].name) continue;
@@ -476,12 +521,11 @@ void listMacros()
 
 
 
-int findMacro(u_char *name)
+int findMacro(char *name)
 {
 	int m;
 	for(m=0;m < macro_cnt && 
-	        (!macros[m].name ||
-	         strcmp((char *)name,(char *)macros[m].name));++m);
+	        (!macros[m].name || strcmp(name,macros[m].name));++m);
 	return (m < macro_cnt ? m : -1);
 }
 
@@ -504,7 +548,7 @@ int writeMacro(FILE *fp, int m, int append)
 	if (fprintf(fp,"%s\n",macros[m].name) == -1 ||
 	    fprintf(fp,"%s\n",macros[m].comlist) == -1)
 	{
-		printf("ERROR: Write failed: %s\n",strerror(errno));
+		errprintf("Write failed: %s\n",strerror(errno));
 		return ERR_MACRO;
 	}
 	printf("Macro \"%s\" %s.\n",macros[m].name,append ? "appended" : "saved");
@@ -521,8 +565,7 @@ int clearMacro(int m)
 	int ret;
 	if (macros[m].running)
 	{
-		printf("ERROR: Cannot delete running macro \"%s\".\n",
-			macros[m].name);
+		errprintf("Cannot delete running macro \"%s\".\n",macros[m].name);
 		return 0;
 	}
 	if (macros[m].name)
@@ -540,7 +583,7 @@ int clearMacro(int m)
 
 
 
-u_char *firstNonWhitespacePos(u_char *str)
+char *firstNonWhitespacePos(char *str)
 {
 	for(;*str && *str < 33;++str);
 	return *str ? str : NULL;
@@ -548,15 +591,15 @@ u_char *firstNonWhitespacePos(u_char *str)
 
 
 
-u_char *trim(u_char *str)
+char *trim(char *str)
 {
-	u_char *end;
+	char *end;
 
 	/* Trim start */
 	if ((str = firstNonWhitespacePos(str)))
 	{
 		/* Trim end */
-		for(end=str+strlen((char *)str)-1;end > str && *end < 33;--end);
+		for(end=str+strlen(str)-1;end > str && *end < 33;--end);
 		*++end = 0;
 	}
 	return str;
@@ -565,7 +608,7 @@ u_char *trim(u_char *str)
 
 
 
-char *tildaToHomeDir(u_char *filename)
+char *tildaToHomeDir(char *filename)
 {
 	char *new_filename;
 	int ret;
@@ -579,8 +622,18 @@ char *tildaToHomeDir(u_char *filename)
 	}
 	else
 	{
-		new_filename = strdup((char *)filename);
+		new_filename = strdup(filename);
 		assert(new_filename);
 	}
 	return new_filename;
+}
+
+
+
+
+int validName(char *name)
+{
+	char *p;
+	for(p=name;*p > 31 && !ispunct(*p);++p);
+	return !*p;
 }
