@@ -73,7 +73,7 @@ int networkStart()
 		close(udp_sock);
 		udp_sock = 0;
 	}
-	initList();
+	initRXList();
 	return 1;
 }
 
@@ -390,7 +390,7 @@ void readSocket(int print_prompt)
 		warnprintf("\nUnknown start char: %c\n",pkt_data->start_char);
 
 	/* Add RX to list for recall later. Returns 1 if new data */
-	new_data = updateList(
+	new_data = updateRXList(
 		pkt_data->command,
 		pkt_data->mesg,pkt_hdr->data_len - (MESG_OFFSET + 3));
 

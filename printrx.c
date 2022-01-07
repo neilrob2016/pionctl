@@ -117,7 +117,7 @@ static struct st_comfunc
 #define RX_COM_NJA 17
 #define RX_COM_NLS 18
 
-/***************************** External functions ****************************/
+/******************************** EXTERNAL *********************************/
 
 /*** Prints out message buffer data translating non printing characters ***/
 void printMesg(char *mesg, int len)
@@ -157,7 +157,7 @@ void prettyPrint(t_iscp_data *pkt_data, int print_prompt)
 	{
 		colprintf("~FYUnknown response:~RS %.3s",pkt_data->command);
 		printMesg(pkt_data->mesg,mesg_len);
-		setUnknownKey(pkt_data->command);
+		setUnknownRXKey(pkt_data->command);
 	}
 
 	if (print_prompt) printPrompt();
@@ -168,7 +168,7 @@ void prettyPrint(t_iscp_data *pkt_data, int print_prompt)
 
 
 /*** Pretty print the RX commands and data stored in the list ***/
-int prettyPrintList(char *pat, int max)
+int prettyPrintRXList(char *pat, int max)
 {
 	t_entry *entry;
 	char *value;
@@ -285,7 +285,7 @@ void printTrackTime()
 }
 
 
-/****************************** Print functions ****************************/
+/********************************** PRINT ***********************************/
 
 void printAMT(char *mesg, uint32_t len)
 {
@@ -1197,7 +1197,7 @@ void printRST(char *mesg, uint32_t len)
 }
 
 
-/**************************** Internal functions *****************************/
+/********************************** SUPPORT ***********************************/
 
 /*** Translate HTML ampersand codes if flag set ***/
 void printTranslatedMesg(char *mesg, uint32_t len, int add_title)

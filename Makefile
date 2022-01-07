@@ -15,7 +15,7 @@ OBJS=\
 	printf.o \
 	prompt.o \
 	buffer.o \
-	list.o \
+	rxlist.o \
 	titles.o \
 	menu.o \
 	saveart.o \
@@ -53,8 +53,8 @@ prompt.o: prompt.c $(DEPS)
 buffer.o: buffer.c $(DEPS)
 	$(COMP) buffer.c
 
-list.o: list.c $(DEPS)
-	$(COMP) list.c
+rxlist.o: rxlist.c $(DEPS)
+	$(COMP) rxlist.c
 
 titles.o: titles.c $(DEPS)
 	$(COMP) titles.c

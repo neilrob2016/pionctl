@@ -23,40 +23,39 @@ enum
 	COM_HISTORY,
 
 	/* 10 */
-	COM_TITLES,
 	COM_WAIT,
 	COM_CLS,
 	COM_ECHO,
 	COM_MACRO,
 	LAST_CLIENT_COM = COM_MACRO,
 
-	/* 15. Streamer commands */
+	/* 14. Streamer commands */
 	COM_MENU,
+
+	/* 15 */
 	COM_MENUSTAT,
 	COM_UP,
 	COM_DN,
 	COM_EN,
+	COM_EX,
 
 	/* 20 */
-	COM_EX,
 	COM_FLIP,
 	COM_DS,
 	COM_DSD,
 	COM_DSSTAT,
+	COM_FILTER,
 
 	/* 25 */
-	COM_FILTER,
 	COM_FILSTAT,
 	COM_ARTBMP,
 	COM_ARTURL,
 	COM_ARTSTAT,
-
-	/* 30 */
 	COM_ARTSAVE,
 
 	/* Enums beyond saveart not required except for these */
-	COM_SETNAME = 82,
-	COM_LRA     = 97
+	COM_SETNAME = 81,
+	COM_LRA     = 96
 };
 
 
@@ -82,7 +81,6 @@ static struct st_command
 	{ "history",   NULL },
 
 	/* 10 */
-	{ "titles",NULL },
 	{ "wait",  NULL },
 	{ "cls",   NULL },
 	{ "echo",  NULL },
@@ -230,6 +228,7 @@ void optShowTXCommands(char *pat);
 void optShowTimes();
 void optShowConStat();
 
+int  comClear(char *opt);
 int  comHelp(char *opt, char *pat);
 void optHelpMain(int extra, char *pat);
 void optHelpSorted(char *pat);
@@ -237,8 +236,7 @@ void optHelpNotes();
 
 int  comConnect(char *param);
 int  comDisconnect();
-int  comHistory(char *opt);
-int  comTitles(char *opt, char *pat, int max);
+int  comHistory();
 void comClearHistory();
 int  comWait(char *param);
 void comEcho(int cmd_word, int word_cnt, char **words);
@@ -254,9 +252,10 @@ void printFlagHTML();
 void printFlagVerb();
 
 void  clearHistory();
+char *bytesSizeStr(u_long num);
 u_int getUsecTime();
 
-/***************************** COM RUN FUNCTIONS ****************************/
+/******************************** INTERFACE *********************************/
 
 /*** Parse a line from the user or a macro ***/
 int parseInputLine(char *data, int len)
@@ -487,7 +486,7 @@ int parseCommand(char *buff, int bufflen)
 		}
 		/* Clear value so its seen as a new value on RX so will get
 		   printed out */
-		clearValueOfKey(comword);
+		clearValueOfRXKey(comword);
 
 		if (sendCommand(repeat_cnt,comword,word_len[cmd_word]))
 			ret = OK;
@@ -571,7 +570,7 @@ int parseCommand(char *buff, int bufflen)
 			goto FREE;
 		}
 
-		clearValueOfKey("NFN");
+		clearValueOfRXKey("NFN");
 		cmd_len = asprintf(&cmd,"NFN%s",words[cmd_word+1]);
 		if (!sendCommand(repeat_cnt,cmd,cmd_len)) ret = ERR_CMD_FAIL;
 		free(cmd);
@@ -589,7 +588,7 @@ int parseCommand(char *buff, int bufflen)
 			ret = ERR_CMD_FAIL;
 			goto FREE;
 		}
-		clearValueOfKey(commands[comnum].data);
+		clearValueOfRXKey(commands[comnum].data);
 		cmd_len = asprintf(&cmd,"%s%02d",commands[comnum].data,val);
 		if (!sendCommand(repeat_cnt,cmd,cmd_len)) ret = ERR_CMD_FAIL;
 		free(cmd);
@@ -607,7 +606,7 @@ int parseCommand(char *buff, int bufflen)
 			cmd_len = strlen(cmd);
 		
 		/* Reset list entry. Will only use the first 3 chars */
-		clearValueOfKey(cmd);
+		clearValueOfRXKey(cmd);
 
 		/* Send command the given count times */
 		if (!sendCommand(repeat_cnt,cmd,cmd_len))
@@ -731,10 +730,7 @@ int processBuiltInCommand(
 	case COM_SHOW:
 		return comShow(param1,param2,max);
 	case COM_CLEAR:
-		clearList();
-		clearTitles();
-		clearHistory();
-		break;
+		return comClear(param1);
 	case COM_HELP:
 		return comHelp(param1,param2);
 	case COM_CONNECT:
@@ -742,9 +738,7 @@ int processBuiltInCommand(
 	case COM_DISCONNECT:
 		return comDisconnect();
 	case COM_HISTORY:
-		return comHistory(param1);
-	case COM_TITLES:
-		return comTitles(param1,param2,max);
+		return comHistory();
 	case COM_WAIT:
 		return comWait(param1);
 	case COM_CLS:
@@ -762,7 +756,7 @@ int processBuiltInCommand(
 }
 
 
-/***************************** COMMAND FUNCTIONS *****************************/
+/********************************** COMMANDS **********************************/
 
 int comToggle(char *opt)
 {
@@ -803,7 +797,10 @@ int comToggle(char *opt)
 		}
 	}
 	USAGE:
-	usageprintf("toggle tracktm/colour/htmlamp/verbmacro\n");
+	usageprintf("toggle tracktm\n");
+	puts("              colour");
+	puts("              htmlamp");
+	puts("              verbmacro");
 	return ERR_CMD_FAIL;
 }
 
@@ -853,19 +850,23 @@ int comRaw(char *param)
 
 int comShow(char *opt, char *pat, int max)
 {
-	char *options[10] =
+	char *options[12] =
 	{
 		/* 0 */
+		"titles",
+		"xtitles",
 		"rx",
 		"rawrx",
 		"rxcoms",
-		"txcoms",
-		"times",
 
 		/* 5 */
+		"txcoms",
+		"times",
 		"flags",
 		"menu",
 		"selected",
+
+		/* 10 */
 		"connection",
 		"version"
 	};
@@ -874,38 +875,42 @@ int comShow(char *opt, char *pat, int max)
 
 	if (!opt) goto USAGE;
 	len = strlen(opt);
-	for(i=0;i < 10;++i)
+	for(i=0;i < 12;++i)
 	{
 		if (strncmp(opt,options[i],len)) continue;
 
 		switch(i)
 		{
 		case 0:
-			return prettyPrintList(pat,max);
+			return printTitles(0,pat,max);
 		case 1:
-			return dumpList(pat,max);
+			return printTitles(1,pat,max);
 		case 2:
+			return prettyPrintRXList(pat,max);
+		case 3:
+			return dumpRXList(pat,max);
+		case 4:
 			printRXCommands(pat);
 			break;
-		case 3:
+		case 5:
 			optShowTXCommands(pat);
 			break;
-		case 4:
+		case 6:
 			optShowTimes();
 			break;
-		case 5:
+		case 7:
 			optShowFlags();
 			break;
-		case 6:
+		case 8:
 			printMenuList();
 			break;
-		case 7:
+		case 9:
 			printMenuSelection();
 			break;
-		case 8:
+		case 10:
 			optShowConStat();
 			break;
-		case 9:
+		case 11:
 			version(1);
 			break;
 		}
@@ -913,10 +918,12 @@ int comShow(char *opt, char *pat, int max)
 	}
 
 	USAGE:
-	usageprintf("show rx     [<pattern> [<count>]]\n");
-	puts("            rawrx  [<pattern> [<count>]]");
-	puts("            rxcoms [<pattern>]");
-	puts("            txcoms [<pattern>]");
+	usageprintf("show titles  [<pattern>  [<count>]]\n");
+	puts("            xtitles [<pattern>  [<count>]]");
+	puts("            rx      [<pattern>  [<count>]]");
+	puts("            rawrx   [<pattern>  [<count>]]");
+	puts("            rxcoms  [<pattern>]");
+	puts("            txcoms  [<pattern>]");
 	puts("            times");
 	puts("            flags");
 	puts("            menu");
@@ -1002,35 +1009,22 @@ void optShowConStat()
 	else puts("Last RX com : ---");
 
 	printf("RX reads    : %lu\n",rx_reads);
-	printf("RX data     : ");
-	if (rx_bytes < 1e4) 
-		printf("%lu bytes\n",rx_bytes);
-	else if (rx_bytes < 1e6)
-		printf("%.1fK\n",(double)rx_bytes / 1e3);
-	else 
-		printf("%.1fM\n",(double)rx_bytes / 1e6);
-
+	printf("RX data     : %s\n",bytesSizeStr(rx_bytes));
 	printf("TX writes   : %lu\n",tx_writes);
-	printf("TX data     : ");
-	if (tx_bytes < 1e4) 
-		printf("%lu bytes\n\n",tx_bytes);
-	else if (tx_bytes < 1e6)
-		printf("%.1fK\n\n",(double)tx_bytes / 1e3);
-	else 
-		printf("%.1fM\n\n",(double)tx_bytes / 1e6);
+	printf("TX data     : %s\n\n",bytesSizeStr(tx_bytes));
 }
 
 
 
 
-int comHelp(char *opt, char *pat)
+int comClear(char *opt)
 {
 	char *options[4] =
 	{
-		"std",
-		"extra",
-		"sorted",
-		"notes"
+		"rx",
+		"titles",
+		"history",
+		"*"
 	};
 	int len;
 	int i;
@@ -1044,26 +1038,81 @@ int comHelp(char *opt, char *pat)
 		switch(i)
 		{
 		case 0:
-			optHelpMain(0,pat);
-			return OK;
+			clearRXList();
+			break;
 		case 1:
+			clearTitles();
+			break;
+		case 2:
+			clearHistory();
+			break;
+		case 3:
+			clearRXList();
+			clearTitles();
+			clearHistory();
+		}
+	}
+	return OK;
+
+	USAGE:
+	usageprintf("clear rx\n");
+	puts("             titles");
+	puts("             history");
+	puts("             *       (Clear all the above)");
+	return ERR_CMD_FAIL;
+}
+
+
+
+
+int comHelp(char *opt, char *pat)
+{
+	char *options[4] =
+	{
+		"extra",
+		"sorted",
+		"notes",
+		"usage"
+	};
+	int len;
+	int ret;
+	int i;
+
+	/* If no option given do standard help */
+	if (!opt)
+	{
+		optHelpMain(0,NULL);
+		return OK;
+	}
+	len = strlen(opt);
+	ret = ERR_CMD_FAIL;
+	for(i=0;i < 4;++i)
+	{
+		if (strncmp(opt,options[i],len)) continue;
+
+		switch(i)
+		{
+		case 0:
 			optHelpMain(1,pat);
 			return OK;
-		case 2:
+		case 1:
 			optHelpSorted(pat);
 			return OK;
-		case 3:
+		case 2:
 			optHelpNotes();
 			return OK;
+		case 3:
+			ret = OK;
+			goto USAGE;
 		}
 	}
 
 	USAGE:
-	usageprintf("help std    [<pattern>]\n");
-	puts("            extra  [<pattern>]");
-	puts("            sorted [<pattern>]");
-	puts("            notes");
-	return ERR_CMD_FAIL;
+	usageprintf("help [extra  [<pattern>]]\n");
+	puts("            [sorted [<pattern>]]");
+	puts("            [notes]");
+	puts("            [usage]");
+	return ret;
 }
 
 
@@ -1112,6 +1161,8 @@ void optHelpMain(int extra, char *pat)
 		puts("       [<repeat count>] <raw streamer command>      eg: 3 OSDUP\n");
 	}
 	else putchar('\n');
+
+	puts("Enter \"help usage\" for further help options.\n");
 }
 
 
@@ -1198,22 +1249,11 @@ int comDisconnect()
 
 
 /*** Prints or clears the command history ***/
-int comHistory(char *opt)
+int comHistory()
 {
 	int cnt;
 	int bn;
 	int i;
-
-	if (opt)
-	{
-		if (!strncmp(opt,"clear",strlen(opt)))
-		{
-			clearHistory();
-			return OK;
-		}
-		usageprintf("history [clear]\n");
-		return ERR_CMD_FAIL;
-	}
 
 	bn = (keyb_buffnum + 2) % MAX_HIST_BUFFERS;
 	for(i=cnt=0;i < MAX_HIST_BUFFERS-1;++i)
@@ -1224,25 +1264,6 @@ int comHistory(char *opt)
 	}
 	puts("Enter !<number> or up/down arrow keys to select.");
 	return OK;
-}
-
-
-
-
-int comTitles(char *opt, char *pat, int max)
-{
-	int len;
-
-	if (opt && max >= 0)
-	{
-		len = strlen(opt);
-		if (!strncmp(opt,"std",len))
-			return printTitles(0,pat,max);
-		if (!strncmp(opt,"extra",len))
-			return printTitles(1,pat,max);
-	}
-	usageprintf("titles std/extra [<pattern> [<count>]]\n");
-	return ERR_CMD_FAIL;
 }
 
 
@@ -1507,7 +1528,25 @@ void clearHistory()
 {
 	int i;
 	for(i=0;i < MAX_HIST_BUFFERS;++i) clearBuffer(i);
-	colprintf("History ~FYcleared.\n");
+	colprintf("History ~FGcleared.\n");
+}
+
+
+
+
+char *bytesSizeStr(u_long bytes)
+{
+	static char str[20];
+
+	/* Only start printing in kilobytes from 10000 as eg 2345 bytes is 
+	   still easy to read */
+	if (bytes < 1e4) 
+		sprintf(str,"%lu bytes",bytes);
+	else if (bytes < 1e6)
+		sprintf(str,"%.1fK",(double)bytes / 1e3);
+	else 
+		sprintf(str,"%.1fM",(double)bytes / 1e6);
+	return str;
 }
 
 

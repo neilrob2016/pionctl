@@ -27,7 +27,7 @@
 #define EXTERN extern
 #endif
 
-#define VERSION "20220105"
+#define VERSION "20220107"
 
 #define STDIN          0
 #define STDOUT         1
@@ -217,9 +217,9 @@ EXTERN int macro_cnt;
 EXTERN int macro_alloc;
 EXTERN int macro_append;
 EXTERN int raw_level;
-EXTERN u_long rx_bytes;
+EXTERN size_t rx_bytes;
+EXTERN size_t tx_bytes;
 EXTERN u_long rx_reads;
-EXTERN u_long tx_bytes;
 EXTERN u_long tx_writes;
 EXTERN char track_time_str[9];
 EXTERN char track_len_str[9];
@@ -254,7 +254,7 @@ void networkClear();
 /* printrx.c */
 void printMesg(char *mesg, int len);
 void prettyPrint(t_iscp_data *pkt_data, int print_prompt);
-int  prettyPrintList(char *pat, int max);
+int  prettyPrintRXList(char *pat, int max);
 void printRXCommands(char *pat);
 void printTrackTime();
 
@@ -265,15 +265,13 @@ void addToBuffer(int buffnum, char *data, int data_len);
 int  delLastCharFromBuffer(int buffnum);
 void clearBuffer(int buffnum);
 
-/* list.c */
-void initList();
-int  updateList(char *key, char *value, int val_len);
-void setEntryValue(t_entry *entry, char *value, int val_len);
-void setUnknownKey(char *key);
-void clearValueOfKey(char *key);
-void clearList();
-int  dumpList(char *pat, int max);
-t_entry *findInList(char *key);
+/* rxlist.c */
+void initRXList();
+int  updateRXList(char *key, char *value, int val_len);
+void setUnknownRXKey(char *key);
+void clearValueOfRXKey(char *key);
+void clearRXList();
+int  dumpRXList(char *pat, int max);
 
 /* titles.c */
 void initTitles();

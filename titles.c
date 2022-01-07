@@ -21,7 +21,7 @@ void initTitles()
 void addTitle(char *mesg, uint32_t len)
 {
 	int prev_pos;
-	int i;
+	uint32_t i;
 
 	/* Remove non printing */
 	for(i=0;i < len;++i) if (mesg[i] < 32) mesg[i] = '.';
@@ -107,5 +107,5 @@ void clearTitles()
 	for(i=0;i < titles_pos;++i) free(titles[i]);
 	free(titles);
 	initTitles();
-	colprintf("Titles ~FYcleared.\n");
+	colprintf("Titles ~FGcleared.\n");
 }
