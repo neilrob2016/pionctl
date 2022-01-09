@@ -140,6 +140,9 @@ void colprintf(const char *fmt, ...)
 		print_len = vsnprintf(newfmt,len,fmt,args);
 		va_end(args);
 	} while(print_len > len / 2);
+/*
+printf("NEIL newfmt --%s--\n",newfmt);
+*/
 
 	/* Now allocate space for our output string. *5 because we might have
 	   to put a reset before a load of newlines. +1 for \0 */
@@ -191,6 +194,7 @@ void colprintf(const char *fmt, ...)
 				break;
 			}
 		}
+		if (i == NUM_CODES) ++out_len;
 	}
 
 	/* Just in case there's something there */

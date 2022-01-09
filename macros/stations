@@ -16,7 +16,7 @@ echo "~BM>>>~RS Tuning ~FMJazzFM~RS..."; tin; 4 dn; tuned
 ocean
 echo "~BM>>>~RS Tuning ~FTOcean Radio~RS..."; tin; 3 dn; wait 0.5; 2 dn; tuned
 moon
-echo "~BM>>>~RS Tuning ~FGMoon Phase~RS..."; tin; 3 dn; wait 0.5; 3 dn; tuned
+echo "~BM>>>~RS Tuning ~FGMoon Phase Radio~RS..."; tin; 3 dn; wait 0.5; 3 dn; tuned
 talk
 echo "~BM>>>~RS Tuning ~FRtalkRadio~RS..."; tin; 3 dn; wait 0.5; 2 dn; wait 0.5; 2 dn; tuned
 times

@@ -20,42 +20,41 @@ enum
 	COM_HELP,
 	COM_CONNECT,
 	COM_DISCONNECT,
-	COM_HISTORY,
+	COM_WAIT,
 
 	/* 10 */
-	COM_WAIT,
 	COM_CLS,
 	COM_ECHO,
 	COM_MACRO,
 	LAST_CLIENT_COM = COM_MACRO,
 
-	/* 14. Streamer commands */
+	/* 13. Streamer commands */
 	COM_MENU,
+	COM_MENUSTAT,
 
 	/* 15 */
-	COM_MENUSTAT,
 	COM_UP,
 	COM_DN,
 	COM_EN,
 	COM_EX,
+	COM_FLIP,
 
 	/* 20 */
-	COM_FLIP,
 	COM_DS,
 	COM_DSD,
 	COM_DSSTAT,
 	COM_FILTER,
+	COM_FILSTAT,
 
 	/* 25 */
-	COM_FILSTAT,
 	COM_ARTBMP,
 	COM_ARTURL,
 	COM_ARTSTAT,
 	COM_ARTSAVE,
 
 	/* Enums beyond saveart not required except for these */
-	COM_SETNAME = 81,
-	COM_LRA     = 96
+	COM_SETNAME = 80,
+	COM_LRA     = 95
 };
 
 
@@ -78,10 +77,9 @@ static struct st_command
 	{ "help",      NULL },
 	{ "connect",   NULL },
 	{ "disconnect",NULL },
-	{ "history",   NULL },
+	{ "wait",  NULL },
 
 	/* 10 */
-	{ "wait",  NULL },
 	{ "cls",   NULL },
 	{ "echo",  NULL },
 	{ "macro", NULL },
@@ -227,6 +225,7 @@ void optShowFlags();
 void optShowTXCommands(char *pat);
 void optShowTimes();
 void optShowConStat();
+void optShowHistory();
 
 int  comClear(char *opt);
 int  comHelp(char *opt, char *pat);
@@ -236,7 +235,6 @@ void optHelpNotes();
 
 int  comConnect(char *param);
 int  comDisconnect();
-int  comHistory();
 void comClearHistory();
 int  comWait(char *param);
 void comEcho(int cmd_word, int word_cnt, char **words);
@@ -737,8 +735,6 @@ int processBuiltInCommand(
 		return comConnect(param1);
 	case COM_DISCONNECT:
 		return comDisconnect();
-	case COM_HISTORY:
-		return comHistory();
 	case COM_WAIT:
 		return comWait(param1);
 	case COM_CLS:
@@ -850,7 +846,7 @@ int comRaw(char *param)
 
 int comShow(char *opt, char *pat, int max)
 {
-	char *options[12] =
+	char *options[13] =
 	{
 		/* 0 */
 		"titles",
@@ -868,6 +864,7 @@ int comShow(char *opt, char *pat, int max)
 
 		/* 10 */
 		"connection",
+		"history",
 		"version"
 	};
 	int len;
@@ -875,7 +872,7 @@ int comShow(char *opt, char *pat, int max)
 
 	if (!opt) goto USAGE;
 	len = strlen(opt);
-	for(i=0;i < 12;++i)
+	for(i=0;i < 13;++i)
 	{
 		if (strncmp(opt,options[i],len)) continue;
 
@@ -911,6 +908,9 @@ int comShow(char *opt, char *pat, int max)
 			optShowConStat();
 			break;
 		case 11:
+			optShowHistory();
+			break;
+		case 12:
 			version(1);
 			break;
 		}
@@ -929,6 +929,7 @@ int comShow(char *opt, char *pat, int max)
 	puts("            menu");
 	puts("            selected");
 	puts("            connection");
+	puts("            history");
 	puts("            version");
 	return ERR_CMD_FAIL;
 }
@@ -951,6 +952,8 @@ void optShowFlags()
 
 void optShowTXCommands(char *pat)
 {
+	const char *data;
+	char str[20];
 	int cnt1;
 	int cnt2;
 	int i;
@@ -964,8 +967,22 @@ void optShowTXCommands(char *pat)
 			if (!pat || wildMatch(commands[i].com,pat))
 			{
 				if (cnt2 && !(cnt2 % 3)) putchar('\n');
+				data = commands[i].data;
+
+				/* Some streamer commands are incomplete */
+				if (!strcmp(data,"DIM") || 
+				    !strcmp(data,"DGF") ||
+				    !strcmp(data,"LRA"))
+				{
+					sprintf(str,"%snn",data);
+				}
+				else if (!strcmp(data,"NFN"))
+					strcpy(str,"NFN*");
+				else
+					strcpy(str,data);
+
 				colprintf("%-8s = ~FT%-15s~RS",
-					commands[i].com,commands[i].data);
+					commands[i].com,str);
 				++cnt2;
 			}
 		}
@@ -1012,6 +1029,26 @@ void optShowConStat()
 	printf("RX data     : %s\n",bytesSizeStr(rx_bytes));
 	printf("TX writes   : %lu\n",tx_writes);
 	printf("TX data     : %s\n\n",bytesSizeStr(tx_bytes));
+}
+
+
+
+
+void optShowHistory()
+{
+	int cnt;
+	int bn;
+	int i;
+
+	colprintf("\n~BB*** Command history ***\n\n");
+	bn = (keyb_buffnum + 2) % MAX_HIST_BUFFERS;
+	for(i=cnt=0;i < MAX_HIST_BUFFERS-1;++i)
+	{
+		if (buffer[bn].len)
+			colprintf("~FB~OL%3d:~RS %s\n",++cnt,buffer[bn].data);
+		bn = (bn + 1) % MAX_HIST_BUFFERS;
+	}
+	puts("\nEnter !<number> or up/down arrow keys to select.\n");
 }
 
 
@@ -1248,27 +1285,6 @@ int comDisconnect()
 
 
 
-/*** Prints or clears the command history ***/
-int comHistory()
-{
-	int cnt;
-	int bn;
-	int i;
-
-	bn = (keyb_buffnum + 2) % MAX_HIST_BUFFERS;
-	for(i=cnt=0;i < MAX_HIST_BUFFERS-1;++i)
-	{
-		if (buffer[bn].len)
-			colprintf("~FB~OL%3d~RS %s\n",++cnt,buffer[bn].data);
-		bn = (bn + 1) % MAX_HIST_BUFFERS;
-	}
-	puts("Enter !<number> or up/down arrow keys to select.");
-	return OK;
-}
-
-
-
-
 int comWait(char *param)
 {
 	struct timeval tv;
@@ -1317,18 +1333,10 @@ int comWait(char *param)
 
 void comEcho(int cmd_word, int word_cnt, char **words)
 {
-	char *ptr;
 	int i;
 
-	for(i=cmd_word+1;i < word_cnt;++i)
-	{
-		/* Put words in a string first so colour codes get passed to
-		   colprintf in the format, not the arguments where they won't
-		   be interpreted */
-		assert(asprintf(&ptr,"%s ",words[i]) != -1);
-		colprintf(ptr);
-		free(ptr);
-	}
+	for(i=cmd_word+1;i < word_cnt;++i) colprintf("%s ",words[i]);
+
 	/* Sends an ansi reset code along with nl */
 	colprintf("\n"); 
 }

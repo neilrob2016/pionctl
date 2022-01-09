@@ -364,10 +364,11 @@ int loadMacros(char *filename)
 		free(path);
 		return ERR_MACRO;
 	}
-	if (!(fp = fopen(path,"r")))
+	fp = fopen(path,"r");
+	free(path);
+	if (!fp)
 	{
 		errprintf("Can't open file to read: %s\n",strerror(errno));
-		free(path);
 		return ERR_MACRO;
 	}
 

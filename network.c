@@ -360,7 +360,7 @@ void readSocket(int print_prompt)
 		nlerrprintf("readSocket(): read(): %s\n",strerror(errno));
 		goto ERROR;
 	case 0:
-		colprintf("\n~BR*** Connection closed by remote host ***\n");
+		colprintf("\n~BR*** Connection closed by streamer ***\n");
 		goto ERROR;
 	}
 	++rx_reads;
