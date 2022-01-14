@@ -27,7 +27,7 @@
 #define EXTERN extern
 #endif
 
-#define VERSION "20220109"
+#define VERSION "20220113"
 
 #define STDIN          0
 #define STDOUT         1
@@ -130,7 +130,7 @@ struct st_flags
 	unsigned show_track_time : 1;
 	unsigned trans_html_amps : 1;
 	unsigned use_colour      : 1;
-	unsigned macro_verbose   : 1;
+	unsigned verbose         : 1;
 
 	/* System flags */
 	unsigned macro_running   : 1;
@@ -239,7 +239,7 @@ void resetKeyboard();
 
 /* commands.c */
 int  parseInputLine(char *data, int len);
-int  getCommand(char *word, int len, int expmsg);
+int  getCommand(char *word, int len);
 void sortCommands();
 
 /* network.c */
@@ -256,7 +256,7 @@ void printMesg(char *mesg, int len);
 void prettyPrint(t_iscp_data *pkt_data, int print_prompt);
 int  prettyPrintRXList(char *pat, int max);
 void printRXCommands(char *pat);
-void printTrackTime();
+void printTrackTime(int rx);
 
 /* buffer.c */
 void initBuffers();

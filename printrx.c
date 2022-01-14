@@ -267,13 +267,16 @@ void printRXCommands(char *pat)
 
 
 
-void printTrackTime()
+void printTrackTime(int rx)
 {
 	int i;
 	int cnt;
 
 	/* The 2 strings are set in readSocket() in network.c */
-	printf("Track time  : %s",track_time_str);
+	if (rx)
+		printf("Track time: %s",track_time_str);
+	else
+		printf("Track  : %s",track_time_str);
 
 	/* Streamer normally sends --:--:-- for unknown track length but do
 	   sanity check for numbers anyway */
@@ -973,7 +976,7 @@ void printNTI(char *mesg, uint32_t len)
 
 void printNTM(char *mesg, uint32_t len)
 {
-	printTrackTime();
+	printTrackTime(1);
 }
 
 

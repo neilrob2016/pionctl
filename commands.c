@@ -320,7 +320,7 @@ int parseInputLine(char *data, int len)
 			{
 				/* Skip initial whitespace */
 				for(ptr2=ptr;*ptr2 < 33;++ptr2);
-				if (flags.macro_verbose)
+				if (flags.verbose)
 				{
 					colprintf("~FB~OLExec cmd:~RS %.*s\n",
 						len - (int)(ptr2-ptr),ptr2);
@@ -494,7 +494,7 @@ int parseCommand(char *buff, int bufflen)
 	}
 
 	/* Look for a command. If we can't find one try a macro */
-	if ((comnum = getCommand(comword,word_len[cmd_word],1)) == -1)
+	if ((comnum = getCommand(comword,word_len[cmd_word])) == -1)
 	{
 		if (findMacro(comword) != -1)
 		{
@@ -570,6 +570,7 @@ int parseCommand(char *buff, int bufflen)
 
 		clearValueOfRXKey("NFN");
 		cmd_len = asprintf(&cmd,"NFN%s",words[cmd_word+1]);
+		assert(cmd_len != -1);
 		if (!sendCommand(repeat_cnt,cmd,cmd_len)) ret = ERR_CMD_FAIL;
 		free(cmd);
 		goto FREE;
@@ -588,6 +589,7 @@ int parseCommand(char *buff, int bufflen)
 		}
 		clearValueOfRXKey(commands[comnum].data);
 		cmd_len = asprintf(&cmd,"%s%02d",commands[comnum].data,val);
+		assert(cmd_len != -1);
 		if (!sendCommand(repeat_cnt,cmd,cmd_len)) ret = ERR_CMD_FAIL;
 		free(cmd);
 		goto FREE;
@@ -616,7 +618,7 @@ int parseCommand(char *buff, int bufflen)
 	}
 
 	FREE:
-	for(i=0;i <= cmd_word;++i) free(words[i]);
+	for(i=0;i < word_cnt;++i) free(words[i]);
 	if (comnum != COM_UP) flags.com_up = 0;
 	if (comnum != COM_DN) flags.com_dn = 0;
 	return ret;
@@ -627,7 +629,7 @@ int parseCommand(char *buff, int bufflen)
 
 /*** Look for a client command. Try exact match first and if that fails look 
      for partial match ***/
-int getCommand(char *word, int len, int expmsg)
+int getCommand(char *word, int len)
 {
 	int comnum;
 
@@ -643,7 +645,7 @@ int getCommand(char *word, int len, int expmsg)
 
 	if (comnum < NUM_COMMANDS)
 	{
-		if (expmsg)
+		if (flags.verbose)
 			colprintf("~FTExpanded to:~RS \"%s\"\n",commands[comnum].com);
 		return comnum;
 	}
@@ -761,7 +763,7 @@ int comToggle(char *opt)
 		"tracktm",
 		"colour",
 		"htmlamp",
-		"verbmacro"
+		"verbose"
 	};
 	int len;
 	int i;
@@ -787,7 +789,7 @@ int comToggle(char *opt)
 			printFlagHTML();
 			return OK;
 		case 3:
-			flags.macro_verbose = !flags.macro_verbose;
+			flags.verbose = !flags.verbose;
 			printFlagVerb();
 			return OK;
 		}
@@ -796,7 +798,7 @@ int comToggle(char *opt)
 	usageprintf("toggle tracktm\n");
 	puts("              colour");
 	puts("              htmlamp");
-	puts("              verbmacro");
+	puts("              verbose");
 	return ERR_CMD_FAIL;
 }
 
@@ -998,9 +1000,11 @@ void optShowTXCommands(char *pat)
 
 void optShowTimes()
 {
-	printf("Local time  : %s\n",getTime());
-	printf("Connect time: %s\n",getTimeString(connect_time));
-	printTrackTime();
+	colprintf("\n~BB*** Times ***\n\n");
+	printf("Local  : %s\n",getTime());
+	printf("Connect: %s\n",getTimeString(connect_time));
+	printTrackTime(0);
+	putchar('\n');
 }
 
 
@@ -1503,8 +1507,8 @@ void printFlagHTML()
 
 void printFlagVerb()
 {
-	printf("Verbose macros  : ");
-	PRINT_ON_OFF(flags.macro_verbose);
+	printf("Verbose output  : ");
+	PRINT_ON_OFF(flags.verbose);
 }
 
 /********************************** MISC *************************************/

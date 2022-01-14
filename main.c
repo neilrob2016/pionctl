@@ -55,6 +55,9 @@ void parseCmdLine(int argc, char **argv)
 
 		switch((c = argv[i][1]))
 		{
+		case 'b':
+			flags.verbose = 1;
+			continue;
 		case 'c':
 			flags.use_colour = 0;
 			continue;
@@ -151,6 +154,8 @@ void parseCmdLine(int argc, char **argv)
 	       "                                  immediately. Eg: tunein;3 dn;en\n"
 	       "       -p [0 to %d]              : Prompt type. Default = %d.\n"
 	       "       -r [0 to %d]              : Raw RX/TX print level. Default = %d.\n"
+	       "       -b                       : Verbose mode (currently only shows macros run\n"
+	       "                                  and expanded command names).\n"
 	       "       -c                       : Do NOT use ansi colour.\n"
 	       "       -e                       : Exit after immediate commands run.\n"
 	       "       -o                       : Offline mode, ie don't listen for streamer.\n"

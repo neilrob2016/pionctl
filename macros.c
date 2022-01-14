@@ -54,7 +54,8 @@ int initMultiLineMacro(char *name)
 		errprintf("Macro \"%s\" already exists.\n",name);
 		return ERR_MACRO;
 	}
-	if (getCommand(name,strlen(name),0) != -1)
+	/* Check the new macro name isn't already used */
+	if (getCommand(name,strlen(name)) != -1)
 	{
 		errprintf(CMDERR_STR);
 		return ERR_MACRO;
@@ -129,7 +130,8 @@ int insertMacro(char *name, char *comlist)
 		errprintf("Empty command list.\n");
 		return ERR_MACRO;
 	}
-	if (getCommand(name,strlen(name),0) != -1)
+	/* Check the new macro name isn't already used */
+	if (getCommand(name,strlen(name)) != -1)
 	{
 		errprintf(CMDERR_STR);
 		return ERR_MACRO;
@@ -314,7 +316,7 @@ int runMacro(char *name)
 	recurse++;
 	macro->running = 1; 
 
-	colprintf("~FMRunning macro:~RS \"%s\"\n",name);
+	if (flags.verbose) colprintf("~FMRunning macro:~RS \"%s\"\n",name);
 	ret = parseInputLine(macros[m].comlist,macros[m].len);
 
 	macro->running = 0;
@@ -322,7 +324,7 @@ int runMacro(char *name)
 
 	if (ret != OK)
 	{
-		errprintf("Macro \"%s\" FAILED\n",macro->name);
+		errprintf("Macro \"%s\" FAILED.\n",macro->name);
 		return ERR_MACRO;
 	}
 	return OK;
