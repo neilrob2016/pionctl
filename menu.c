@@ -20,10 +20,7 @@ void addMenuOption(char *mesg, uint32_t len)
 	/* If we've received an option number thats less than the current
 	   count AND we're not still receiving the menu then reset */
 	if (isdigit(mesg[0]) &&
-	    (mesg[0] - '0') < menu_option_cnt && !flags.in_menu)
-	{
-		clearMenu();
-	}
+	    (mesg[0] - '0') < menu_option_cnt && !flags.in_menu) clearMenu();
 
 	/* Allocate new memory in blocks. Could do 1 by 1 but thats not very
 	   efficient */
@@ -100,4 +97,5 @@ void clearMenu()
 	for(i=0;i < menu_option_cnt;++i) free(menu_options[i]);
 	free(menu_options);
 	initMenu();
+	colprintf("Menu ~FGcleared.\n");
 }

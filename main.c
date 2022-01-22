@@ -190,6 +190,7 @@ void init()
 	input_state = INPUT_CMD;
 	macro_append = -1;
 	connect_time = 0;
+	start_time = time(0);
 
 	signal(SIGINT,sigHandler);
 	signal(SIGQUIT,sigHandler);

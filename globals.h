@@ -27,7 +27,7 @@
 #define EXTERN extern
 #endif
 
-#define VERSION "20220113"
+#define VERSION "20220122"
 
 #define STDIN          0
 #define STDOUT         1
@@ -197,6 +197,7 @@ EXTERN t_iscp_hdr *pkt_hdr;
 EXTERN t_buffer buffer[NUM_BUFFERS];
 EXTERN t_entry *list[256];
 EXTERN t_macro *macros;
+EXTERN time_t start_time;
 EXTERN time_t connect_time;
 EXTERN time_t last_rx_time;
 EXTERN time_t last_tx_time;
@@ -330,6 +331,7 @@ int   isNumberWithLen(char *str, int len);
 int   isNumber(char *str);
 char *getTime();
 char *getTimeString(time_t tm);
+char *getRawTimeString(time_t tm);
 void  doExit(int code);
 void  sigHandler(int sig);
 void  version(int print_pid);

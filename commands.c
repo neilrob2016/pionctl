@@ -1001,6 +1001,7 @@ void optShowTXCommands(char *pat)
 void optShowTimes()
 {
 	colprintf("\n~BB*** Times ***\n\n");
+	printf("Run    : %s\n",getRawTimeString(start_time));
 	printf("Local  : %s\n",getTime());
 	printf("Connect: %s\n",getTimeString(connect_time));
 	printTrackTime(0);
@@ -1060,9 +1061,10 @@ void optShowHistory()
 
 int comClear(char *opt)
 {
-	char *options[4] =
+	char *options[5] =
 	{
 		"rx",
+		"menu",
 		"titles",
 		"history",
 		"*"
@@ -1072,7 +1074,7 @@ int comClear(char *opt)
 
 	if (!opt) goto USAGE;
 	len = strlen(opt);
-	for(i=0;i < 4;++i)
+	for(i=0;i < 5;++i)
 	{
 		if (strncmp(opt,options[i],len)) continue;
 
@@ -1082,13 +1084,17 @@ int comClear(char *opt)
 			clearRXList();
 			break;
 		case 1:
-			clearTitles();
+			clearMenu();
 			break;
 		case 2:
-			clearHistory();
+			clearTitles();
 			break;
 		case 3:
+			clearHistory();
+			break;
+		case 4:
 			clearRXList();
+			clearMenu();
 			clearTitles();
 			clearHistory();
 		}
@@ -1097,6 +1103,7 @@ int comClear(char *opt)
 
 	USAGE:
 	usageprintf("clear rx\n");
+	puts("             menu");
 	puts("             titles");
 	puts("             history");
 	puts("             *       (Clear all the above)");
