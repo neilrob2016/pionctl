@@ -286,7 +286,7 @@ void addMenuOption();
 void setMenuSelection();
 void printMenuList();
 void printMenuSelection();
-void clearMenu();
+void clearMenu(int prt);
 
 /* save.c */
 void initSave();

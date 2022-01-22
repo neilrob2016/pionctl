@@ -540,7 +540,7 @@ int parseCommand(char *buff, int bufflen)
 		break;
 
 	case COM_EX:
-		clearMenu();
+		clearMenu(0);
 		menu_cursor_pos = -1;
 		break;
 
@@ -1084,7 +1084,7 @@ int comClear(char *opt)
 			clearRXList();
 			break;
 		case 1:
-			clearMenu();
+			clearMenu(1);
 			break;
 		case 2:
 			clearTitles();
@@ -1094,7 +1094,7 @@ int comClear(char *opt)
 			break;
 		case 4:
 			clearRXList();
-			clearMenu();
+			clearMenu(1);
 			clearTitles();
 			clearHistory();
 		}
