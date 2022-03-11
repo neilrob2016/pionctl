@@ -27,7 +27,7 @@
 #define EXTERN extern
 #endif
 
-#define VERSION "20220122"
+#define VERSION "20220311"
 
 #define STDIN          0
 #define STDOUT         1

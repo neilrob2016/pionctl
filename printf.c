@@ -7,7 +7,7 @@
 void errprintf(const char *fmt, ...)
 {
 	va_list args;
-	colprintf("~BRERROR:~RS ");
+	colprintf("\07~BR~FWERROR:~RS ");
 	va_start(args,fmt);
 	vprintf(fmt,args);
 	va_end(args);
@@ -19,7 +19,7 @@ void errprintf(const char *fmt, ...)
 void nlerrprintf(const char *fmt, ...)
 {
 	va_list args;
-	colprintf("\n~BRERROR:~RS ");
+	colprintf("\n\07~BR~FWERROR:~RS ");
 	va_start(args,fmt);
 	vprintf(fmt,args);
 	va_end(args);
@@ -31,7 +31,7 @@ void nlerrprintf(const char *fmt, ...)
 void warnprintf(const char *fmt, ...)
 {
 	va_list args;
-	colprintf("~BMWARNING:~RS ");
+	colprintf("~BM~FWWARNING:~RS ");
 	va_start(args,fmt);
 	vprintf(fmt,args);
 	va_end(args);
@@ -43,7 +43,7 @@ void warnprintf(const char *fmt, ...)
 void nlwarnprintf(const char *fmt, ...)
 {
 	va_list args;
-	colprintf("\n~BMWARNING:~RS ");
+	colprintf("\n~BM~FWWARNING:~RS ");
 	va_start(args,fmt);
 	vprintf(fmt,args);
 	va_end(args);

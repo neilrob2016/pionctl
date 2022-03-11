@@ -65,7 +65,7 @@ void printMenuList()
 
 	if (menu_option_cnt)
 	{
-		colprintf("\n~BB*** Menu list ***\n\n");
+		colprintf("\n~BB~FW*** Menu list ***\n\n");
 		for(i=0;i < menu_option_cnt;++i)
 		{
 			printf("%s %-2d: %s\n",

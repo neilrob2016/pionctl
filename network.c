@@ -360,7 +360,7 @@ void readSocket(int print_prompt)
 		nlerrprintf("readSocket(): read(): %s\n",strerror(errno));
 		goto ERROR;
 	case 0:
-		colprintf("\n~BR*** Connection closed by streamer ***\n");
+		colprintf("\n~BR~FW*** Connection closed by streamer ***\n");
 		goto ERROR;
 	}
 	++rx_reads;
@@ -604,7 +604,7 @@ void networkClear()
 		strcpy(track_len_str,TIME_DEF_STR);
 		if (connect_time)
 		{
-			colprintf("~BM*** ~LIDISCONNECTED~RS~BM ***\n");
+			colprintf("~BM~FW*** ~LIDISCONNECTED~RS~BM ***\n");
 			connect_time = 0;
 		}
 	}

@@ -494,7 +494,7 @@ void listMacros()
 		return;
 	}
 
-	colprintf("\n~BM*** Macros ***\n\n");
+	colprintf("\n~BM~FW*** Macros ***\n\n");
 	colprintf("~FB~OLName          ~FGCommands\n");
 	colprintf("~FT----          --------\n");
 	for(m=cnt=0;m < macro_cnt;++m)

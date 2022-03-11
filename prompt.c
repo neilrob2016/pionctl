@@ -87,14 +87,8 @@ void printPromptTrackTime()
 
 void clearPrompt()
 {
-	int i;
-
-	/* Clear the prompt itself */
-	printf("\r                             ");
-
-	/* Clear anything in the keyboard buffer */
-	for(i=buffer[keyb_buffnum].len+1;i >= 0;--i) putchar(' ');
-
+	putchar('\r');
+	write(STDOUT,"\033[0k",4); /* Clears the whole line */
 	putchar('\r');
 	fflush(stdout);
 }

@@ -740,6 +740,7 @@ int processBuiltInCommand(
 	case COM_WAIT:
 		return comWait(param1);
 	case COM_CLS:
+		/* [2J clears screen, [H makes the cursor go to the top left */
 		write(STDOUT,"\033[2J\033[H",7);
 		break;
 	case COM_ECHO:
@@ -941,7 +942,7 @@ int comShow(char *opt, char *pat, int max)
 
 void optShowFlags()
 {
-	colprintf("\n~BB*** Toggle flags ***\n\n");
+	colprintf("\n~BB~FW*** Toggle flags ***\n\n");
 	printFlagTrackTime();
 	printFlagColour();
 	printFlagHTML();
@@ -960,7 +961,7 @@ void optShowTXCommands(char *pat)
 	int cnt2;
 	int i;
 
-	colprintf("\n~BG*** TX streamer command mappings ***\n\n");
+	colprintf("\n~BG~FW*** TX streamer command mappings ***\n\n");
 	for(i=cnt1=cnt2=0;i < NUM_COMMANDS;++i)
 	{
 		if (commands[i].data)
@@ -1000,9 +1001,9 @@ void optShowTXCommands(char *pat)
 
 void optShowTimes()
 {
-	colprintf("\n~BB*** Times ***\n\n");
-	printf("Run    : %s\n",getRawTimeString(start_time));
+	colprintf("\n~BB~FW*** Times ***\n\n");
 	printf("Local  : %s\n",getTime());
+	printf("Run    : %s\n",getRawTimeString(start_time));
 	printf("Connect: %s\n",getTimeString(connect_time));
 	printTrackTime(0);
 	putchar('\n');
@@ -1015,7 +1016,7 @@ void optShowConStat()
 {
 	t_iscp_data *pkt_data;
 
-	colprintf("\n~BB*** Connection status and traffic ***\n\n");
+	colprintf("\n~BB~FW*** Connection status and traffic ***\n\n");
 	printf("Streamer TCP: %s:%d\n",inet_ntoa(con_addr.sin_addr),tcp_port);
 	printf("Status      : ");
 	colprintf(connect_time ? "~FGCONNECTED\n" : "~FRDISCONNECTED\n");
@@ -1045,7 +1046,7 @@ void optShowHistory()
 	int bn;
 	int i;
 
-	colprintf("\n~BB*** Command history ***\n\n");
+	colprintf("\n~BB~FW*** Command history ***\n\n");
 	bn = (keyb_buffnum + 2) % MAX_HIST_BUFFERS;
 	for(i=cnt=0;i < MAX_HIST_BUFFERS-1;++i)
 	{
@@ -1174,13 +1175,13 @@ void optHelpMain(int extra, char *pat)
 
 	nlafter = 5;
 
-	colprintf("\n~BG*** Client commands ***\n\n");
+	colprintf("\n~BG~FW*** Client commands ***\n\n");
 	for(i=cnt=0;i < NUM_COMMANDS;++i)
 	{
 		if (i && commands[i].data && !commands[i-1].data)
 		{
 			if (cnt % nlafter) putchar('\n');
-			colprintf("\n~BB*** Streamer commands ***\n\n");
+			colprintf("\n~BB~FW*** Streamer commands ***\n\n");
 			if (extra) nlafter = 4;
 			cnt = 0;
 		}
@@ -1217,7 +1218,7 @@ void optHelpMain(int extra, char *pat)
 
 void optHelpNotes()
 {
-	colprintf("\n~BB*** Help notes ***\n\n");
+	colprintf("\n~BB~FW*** Help notes ***\n\n");
 	puts("1) Any commands starting with a capital letter are passed to the streamer");
 	puts("   unchanged as raw commands. eg: OSDUP\n");
 	puts("2) Commands and their sub options can be shortened to any matching substring"); 
@@ -1245,7 +1246,7 @@ void optHelpSorted(char *pat)
 	int cnt;
 	int i;
 
-	colprintf("\n~BG*** Sorted commands ***\n\n");
+	colprintf("\n~BG~FW*** Sorted commands ***\n\n");
 	for(i=cnt=0;i < NUM_COMMANDS;++i)
 	{
 		if (!pat || wildMatch(sorted_commands[i],pat))

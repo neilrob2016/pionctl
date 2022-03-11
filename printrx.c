@@ -184,7 +184,7 @@ int prettyPrintRXList(char *pat, int max)
 		return ERR_CMD_FAIL;
 	}
 
-	colprintf("\n~BB*** Processed streamer RX (%s : %sCONNECTED) ***\n\n",
+	colprintf("\n~BB~FW*** Processed streamer RX (%s : %sCONNECTED) ***\n\n",
 		inet_ntoa(con_addr.sin_addr),tcp_sock ? "" : "DIS");
 
 	flags.pretty_printing = 1;
@@ -248,7 +248,7 @@ void printRXCommands(char *pat)
 	int cnt;
 	int i;
 
-	colprintf("\n~BG*** RX streamer commands parsed by this client ***\n\n");
+	colprintf("\n~BG~FW*** RX streamer commands parsed by this client ***\n\n");
 	for(i=cnt=0;comfunc[i].func;++i)
 	{
 		if (!pat || wildMatch(comfunc[i].com,pat))
@@ -418,7 +418,7 @@ void printHBT(char *mesg, uint32_t len)
 
 void printMDI(char *mesg, uint32_t len)
 {
-	colprintf("\n~BB*** Streamer info ***\n\n");
+	colprintf("~FTStreamer info:\n");
 	printMesg(mesg,len);
 }
 
@@ -907,7 +907,7 @@ void printNLT(char *mesg, uint32_t len)
 
 void printNRI(char *mesg, uint32_t len)
 {
-	colprintf("\n~BB*** Device setup ***\n\n");
+	colprintf("~FTDevice setup:\n");
 	printMesg(mesg,len);
 }
 

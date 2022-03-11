@@ -69,7 +69,7 @@ int printTitles(int xtitles, char *pat, int max)
 		return OK;
 	}
 
-	colprintf("\n~BB*** Titles ***\n\n");
+	colprintf("\n~BB~FW*** Titles ***\n\n");
 	if (xtitles) 
 	{
 		colprintf("~FRCon time~RS  ~FGTrk time~RS  ~FBLoc time~RS  Bytes  Text\n");

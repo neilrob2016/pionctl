@@ -134,11 +134,11 @@ void sigHandler(int sig)
 
 void version(int print_pid)
 {
-	colprintf("\n~BM*** PIONCTL - Pioneer N-70AE control client ***\n\n");
+	colprintf("\n~BM~FW*** PIONCTL - Pioneer N-70AE control client ***\n\n");
 	colprintf("~FTCopyright (C) Neil Robertson 2021-2022\n\n");
-	colprintf("~FGVersion~RS   : %s\n",VERSION);
+	colprintf("~FYVersion~RS   : %s\n",VERSION);
 	colprintf("~FGBuild date~RS: %s\n",BUILD_DATE);
-	if (print_pid) colprintf("~FGPID~RS       : %d\n",getpid());
+	if (print_pid) colprintf("~FBPID~RS       : %d\n",getpid());
 	putchar('\n');
 }
 

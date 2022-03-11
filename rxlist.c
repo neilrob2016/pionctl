@@ -124,7 +124,7 @@ int dumpRXList(char *pat, int max)
 		return ERR_CMD_FAIL;
 	}
 
-	colprintf("\n~BB*** Raw streamer RX (%s : %sCONNECTED) ***\n\n",
+	colprintf("\n~BB~FW*** Raw streamer RX (%s : %sCONNECTED) ***\n\n",
 		inet_ntoa(con_addr.sin_addr),tcp_sock ? "" : "DIS");
 	colprintf("~FRCom   ~FGBytes   ~FBMessage\n");
 	colprintf("~FT---   -----   -------\n");
