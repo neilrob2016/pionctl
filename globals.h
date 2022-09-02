@@ -27,7 +27,7 @@
 #define EXTERN extern
 #endif
 
-#define VERSION "20220311"
+#define VERSION "20220902"
 
 #define STDIN          0
 #define STDOUT         1
@@ -141,6 +141,7 @@ struct st_flags
 	unsigned com_up          : 1;
 	unsigned com_dn          : 1;
 	unsigned interrupted     : 1;
+	unsigned rx_menu         : 1;
 };
 
 

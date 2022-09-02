@@ -44,6 +44,7 @@ void printDIM(char *mesg, uint32_t len);
 void printLRA(char *mesg, uint32_t len);
 void printMGV(char *mesg, uint32_t len);
 void printMRM(char *mesg, uint32_t len);
+void printMMT(char *mesg, uint32_t len);
 void printRST(char *mesg, uint32_t len);
 void printTranslatedMesg(char *mesg, uint32_t len, int add_title);
 char *replaceAmpCodes(char *str, uint32_t *len);
@@ -110,7 +111,10 @@ static struct st_comfunc
 	{ "LRA", printLRA },
 	{ "MGV", printMGV },
 	{ "MRM", printMRM },
+	{ "MMT", printMMT },
 	{ "RST", printRST },
+
+	/* 40 */
 	{ "", NULL }
 };
 
@@ -248,7 +252,7 @@ void printRXCommands(char *pat)
 	int cnt;
 	int i;
 
-	colprintf("\n~BG~FW*** RX streamer commands parsed by this client ***\n\n");
+	colprintf("\n~BB~FW*** RX streamer commands parsed by this client ***\n\n");
 	for(i=cnt=0;comfunc[i].func;++i)
 	{
 		if (!pat || wildMatch(comfunc[i].com,pat))
@@ -457,11 +461,19 @@ void printNCP(char *mesg, uint32_t len)
 {
 	const char *popup_type[6] =
 	{ 
-		"List","Menu","Playback","Popup","Keyboard","Menu list"
+		"List",
+		"Menu",
+		"Playback",
+		"Popup",
+		"Keyboard",
+		"Menu list"
 	};
 	const char *update_type[4] =
 	{
-		"All","Button","Textbox","Listbox"
+		"All",
+		"Button",
+		"Textbox",
+		"Listbox"
 	};
 	switch(mesg[0])
 	{
@@ -524,9 +536,9 @@ void printNDS(char *mesg, uint32_t len)
 
 	switch(mesg[0])
 	{
-	case '-': printf("None");     break;
-	case 'E': printf("Ethernet"); break;
-	case 'W': printf("WiFi");     break;
+	case '-': colprintf("~FRNone~RS"); break;
+	case 'E': printf("Ethernet");      break;
+	case 'W': printf("WiFi");          break;
 	default : printf("?");
 	}
 	printf(" (%c)\n",mesg[0]);
@@ -536,12 +548,12 @@ void printNDS(char *mesg, uint32_t len)
 	{
 		switch(mesg[i])
 		{
-		case '-': printf("Nothing attached");  break;
+		case '-': colprintf("~FYNothing attached~RS"); break;
 		case 'i': printf("iPod/iPhone");       break;
 		case 'M': printf("Memory/NAS");        break;
 		case 'W': printf("Wireless adaptor");  break;
 		case 'B': printf("Bluetooth adaptor"); break;
-		case 'x': printf("Disabled");
+		case 'x': colprintf("~FRDisabled\n");
 		}
 		printf(" (%c)\n",mesg[i]);
 		if (i == 1) printf("   Rear USB : ");
@@ -623,6 +635,9 @@ void printNLS(char *mesg, uint32_t len)
 {
 	int prev_menu_cursor_pos;
 	int rx_cursor_pos;
+
+	/* Only used by wait_for_menu so reset there */
+	flags.rx_menu = 1;
 
 	printf("Menu  : ");
 	switch(mesg[0])
@@ -817,11 +832,11 @@ void printNLT(char *mesg, uint32_t len)
 	const char *status[15] =
 	{
 		/* 0 - 4 */
-		"None",
+		"~FYNone",
 		"Connecting",
 		"Aquiring license",
 		"Buffering",
-		"Cannot play",
+		"~FRCannot play",
 
 		/* 5 - 9 */
 		"Searching",
@@ -832,10 +847,10 @@ void printNLT(char *mesg, uint32_t len)
 
 		/* 10 - 14 */
 		"Song banned from station",
-		"Authentication failed",
+		"~FRAuthentication failed",
 		"Spotify paused",
 		"Track not available",
-		"Cannot skip"
+		"~FRCannot skip"
 	};	
 	int val;
 
@@ -895,11 +910,13 @@ void printNLT(char *mesg, uint32_t len)
 	}
 	printf(" (%c)\n",mesg[3]);
 
-	printf("   First?    : %s\n",mesg[14] == '1' ? "YES" : "NO");
+	colprintf("   First?    : %s~RS\n",
+		mesg[14] == '1' ? "~FGYES" : "~FRNO");
 
 	/* Skip icon info and go to status */
 	val = (int)hexToInt(mesg+20,2);
-	printf("   Status    : %s (0x%02X)\n",val < 16 ? status[val] : "?",val);
+	colprintf("   Status    : %s~RS (0x%02X)\n",
+		val < 16 ? status[val] : "?",val);
 }
 
 
@@ -1064,7 +1081,7 @@ void printUPD(char *mesg, uint32_t len)
 	switch(mesg[0])
 	{
 	case 'C':
-		puts("COMPLETE");
+		colprintf("~FGCOMPLETE\n");
 		return;
 	case 'D':
 		if (isdigit(mesg[1]))
@@ -1073,19 +1090,19 @@ void printUPD(char *mesg, uint32_t len)
 			printf("DOWNLOAD state %.2s\n",mesg+1);
 		return;
 	case 'E':
-		printf("ERROR %.4s\n",mesg+1);
+		colprintf("~FRERROR~RS %.4s\n",mesg+1);
 		return;
 	case '0':
 		switch(mesg[1])
 		{
 		case '0':
-			puts("No new firmware available.");
+			colprintf("~FYNo new firmware available.\n");
 			return;
 		case '1':
-			puts("New firmware available.");
+			colprintf("~FB~OLNew firmware available.\n");
 			return;
 		case '2':
-			puts("New firmware available (forced upgrade).");
+			colprintf("~FMNew firmware available (forced upgrade).\n");
 			return;
 		}
 	}
@@ -1161,7 +1178,8 @@ void printDIM(char *mesg, uint32_t len)
 
 void printLRA(char *mesg, uint32_t len)
 {
-	printf("LRA   : %.*s\n",len,mesg);
+	printf("LRA   : ");
+	printMesg(mesg,len);
 }
 
 
@@ -1173,7 +1191,7 @@ void printMGV(char *mesg, uint32_t len)
 	if (len > 2 && isNumberWithLen(mesg,len))
 		printf("%c.%.*s\n", mesg[0],len-1,mesg+1);
 	else
-		printf("%.*s\n",len,mesg);
+		printMesg(mesg,len);
 }
 
 
@@ -1187,7 +1205,46 @@ void printMRM(char *mesg, uint32_t len)
 	if (len > 1)
 		printf("0x%02x%02x\n",mesg[0] - '0',mesg[1] - '0');
 	else 
-		printf("%.*s\n",len,mesg);
+		printMesg(mesg,len);
+}
+
+
+
+
+/*** No idea what this is reporting but the N70 responds to QSTN ***/
+void printMMT(char *mesg, uint32_t len)
+{
+	const char *mesgstr[10] =
+	{
+		/* 0 */
+		"Possible to send",
+		"AirPlay can't resend",
+		"HDMI input content = other than PCM",
+		"HDMI ACP packet type = other than Generic Audio",
+		"OPT/COAX input content = other than PCM",
+
+		/* 5 */
+		"Circuit configuration factor",
+		"Inputting HMDI 3G or more",
+		"Signal exceeding 48Khz is input",
+		"Disabled NET/USB playback format",
+		"Master device grouped"
+	};
+	int mnum;
+
+	printf("Multiroom master TX command: ");
+	if (len != 2 || mesg[0] != '0')
+	{
+		printMesg(mesg,len);
+		return;
+	}
+	mnum = mesg[1] - '0';
+	if (mnum >= 0 && mnum < 10)
+		printf("%s",mesgstr[mnum]);
+	else
+		putchar('?');
+	
+	colprintf(" (%.2s)\n",mesg);
 }
 
 
@@ -1196,7 +1253,8 @@ void printMRM(char *mesg, uint32_t len)
 /*** Will only normally get a RST response if you manually send RSTQSTN ***/
 void printRST(char *mesg, uint32_t len)
 {
-	printf("Reset : %.*s\n",len,mesg);
+	printf("Reset : ");
+	printMesg(mesg,len);
 }
 
 

@@ -23,38 +23,39 @@ enum
 	COM_WAIT,
 
 	/* 10 */
+	COM_WAIT_MENU,
 	COM_CLS,
 	COM_ECHO,
 	COM_MACRO,
 	LAST_CLIENT_COM = COM_MACRO,
 
-	/* 13. Streamer commands */
+	/* 14. Streamer commands */
 	COM_MENU,
-	COM_MENUSTAT,
 
 	/* 15 */
+	COM_MENUSTAT,
 	COM_UP,
 	COM_DN,
 	COM_EN,
 	COM_EX,
-	COM_FLIP,
 
 	/* 20 */
+	COM_FLIP,
 	COM_DS,
 	COM_DSD,
 	COM_DSSTAT,
 	COM_FILTER,
-	COM_FILSTAT,
 
 	/* 25 */
+	COM_FILSTAT,
 	COM_ARTBMP,
 	COM_ARTURL,
 	COM_ARTSTAT,
 	COM_ARTSAVE,
 
 	/* Enums beyond saveart not required except for these */
-	COM_SETNAME = 80,
-	COM_LRA     = 95
+	COM_SETNAME = 82,
+	COM_LRA     = 97
 };
 
 
@@ -77,12 +78,13 @@ static struct st_command
 	{ "help",      NULL },
 	{ "connect",   NULL },
 	{ "disconnect",NULL },
-	{ "wait",  NULL },
+	{ "wait",      NULL },
 
 	/* 10 */
-	{ "cls",   NULL },
-	{ "echo",  NULL },
-	{ "macro", NULL },
+	{ "wait_menu",NULL },
+	{ "cls",      NULL },
+	{ "echo",     NULL },
+	{ "macro",    NULL },
 
 	/* Menu navigation */
 	{ "menu",    "NTCMENU"  },
@@ -168,6 +170,7 @@ static struct st_command
 	{ "airplay", "NSV180"  },
 	{ "svcstat", "NSVQSTN" },
 	{ "mrmstat", "MRMQSTN" },
+	{ "mmtstat", "MMTQSTN" },
 
 	/* Misc */
 	{ "cnstat",  "NDSQSTN" },
@@ -236,7 +239,7 @@ void optHelpNotes();
 int  comConnect(char *param);
 int  comDisconnect();
 void comClearHistory();
-int  comWait(char *param);
+int  comWait(int comnum, char *param);
 void comEcho(int cmd_word, int word_cnt, char **words);
 
 int  comMacro(char *opt, char *name, int cmd_word, int word_cnt, char **words);
@@ -738,7 +741,8 @@ int processBuiltInCommand(
 	case COM_DISCONNECT:
 		return comDisconnect();
 	case COM_WAIT:
-		return comWait(param1);
+	case COM_WAIT_MENU:
+		return comWait(comnum,param1);
 	case COM_CLS:
 		/* [2J clears screen, [H makes the cursor go to the top left */
 		write(STDOUT,"\033[2J\033[H",7);
@@ -961,7 +965,7 @@ void optShowTXCommands(char *pat)
 	int cnt2;
 	int i;
 
-	colprintf("\n~BG~FW*** TX streamer command mappings ***\n\n");
+	colprintf("\n~BB~FW*** TX streamer command mappings ***\n\n");
 	for(i=cnt1=cnt2=0;i < NUM_COMMANDS;++i)
 	{
 		if (commands[i].data)
@@ -1051,7 +1055,7 @@ void optShowHistory()
 	for(i=cnt=0;i < MAX_HIST_BUFFERS-1;++i)
 	{
 		if (buffer[bn].len)
-			colprintf("~FB~OL%3d:~RS %s\n",++cnt,buffer[bn].data);
+			colprintf("~FM%3d:~RS %s\n",++cnt,buffer[bn].data);
 		bn = (bn + 1) % MAX_HIST_BUFFERS;
 	}
 	puts("\nEnter !<number> or up/down arrow keys to select.\n");
@@ -1175,13 +1179,13 @@ void optHelpMain(int extra, char *pat)
 
 	nlafter = 5;
 
-	colprintf("\n~BG~FW*** Client commands ***\n\n");
+	colprintf("\n~BM~FW*** Client commands ***\n\n");
 	for(i=cnt=0;i < NUM_COMMANDS;++i)
 	{
 		if (i && commands[i].data && !commands[i-1].data)
 		{
 			if (cnt % nlafter) putchar('\n');
-			colprintf("\n~BB~FW*** Streamer commands ***\n\n");
+			colprintf("\n~BT~FW*** Streamer commands ***\n\n");
 			if (extra) nlafter = 4;
 			cnt = 0;
 		}
@@ -1246,7 +1250,7 @@ void optHelpSorted(char *pat)
 	int cnt;
 	int i;
 
-	colprintf("\n~BG~FW*** Sorted commands ***\n\n");
+	colprintf("\n~BM~FW*** Sorted commands ***\n\n");
 	for(i=cnt=0;i < NUM_COMMANDS;++i)
 	{
 		if (!pat || wildMatch(sorted_commands[i],pat))
@@ -1297,46 +1301,72 @@ int comDisconnect()
 
 
 
-int comWait(char *param)
+/*** WAIT and WAIT_MENU ***/
+int comWait(int comnum, char *param)
 {
 	struct timeval tv;
+	struct timeval *tvp;
 	fd_set mask;
 	float secs;
 	u_int usecs;
 	u_int end;
 
-	if (param && (secs = atof(param)) > 0)
-	{
-		usecs = (u_int)(secs * 1000000);
-		if (tcp_sock)
-		{
-			/* Print out anything coming from the streamer while 
-			   we wait */
-			end = getUsecTime() + usecs;
+	secs = 0;
+	tvp = NULL;
 
-			while(1)
+	/* wait_menu can also take a timeout just in case we never receive
+	   a menu */
+	if (param)
+	{
+		if ((secs = atof(param)) <= 0) goto ERROR;
+		tvp = &tv;
+	}
+	else if (comnum == COM_WAIT) goto ERROR;
+
+	usecs = (u_int)(secs * 1000000);
+	if (tcp_sock)
+	{
+		if (usecs) end = getUsecTime() + usecs;
+
+		while(1)
+		{
+			/* Wait for timeout */
+			FD_ZERO(&mask);
+			FD_SET(tcp_sock,&mask);
+
+			if (usecs)
 			{
-				FD_ZERO(&mask);
-				FD_SET(tcp_sock,&mask);
 				usecs = end - getUsecTime();
 				tv.tv_sec = usecs / 1000000;
 				tv.tv_usec = usecs % 1000000;
-				switch(select(FD_SETSIZE,&mask,0,0,&tv))
-				{
-				case -1:
-					return (errno == EINTR) ? ERR_CMD_FAIL : OK;
-				case 0:
-					return OK;
-				}
-				readSocket(0);
 			}
-		}
-		else if (usleep(usecs) == -1 && errno == EINTR)
-			return ERR_CMD_FAIL;
 
-		return OK;
+			switch(select(FD_SETSIZE,&mask,0,0,tvp))
+			{
+			case -1:
+				return (errno == EINTR) ? ERR_CMD_FAIL : OK;
+			case 0:
+				/* Wait time expired */
+				return OK;
+			}
+
+			/* Process anything coming from the streamer while we 
+			   wait */
+			flags.rx_menu = 0;
+			readSocket(0);
+			if (comnum == COM_WAIT_MENU && flags.rx_menu)
+				return OK;
+		}
 	}
-	usageprintf("wait <seconds>\n");
+	else if (usleep(usecs) == -1 && errno == EINTR)
+		return ERR_CMD_FAIL;
+	return OK;
+
+	ERROR:
+	if (comnum == COM_WAIT)
+		usageprintf("wait <seconds>\n");
+	else
+		usageprintf("wait_menu [<seconds>]\n");
 	return ERR_CMD_FAIL;
 }
 
