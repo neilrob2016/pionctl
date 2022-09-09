@@ -1418,10 +1418,10 @@ int comMacro(char *opt, char *name, int cmd_word, int word_cnt, char **words)
 		{
 		case 0:
 			ret = optMacroDefine(cmd_word,word_cnt,words);
-			break;
+			goto DONE;
 		case 1:
 			ret = optMacroAppend(cmd_word,word_cnt,words);
-			break;
+			goto DONE;
 		case 2:
 			if (name) return deleteMacro(name);
 			goto USAGE;
@@ -1433,15 +1433,16 @@ int comMacro(char *opt, char *name, int cmd_word, int word_cnt, char **words)
 			goto USAGE;
 		case 5:
 			ret = optMacroSave(0,cmd_word,word_cnt,words);
-			break;
+			goto DONE;
 		case 6:
 			ret = optMacroSave(1,cmd_word,word_cnt,words);
-			break;
+			goto DONE;
 		case 7:
 			listMacros();
 			return OK;
 		}
 	}
+	DONE:
 	if (ret != ERR_CMD_FAIL) return ret;
 
 	USAGE:

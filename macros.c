@@ -15,13 +15,14 @@ int   writeMacro(FILE *fp, int m, int append);
 int   clearMacro(int m);
 char *firstNonWhitespacePos(char *str);
 char *trim(char *name);
-char *tildaToHomeDir(char *filename);
 int   validName(char *name);
+int   expandPath(char *search_path, char *found_path);
+int   hasWildCards(char *str);
 
 
 void initMacros()
 {
-	struct passwd *ud;
+	struct passwd *pwd;
 
 	macros = NULL;
 	macro_cnt = 0;
@@ -30,8 +31,8 @@ void initMacros()
 	macro_name = NULL;
 
 	/* Get the home directory in order to substitute '~' in filenames */
-	ud = getpwuid(getuid());
-	home_dir = ud->pw_dir ? strdup(ud->pw_dir) : "";
+	pwd = getpwuid(getuid());
+	home_dir = (pwd && pwd->pw_dir) ? strdup(pwd->pw_dir) : NULL;
 }
 
 
@@ -341,14 +342,15 @@ int loadMacros(char *filename)
 	   commands as the next name etc. Too bad */
 	char name[MAX_LINE_LEN];
 	char line[MAX_LINE_LEN];
-	char *path;
+	char path[PATH_MAX];
 	char *ptr;
 	FILE *fp;
 	int get_name;
 	int good;
 	int bad;
 
-	path = tildaToHomeDir(filename);
+	if (!expandPath(filename,path)) return ERR_MACRO;
+
 	printf("Loading from file \"%s\"...\n",path);
 
 	/* Annoyingly fopen() will happily open a directory to read if in
@@ -357,17 +359,14 @@ int loadMacros(char *filename)
 	if (lstat(path,&st) == -1)
 	{
 		errprintf("Can't stat file: %s\n",strerror(errno));
-		free(path);
 		return ERR_MACRO;
 	}
 	if (!S_ISREG(st.st_mode))
 	{
 		errprintf("Not a regular file.\n");
-		free(path);
 		return ERR_MACRO;
 	}
 	fp = fopen(path,"r");
-	free(path);
 	if (!fp)
 	{
 		errprintf("Can't open file to read: %s\n",strerror(errno));
@@ -415,7 +414,7 @@ int loadMacros(char *filename)
 int saveMacro(char *filename, char *name, int append)
 {
 	FILE *fp;
-	char *path;
+	char path[PATH_MAX];
 	int ret;
 	int m;
 
@@ -424,10 +423,16 @@ int saveMacro(char *filename, char *name, int append)
 		errprintf("Macro \"%s\" does not exist.\n",name);
 		return ERR_MACRO;
 	}
-	path = tildaToHomeDir(filename);
+	if (!expandPath(filename,path)) return ERR_MACRO;
+
+	if (hasWildCards(path))
+	{
+		errprintf("Invalid file name.\n");
+		return ERR_MACRO;
+	}
+
 	printf("Writing to file \"%s\"...\n",path);
 	fp = fopen(path,append ? "a" : "w");
-	free(path);
 	if (!fp)
 	{
 		errprintf("Can't open file to write: %s\n",strerror(errno));
@@ -444,7 +449,7 @@ int saveMacro(char *filename, char *name, int append)
 int saveAllMacros(char *filename, int append)
 {
 	FILE *fp;
-	char *path;
+	char path[PATH_MAX];
 	int cnt;
 	int m;
 
@@ -453,10 +458,16 @@ int saveAllMacros(char *filename, int append)
 		puts("No macros defined.");
 		return OK;
 	}
-	path = tildaToHomeDir(filename);
+	if (!expandPath(filename,path)) return ERR_MACRO;
+
+	if (hasWildCards(path))
+	{
+		errprintf("Invalid file name.\n");
+		return ERR_MACRO;
+	}
+
 	printf("Writing to file \"%s\"...\n",path);
 	fp = fopen(path,append ? "a" : "w");
-	free(path);
 	if (!fp)
 	{
 		errprintf("Can't open file to write: %s\n",strerror(errno));
@@ -611,32 +622,137 @@ char *trim(char *str)
 
 
 
-char *tildaToHomeDir(char *filename)
-{
-	char *new_filename;
-	int ret;
-
-	filename = trim(filename);
-	if (filename[0] == '~')
-	{
-		ret = asprintf(&new_filename,
-			"%s/%s",home_dir,filename+(filename[1] == '/' ? 2 : 1));
-		assert(ret != -1);
-	}
-	else
-	{
-		new_filename = strdup(filename);
-		assert(new_filename);
-	}
-	return new_filename;
-}
-
-
-
-
 int validName(char *name)
 {
 	char *p;
 	for(p=name;*p > 31 && !ispunct(*p);++p);
 	return !*p;
+}
+
+
+
+
+/*** Expands any wildcards into full path entries ***/
+int expandPath(char *search_path, char *found_path)
+{
+	struct passwd *pwd;
+	struct dirent *ds;
+	DIR *dir;
+	char *start;
+	char *entry;
+	char *ptr;
+	int add_slash;
+	int found;
+	
+	errno = 0;
+	if (!search_path) goto ERROR;
+
+	add_slash = 1;
+	found_path[0] = 0;
+
+	switch(*search_path)
+	{
+	case '.':
+		if (search_path[1] == '/')
+			start = search_path + 2;
+		else
+			start = search_path;
+		strcpy(found_path,".");
+		break;
+	case '/':
+		strcpy(found_path,"/");
+		start = search_path + 1;
+		add_slash = 0;
+		break;
+	case '~':
+		if (search_path[1] == '/')
+		{
+			if (!home_dir) goto ERROR;
+			/* Its our home directory */
+			strcpy(found_path,home_dir);
+			start = search_path + 2;
+			break;
+		}
+
+		/* Get other user home directory */
+		if ((ptr = strchr(search_path,'/')))
+		{
+			*ptr = 0;
+			start = ptr + 1;
+		}
+		else goto ERROR;
+
+		pwd = getpwnam(search_path + 1);
+		if (pwd && pwd->pw_dir)
+		{
+			strcpy(found_path,pwd->pw_dir);
+			break;
+		}
+		goto ERROR;
+	default:
+		strcpy(found_path,".");
+		start = search_path;
+	}
+
+	while(1)
+	{
+		/* Get directory entry */
+		if ((ptr = strchr(start,'/'))) *ptr = 0;
+		entry = start;
+
+		/* Only search for an entry if its not the last one in the
+		   path or it has wildcards. Ie it doesn't matter if the last
+		   entry doesn't yet exist unless it has wildCards */
+		if (ptr || hasWildCards(entry))
+		{
+			if (!(dir = opendir(found_path))) goto ERROR;
+
+			/* Find entry */
+			for(found=0;(ds = readdir(dir));)
+			{
+				if (wildMatch(ds->d_name,entry)) 
+				{
+					entry = ds->d_name;
+					found = 1;
+					break;
+				}
+			}
+			closedir(dir);
+		}
+		if (!found) goto ERROR;
+
+		if (add_slash) strncat(found_path,"/",PATH_MAX);
+		strncat(found_path,entry,PATH_MAX);
+		if (!ptr) break;
+
+		start = ptr + 1;
+		add_slash = 1;
+	}
+	return 1;
+
+	ERROR:
+	if (errno)
+	{
+		if (found_path[0])
+		{
+			errprintf("Invalid path from \"%s\": %s\n",
+				found_path,strerror(errno));
+		}
+		else errprintf("Invalid path: %s\n",strerror(errno));
+	}
+	else if (found_path[0])
+		errprintf("Invalid path from \"%s\".\n",found_path);
+	else
+		errprintf("Invalid path.\n");
+	return 0;
+}
+
+
+
+
+int hasWildCards(char *str)
+{
+	char *s;
+	for(s=str;*s;++s) if (*s == '*' || *s == '?') return 1;
+	return 0;
 }

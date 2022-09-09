@@ -5,6 +5,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <termios.h>
+#include <dirent.h>
 #include <time.h>
 #include <pwd.h>
 #include <netdb.h>
@@ -12,6 +13,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include <signal.h>
+#include <limits.h>
 #include <assert.h>
 #include <uuid/uuid.h>
 #include <sys/socket.h>
@@ -27,7 +29,7 @@
 #define EXTERN extern
 #endif
 
-#define VERSION "20220902"
+#define VERSION "20220909"
 
 #define STDIN          0
 #define STDOUT         1
