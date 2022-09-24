@@ -1315,7 +1315,7 @@ int comWait(int comnum, char *param)
 	tvp = NULL;
 
 	/* wait_menu can also take a timeout just in case we never receive
-	   a menu */
+	   a menu. If the timeout expires it errors. */
 	if (param)
 	{
 		if ((secs = atof(param)) <= 0) goto ERROR;
@@ -1347,6 +1347,11 @@ int comWait(int comnum, char *param)
 				return (errno == EINTR) ? ERR_CMD_FAIL : OK;
 			case 0:
 				/* Wait time expired */
+				if (comnum == COM_WAIT_MENU)
+				{
+					errprintf("TIMEOUT\n");
+					return ERR_CMD_FAIL;
+				}
 				return OK;
 			}
 

@@ -1,0 +1,15 @@
+Older versions skipped.
+
+20220322
+========
+- Cosmetic changes so it looks better on a black on white xterm.
+- Minor updates
+
+20220909
+========
+- Added wait_menu command.
+
+20220924
+========
+- Changed wait_menu to error if timeout occurs.
+- Minor bug fix.

@@ -3,6 +3,7 @@ CC=cc
 # ARM Linux
 #CC=aarch64-poky-linux-gcc --sysroot=/opt/fsl-imx-wayland/4.19-warrior/sysroots/aarch64-poky-linux
 
+#ARGS=-Wall -Wextra -pedantic -g -c
 ARGS=-Wall -pedantic -g -c
 COMP=$(CC) $(ARGS)
 DEPS=globals.h Makefile

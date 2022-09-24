@@ -42,7 +42,7 @@ int updateRXList(char *key, char *value, int val_len)
 	assert((entry = (t_entry *)malloc(sizeof(t_entry))));
 	bzero(entry,sizeof(t_entry));
 
-	assert((entry->key = (char *)malloc(4)));
+	assert((entry->key = (char *)malloc(sizeof(key2))));
 	strcpy(entry->key,key2);
 
 	setEntryValue(entry,value,val_len);

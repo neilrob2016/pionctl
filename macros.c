@@ -198,11 +198,15 @@ void addMacroLine(char *line, int len)
 	if (macro_line_tmp)
 	{
 		ret = asprintf(&tmp,"%s; %.*s",macro_line_tmp,len,line);
-		free(macro_line_tmp);
+		assert(ret >= 0);
+		FREE(macro_line_tmp);
 		macro_line_tmp = tmp;
 	}
-	else ret = asprintf(&macro_line_tmp,"%.*s",len,line);
-	assert(ret != -1);
+	else
+	{
+		ret = asprintf(&macro_line_tmp,"%.*s",len,line);
+		assert(ret >= 0);
+	}
 }
 
 

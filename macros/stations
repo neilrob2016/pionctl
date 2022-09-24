@@ -1,10 +1,10 @@
 # Some UK ratio stations
 tin
 # Need a proper wait after en or streamed will ignore up/dn if sent too fast
-tunein; wait_menu 5; en; wait 2
+tunein; wait_menu 10; en; wait 2
 
 tuned
-wait_menu 1; en; echo "~BM***** ~LITuned~RS~BM *****"
+wait_menu 2; en; echo "~BM***** ~LITuned~RS~BM *****"
 amb
 echo "~BM>>>~RS Tuning ~FGAmbient~RS..."; tin; tuned 
 chill
