@@ -88,7 +88,6 @@ void printPromptTrackTime()
 void clearPrompt()
 {
 	putchar('\r');
-	write(STDOUT,"\033[0k",4); /* Clears the whole line */
-	putchar('\r');
+	write(STDOUT,"\033[2K\r",5); /* Clears the whole line */
 	fflush(stdout);
 }

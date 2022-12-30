@@ -13,3 +13,11 @@ Older versions skipped.
 ========
 - Changed wait_menu to error if timeout occurs.
 - Minor bug fix.
+
+20221230
+========
+- Added serial, ethmac, iconurl, tidalver, ecover, prodid commands.
+- Renamed "name" command to "id"
+- Split some functions from misc.c out into strings.c, time.c
+- Fixed bug in clearPrompt()
+- Minor code tidying.

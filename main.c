@@ -148,8 +148,8 @@ void parseCmdLine(int argc, char **argv)
 	       "       -a <TCP address[:<port>]>\n"
 	       "       -n <TCP connect timeout> : Default = TCP default\n"
 	       "       -u <UDP listen port>     : 0 to 65535. Default = %d.\n"
-	       "       -l <UDP listen timeout>] : Default = %d secs.\n"
-	       "       -d <device code (0-9)>]  : Default = %c.\n"
+	       "       -l <UDP listen timeout>  : Default = %d secs.\n"
+	       "       -d <device code (0-9)>   : Default = %c.\n"
 	       "       -i <command list>        : Semi colon seperated list of commands to run\n"
 	       "                                  immediately. Eg: tunein;3 dn;en\n"
 	       "       -p [0 to %d]              : Prompt type. Default = %d.\n"
@@ -157,7 +157,7 @@ void parseCmdLine(int argc, char **argv)
 	       "       -b                       : Verbose mode (currently only shows macros run\n"
 	       "                                  and expanded command names).\n"
 	       "       -c                       : Do NOT use ansi colour.\n"
-	       "       -e                       : Exit after immediate commands run.\n"
+	       "       -e                       : Exit after immediate commands run using -i.\n"
 	       "       -o                       : Offline mode, ie don't listen for streamer.\n"
 	       "       -s                       : Translate HTML ampersand codes in album,\n"
 	       "                                  artist and title when pretty printing.\n"
@@ -191,6 +191,7 @@ void init()
 	macro_append = -1;
 	connect_time = 0;
 	start_time = time(0);
+	nri_command = 0;
 
 	signal(SIGINT,sigHandler);
 	signal(SIGQUIT,sigHandler);

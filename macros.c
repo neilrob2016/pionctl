@@ -93,8 +93,8 @@ void discardMultiLineMacro()
 	switch(input_state)
 	{
 	case INPUT_MACRO_DEF:
-		FREE(macro_name);
-		FREE(macro_line_tmp);
+		FREEIF(macro_name);
+		FREEIF(macro_line_tmp);
 		break;
 	case INPUT_MACRO_APP:
 		break;
@@ -190,8 +190,8 @@ void addMacroLine(char *line, int len)
 		default:
 			assert(0);
 		}
-		FREE(macro_line_tmp);
-		FREE(macro_name);
+		FREEIF(macro_line_tmp);
+		FREEIF(macro_name);
 		input_state = INPUT_CMD;
 		return;
 	}
@@ -589,7 +589,7 @@ int clearMacro(int m)
 	if (macros[m].name)
 	{
 		FREE(macros[m].name);
-		FREE(macros[m].comlist);
+		FREEIF(macros[m].comlist);
 		ret = 1;
 	}
 	else ret = 0;
@@ -652,6 +652,7 @@ int expandPath(char *search_path, char *found_path)
 	if (!search_path) goto ERROR;
 
 	add_slash = 1;
+	found = 0;
 	found_path[0] = 0;
 
 	switch(*search_path)

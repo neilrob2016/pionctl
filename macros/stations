@@ -6,7 +6,7 @@ tunein; wait_menu 10; en; wait 2
 tuned
 wait_menu 2; en; echo "~BM***** ~LITuned~RS~BM *****"
 amb
-echo "~BM>>>~RS Tuning ~FGAmbient~RS..."; tin; tuned 
+echo "~BM>>>~RS Tuning ~FGAmbient~RS..."; tin; en; tuned
 chill
 echo "~BM>>>~RS Tuning ~FYChill~RS..."; tin; 1 dn; tuned
 jazz
@@ -14,12 +14,12 @@ echo "~BM>>>~RS Tuning ~FMJazzFM~RS..."; tin; 2 dn; tuned
 moon
 echo "~BM>>>~RS Tuning ~FGMoon Phase Radio~RS..."; tin; 3 dn; tuned
 talk
-echo "~BM>>>~RS Tuning ~FRtalkRadio~RS..."; tin; 2 dn; wait_menu 0.5; 2 dn; tuned
+echo "~BM>>>~RS Tuning ~FRtalkRadio~RS..."; tin; 2 dn; wait_menu 10; 2 dn; tuned
 times
-echo "~BM>>>~RS Tuning ~FYTimes Radio~RS..."; tin; 3 dn; wait_menu 0.5; 2 dn; tuned
+echo "~BM>>>~RS Tuning ~FYTimes Radio~RS..."; tin; 3 dn; wait_menu 10; 2 dn; tuned
 lbc
-echo "~BM>>>~RS Tuning ~FBLBC~RS..."; tin; 3 dn; wait_menu 0.5; 3 dn; tuned
+echo "~BM>>>~RS Tuning ~FBLBC~RS..."; tin; 3 dn; wait_menu 10; 3 dn; tuned
 sunset
-echo "~BM>>>~RS Tuning ~FGSunset~RS..."; tin; up; tuned
+echo "~BM>>>~RS Tuning ~FGSunset~RS..."; tin; 2 up; tuned
 gbn
 echo "~BM>>>~RS Tuning ~FRGB News~RS..."; tin; 3 up; tuned

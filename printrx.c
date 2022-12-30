@@ -46,6 +46,7 @@ void printMGV(char *mesg, uint32_t len);
 void printMRM(char *mesg, uint32_t len);
 void printMMT(char *mesg, uint32_t len);
 void printRST(char *mesg, uint32_t len);
+void printXMLField(char *field, int mac, char *mesg, uint32_t len);
 void printTranslatedMesg(char *mesg, uint32_t len, int add_title);
 char *replaceAmpCodes(char *str, uint32_t *len);
 char translateAmpCode(char *code);
@@ -276,7 +277,6 @@ void printTrackTime(int rx)
 	int i;
 	int cnt;
 
-	/* The 2 strings are set in readSocket() in network.c */
 	if (rx)
 		printf("Track time: %s",track_time_str);
 	else
@@ -296,7 +296,7 @@ void printTrackTime(int rx)
 
 void printAMT(char *mesg, uint32_t len)
 {
-	printf("Muting: ");
+	printf("Muting    : ");
 	PRINT_ON_OFF();
 }
 
@@ -306,7 +306,7 @@ void printAMT(char *mesg, uint32_t len)
 /*** Digital filter ***/
 void printDGF(char *mesg, uint32_t len)
 {
-	printf("Filter: ");
+	printf("Filter    : ");
 
 	/* Values are 00, 01, 02 */
 	if (mesg[0] == '0')
@@ -326,7 +326,7 @@ void printDGF(char *mesg, uint32_t len)
 
 void printDIR(char *mesg, uint32_t len)
 {
-	printf("Direct: ");
+	printf("Direct    : ");
 	PRINT_ON_OFF();
 }
 
@@ -335,7 +335,7 @@ void printDIR(char *mesg, uint32_t len)
 
 void printEDF(char *mesg, uint32_t len)
 {
-	printf("Memory: ");
+	printf("Memory    : ");
 	if (len < 8)
 		puts("<unknown>");
 	else
@@ -347,7 +347,7 @@ void printEDF(char *mesg, uint32_t len)
 
 void printEDV(char *mesg, uint32_t len)
 {
-	printf("Action: ");
+	printf("Action    : ");
 	if (!memcmp(mesg,"00",2)) colprintf("~FRNot approved\n");
 	else if (!memcmp(mesg,"01",2)) colprintf("~FGApproved\n");
 	else printMesg(mesg,len);
@@ -413,7 +413,7 @@ void printFWV(char *mesg, uint32_t len)
 
 void printHBT(char *mesg, uint32_t len)
 {
-	printf("Hi-bit: ");
+	printf("High bit  : ");
 	PRINT_ON_OFF();
 }
 
@@ -431,7 +431,7 @@ void printMDI(char *mesg, uint32_t len)
 
 void printMOT(char *mesg, uint32_t len)
 {
-	printf("ASR   : ");
+	printf("ASR       : ");
 	PRINT_ON_OFF();
 }
 
@@ -440,7 +440,7 @@ void printMOT(char *mesg, uint32_t len)
 
 void printNAL(char *mesg, uint32_t len)
 {
-	printf("Album : ");
+	printf("Album name: ");
 	printTranslatedMesg(mesg,len,0);
 }
 
@@ -449,7 +449,7 @@ void printNAL(char *mesg, uint32_t len)
 
 void printNAT(char *mesg, uint32_t len)
 {
-	printf("Artist: ");
+	printf("Artist    : ");
 	printTranslatedMesg(mesg,len,0);
 }
 
@@ -520,7 +520,7 @@ void printNCP(char *mesg, uint32_t len)
      device name command. Perhaps for other models only ***/
 void printNDN(char *mesg, uint32_t len)
 {
-	printf("Device: ");
+	printf("Device    : ");
 	printMesg(mesg,len);
 }
 
@@ -565,7 +565,7 @@ void printNDS(char *mesg, uint32_t len)
 
 void printNFI(char *mesg, uint32_t len)
 {
-	printf("Codec : ");
+	printf("Codec type: ");
 	printMesg(mesg,len);
 }
 
@@ -574,7 +574,7 @@ void printNFI(char *mesg, uint32_t len)
 
 void printNFN(char *mesg, uint32_t len)
 {
-	colprintf("~FTUnit info:\n");
+	colprintf("~FTIdentity  :\n");
 	/* No lookup table in docs */
 	printf("   Manufacturer ID: %d\n",mesg[0]); 
 	printf("   Friendly name  : ");
@@ -593,7 +593,7 @@ void printNJA(char *mesg, uint32_t len)
 	if (mesg[0] == nja_prev && (nja_prev == '0' || nja_prev == '1'))
 		return;
 
-	printf("Jktart: ");
+	printf("Jacket art: ");
 	switch(mesg[0])
 	{
 	case '0':
@@ -639,7 +639,7 @@ void printNLS(char *mesg, uint32_t len)
 	/* Only used by wait_for_menu so reset there */
 	flags.rx_menu = 1;
 
-	printf("Menu  : ");
+	printf("Menu      : ");
 	switch(mesg[0])
 	{
 	case 'A':
@@ -922,10 +922,48 @@ void printNLT(char *mesg, uint32_t len)
 
 
 
+/*** Don't reset nri_command so that if user calls "show rx" it'll show 
+     whichever NRI command they last requested ***/
 void printNRI(char *mesg, uint32_t len)
 {
-	colprintf("~FTDevice setup:\n");
-	printMesg(mesg,len);
+	switch(nri_command)
+	{
+	case COM_SERIAL:
+		/* Colour output because it depends on last command */
+		colprintf("~FB~OLSerial num:~RS ");
+		printXMLField("deviceserial",0,mesg,len);
+		break;
+	case COM_ETHMAC:
+		/* Ethernet MAC, not wifi MAC. The latter isn't given in the
+		   setup data and there doesn't seem to be any alternative way
+		   to get it */
+		colprintf("~FB~OLEther MAC :~RS ");
+		printXMLField("macaddress",1,mesg,len);
+		break;
+	case COM_ICONURL:
+		colprintf("~FB~OLIcon URL  :~RS ");
+		printXMLField("modeliconurl",0,mesg,len);
+		break;
+	case COM_MODEL:
+		colprintf("~FB~OLModel type:~RS ");
+		printXMLField("model",0,mesg,len);
+		break;
+	case COM_TIDALVER:
+		colprintf("~FB~OLTidal vers:~RS ");
+		printXMLField("tidaloauthversion",0,mesg,len);
+		break;
+	case COM_ECOVER:
+		colprintf("~FB~OLEcosys ver:~RS ");
+		printXMLField("ecosystemversion",0,mesg,len);
+		break;
+	case COM_PRODID:
+		colprintf("~FB~OLProduct ID:~RS ");
+		printXMLField("productid",0,mesg,len);
+		break;
+	default:
+		colprintf("~FB~OLDevice setup:\n");
+		printMesg(mesg,len);
+	}
 }
 
 
@@ -984,7 +1022,7 @@ void printNST(char *mesg, uint32_t len)
 
 void printNTI(char *mesg, uint32_t len)
 {
-	printf("Title : ");
+	printf("Trak title: ");
 	printTranslatedMesg(mesg,len,1);
 }
 
@@ -1001,7 +1039,7 @@ void printNTM(char *mesg, uint32_t len)
 
 void printNTR(char *mesg, uint32_t len)
 {
-	colprintf("~FTTracks:\n");
+	colprintf("~FTTracks    :\n");
 	if (len > 3)
 	{
 		printf("   Current: ");
@@ -1036,7 +1074,7 @@ void printNLU(char *mesg, uint32_t len)
 
 void printPWR(char *mesg, uint32_t len)
 {
-	printf("Power : ");
+	printf("Power stat: ");
 	PRINT_ON_OFF();
 }
 
@@ -1057,7 +1095,7 @@ void printSLI(char *mesg, uint32_t len)
 {
 	int val;
 
-	printf("Input : ");
+	printf("Input type: ");
 	switch((val = (int)hexToInt(mesg,2)))
 	{
 	case 0x27: printf("Music server"); break;
@@ -1077,7 +1115,7 @@ void printSLI(char *mesg, uint32_t len)
 
 void printUPD(char *mesg, uint32_t len)
 {
-	printf("Update status: ");
+	printf("Upd status: ");
 	switch(mesg[0])
 	{
 	case 'C':
@@ -1156,7 +1194,7 @@ void printPPS(char *mesg, uint32_t len)
 
 void printDIM(char *mesg, uint32_t len)
 {
-	printf("Dimmer: ");
+	printf("Dimmer lev: ");
 	if (mesg[0] == '0')
 	{
 		switch(mesg[1])
@@ -1178,7 +1216,7 @@ void printDIM(char *mesg, uint32_t len)
 
 void printLRA(char *mesg, uint32_t len)
 {
-	printf("LRA   : ");
+	printf("LRA level : ");
 	printMesg(mesg,len);
 }
 
@@ -1253,12 +1291,51 @@ void printMMT(char *mesg, uint32_t len)
 /*** Will only normally get a RST response if you manually send RSTQSTN ***/
 void printRST(char *mesg, uint32_t len)
 {
-	printf("Reset : ");
+	printf("Reset     : ");
 	printMesg(mesg,len);
 }
 
 
 /********************************** SUPPORT ***********************************/
+
+void printXMLField(char *field, int mac, char *mesg, uint32_t len)
+{
+	char *ptr;
+	char *mptr;
+	char *mend;
+	char *fstart;
+	char *fptr;
+	int cnt;
+
+	/* Might find substring of longer field name so need to loop until 
+	   we find it or the end of the message */
+	mend = mesg + len;
+	for(mptr=mesg;mptr < mend;mptr=fstart + 1)
+	{
+		if (!(ptr = strnstr(mptr,field,len)) ||
+		     (fstart = ptr + strlen(field)) >= mend) break;
+
+		if (*fstart == '>')
+		{
+			++fstart;
+			cnt = 0;
+			for(fptr=fstart;
+			    fptr < mend && *fptr != '<';++fptr)
+			{
+				putchar(*fptr);
+				/* Put the colons in the MAC address */
+				if (mac && cnt < 10 && !(++cnt % 2))
+					putchar(':');
+			}
+			putchar('\n');
+			return;
+		}
+	}
+	puts("?");
+}
+
+
+
 
 /*** Translate HTML ampersand codes if flag set ***/
 void printTranslatedMesg(char *mesg, uint32_t len, int add_title)

@@ -29,7 +29,7 @@
 #define EXTERN extern
 #endif
 
-#define VERSION "20220924"
+#define VERSION "20221230"
 
 #define STDIN          0
 #define STDOUT         1
@@ -41,7 +41,8 @@
 #define SAVE_TIMEOUT   5
 #define TIME_DEF_STR   "--:--:--"
 
-#define FREE(M) if (M) { free(M); M = NULL; }
+#define FREE(M)   { free(M); M = NULL; }
+#define FREEIF(M) if (M) FREE(M)
 
 #ifdef __APPLE__
 /* Don't bitch about pragma pack every time it sees it */
@@ -116,14 +117,65 @@ enum
 };
 
 
-typedef struct
+enum
 {
-	char iscp[4];
-	uint32_t hdr_len;
-	uint32_t data_len;
-	char version;
-	char reserved[3];
-} t_iscp_hdr;
+	/* 0. Client commands */
+	COM_EXIT,
+	COM_TOGGLE,
+	COM_PROMPT,
+	COM_RAW,
+	COM_SHOW,
+
+	/* 5 */
+	COM_CLEAR,
+	COM_HELP,
+	COM_CONNECT,
+	COM_DISCONNECT,
+	COM_WAIT,
+
+	/* 10 */
+	COM_WAIT_MENU,
+	COM_CLS,
+	COM_ECHO,
+	COM_MACRO,
+	LAST_CLIENT_COM = COM_MACRO,
+
+	/* 14. Streamer commands */
+	COM_MENU,
+
+	/* 15 */
+	COM_MENUSTAT,
+	COM_UP,
+	COM_DN,
+	COM_EN,
+	COM_EX,
+
+	/* 20 */
+	COM_FLIP,
+	COM_DS,
+	COM_DSD,
+	COM_DSSTAT,
+	COM_FILTER,
+
+	/* 25 */
+	COM_FILSTAT,
+	COM_ARTBMP,
+	COM_ARTURL,
+	COM_ARTSTAT,
+	COM_ARTSAVE,
+
+	/* Enums beyond saveart not required except for these */
+	COM_SETNAME = 82,
+	COM_SETUP   = 88,
+	COM_SERIAL,
+	COM_ETHMAC,
+	COM_ICONURL,
+	COM_MODEL,
+	COM_TIDALVER,
+	COM_ECOVER,
+	COM_PRODID,
+	COM_LRA     = 104
+};
 
 
 struct st_flags
@@ -147,6 +199,31 @@ struct st_flags
 };
 
 
+struct st_addr
+{
+	int cnt;
+	struct in_addr addr;
+};
+
+
+struct st_buffer
+{
+	char *data;
+	int len;
+	int alloc;
+};
+
+
+typedef struct
+{
+	char iscp[4];
+	uint32_t hdr_len;
+	uint32_t data_len;
+	char version;
+	char reserved[3];
+} t_iscp_hdr;
+
+
 typedef struct
 {
 	char start_char;
@@ -166,14 +243,6 @@ typedef struct st_entry
 } t_entry;
 
 
-typedef struct 
-{
-	char *data;
-	int len;
-	int alloc;
-} t_buffer;
-
-
 typedef struct
 {
 	char *name;
@@ -181,7 +250,6 @@ typedef struct
 	int len;
 	int running;
 } t_macro;
-
 
 /* Cmd line params */
 EXTERN struct st_flags flags;
@@ -194,10 +262,10 @@ EXTERN int connect_timeout;
 
 /* Runtime globals */
 EXTERN struct termios saved_tio;
-EXTERN struct in_addr addr_list[ADDR_LIST_SIZE];
 EXTERN struct sockaddr_in con_addr;
+EXTERN struct st_addr addr_list[ADDR_LIST_SIZE];
+EXTERN struct st_buffer buffer[NUM_BUFFERS];
 EXTERN t_iscp_hdr *pkt_hdr;
-EXTERN t_buffer buffer[NUM_BUFFERS];
 EXTERN t_entry *list[256];
 EXTERN t_macro *macros;
 EXTERN time_t start_time;
@@ -221,6 +289,7 @@ EXTERN int macro_cnt;
 EXTERN int macro_alloc;
 EXTERN int macro_append;
 EXTERN int raw_level;
+EXTERN int nri_command;
 EXTERN size_t rx_bytes;
 EXTERN size_t tx_bytes;
 EXTERN u_long rx_reads;
@@ -328,13 +397,20 @@ void colprintf(const char *fmt, ...);
 void  printPrompt();
 void  clearPrompt();
 
-/* misc.c */
+/* strings.c */
+#ifdef __linux__
+char *strnstr(char *haystack, char *needle, size_t len);
+#endif
 int   wildMatch(char *str, char *pat);
 int   isNumberWithLen(char *str, int len);
 int   isNumber(char *str);
+
+/* time.c */
 char *getTime();
 char *getTimeString(time_t tm);
 char *getRawTimeString(time_t tm);
+
+/* misc.c */
 void  doExit(int code);
 void  sigHandler(int sig);
 void  version(int print_pid);

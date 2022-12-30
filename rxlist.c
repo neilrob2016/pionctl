@@ -99,9 +99,9 @@ void clearRXList()
 		for(entry=list[i];entry;entry=entry->next)
 		{
 			free(entry->key);
-			FREE(entry->value);
+			FREEIF(entry->value);
 		}
-		FREE(list[i]);
+		FREEIF(list[i]);
 	}
 	bzero(list,sizeof(list));
 	colprintf("RX list ~FGcleared.\n");
@@ -172,7 +172,7 @@ int dumpRXList(char *pat, int max)
 
 void setEntryValue(t_entry *entry, char *value, int val_len)
 {
-	FREE(entry->value);
+	FREEIF(entry->value);
 	if (val_len)
 	{
 		assert((entry->value = (char *)malloc(val_len+1)));

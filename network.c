@@ -132,11 +132,11 @@ int getStreamerAddress()
 	char dummy;
 	int i;
 
+	puts("Listening for streamer... ");
 	size = sizeof(struct sockaddr_in);
 
 	while(1)
 	{
-		printf("Listening for streamer... ");
 		fflush(stdout);
 
 		FD_ZERO(&mask);
@@ -170,20 +170,29 @@ int getStreamerAddress()
 			networkClear();
 			return 0;
 		}
-		printf("RX %s: ",inet_ntoa(addr.sin_addr));
 		for(i=0;i < addr_list_cnt;++i)
 		{
-			if (addr_list[i].s_addr == addr.sin_addr.s_addr)
+			if (addr_list[i].addr.s_addr == addr.sin_addr.s_addr)
 			{
-				puts("Address already tried");
+				/* Don't mention it every packet */
+				if (flags.verbose || ++addr_list[i].cnt == 10)
+				{
+					colprintf("   ~FTRX:~RS %s: ~FYAddress already tried\n",
+						inet_ntoa(addr.sin_addr));
+					addr_list[i].cnt = 0;
+				}
 				break;
 			}
 		}
 		if (i == addr_list_cnt)
 		{
 			/* The count will be reset when we disconnect */
-			colprintf("~FMNew address\n");
-			addr_list[addr_list_cnt] = addr.sin_addr;
+			colprintf("   ~FTRX:~RS %s: ~FMNew address\n",
+				inet_ntoa(addr.sin_addr));
+
+			addr_list[addr_list_cnt].cnt = 0;
+			addr_list[addr_list_cnt].addr = addr.sin_addr;
+
 			con_addr.sin_addr = addr.sin_addr;
 			addr_list_cnt = (addr_list_cnt + 1) % ADDR_LIST_SIZE;
 			return 1;
@@ -203,6 +212,9 @@ int resolveAddress()
 	/* If its not numeric then resolve */
 	if ((int)(con_addr.sin_addr.s_addr = inet_addr(ipaddr)) == -1)
 	{
+		printf("Resolving address... ");
+		fflush(stdout);
+
 		/* Not a numeric address, try to resolve DNS */
 		if (!(he = gethostbyname(ipaddr)))
 		{
@@ -212,6 +224,7 @@ int resolveAddress()
 
 		/* Just use 1st address */
 		memcpy((char *)&con_addr.sin_addr,he->h_addr,he->h_length);
+		ok();
 	}
 	return 1;
 }
@@ -224,7 +237,7 @@ int connectToStreamer()
 	struct timeval tvs;
 	fd_set mask;
 	socklen_t len;
-	int sock_flags;
+	int sock_flags = 0; /* Keeps gcc happy in -O mode */
 	int so_error;
 	int val;
 
@@ -591,6 +604,13 @@ void printPacketDetails(t_iscp_hdr *hdr, t_iscp_data *data)
 
 void networkClear()
 {
+	if (flags.verbose) 
+	{
+		printf("Clearing connection... ");
+		fflush(stdout);
+	}
+	FREEIF(ipaddr);
+
 	if (udp_sock)
 	{
 		close(udp_sock);
@@ -602,15 +622,12 @@ void networkClear()
 		tcp_sock = 0;
 		strcpy(track_time_str,TIME_DEF_STR);
 		strcpy(track_len_str,TIME_DEF_STR);
+		if (flags.verbose) ok();
 		if (connect_time)
 		{
 			colprintf("~BM~FW*** ~LIDISCONNECTED~RS~BM ***\n");
 			connect_time = 0;
 		}
 	}
-	if (ipaddr)
-	{
-		free(ipaddr);
-		ipaddr = NULL;
-	}
+	else if (flags.verbose) ok();
 }

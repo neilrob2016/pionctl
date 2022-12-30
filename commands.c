@@ -5,61 +5,6 @@
 #define PRINT_ON_OFF(F) colprintf(F ? "~FGON\n" : "~FROFF\n");
 #define OFFLINE_ERROR   "Offline, command cannot be sent.\n"
 
-/* Built in commands apart from SAVEART */
-enum
-{
-	/* 0. Client commands */
-	COM_EXIT,
-	COM_TOGGLE,
-	COM_PROMPT,
-	COM_RAW,
-	COM_SHOW,
-
-	/* 5 */
-	COM_CLEAR,
-	COM_HELP,
-	COM_CONNECT,
-	COM_DISCONNECT,
-	COM_WAIT,
-
-	/* 10 */
-	COM_WAIT_MENU,
-	COM_CLS,
-	COM_ECHO,
-	COM_MACRO,
-	LAST_CLIENT_COM = COM_MACRO,
-
-	/* 14. Streamer commands */
-	COM_MENU,
-
-	/* 15 */
-	COM_MENUSTAT,
-	COM_UP,
-	COM_DN,
-	COM_EN,
-	COM_EX,
-
-	/* 20 */
-	COM_FLIP,
-	COM_DS,
-	COM_DSD,
-	COM_DSSTAT,
-	COM_FILTER,
-
-	/* 25 */
-	COM_FILSTAT,
-	COM_ARTBMP,
-	COM_ARTURL,
-	COM_ARTSTAT,
-	COM_ARTSAVE,
-
-	/* Enums beyond saveart not required except for these */
-	COM_SETNAME = 82,
-	COM_LRA     = 97
-};
-
-
-/* Not a comprehensive list of commands but just the more useful ones */
 static struct st_command
 {
 	char *com;
@@ -183,14 +128,23 @@ static struct st_command
 	{ "sysinfo", "MDIQSTN" },
 	{ "auinfo",  "IFAQSTN" },
 	{ "stop",    "NTCSTOP" },
-	{ "name",    "NFNQSTN" },
+	{ "id",      "NFNQSTN" },
 	{ "setname", "NFN"     },  /* NFN only here for help print out */
-	{ "setup",   "NRIQSTN" },
+	{ "reset",   "RSTALL"  },
+	{ "mgver",   "MGVQSTN" },
 	{ "updstat", "UPDQSTN" },
 	{ "codec",   "NFIQSTN" },
 	{ "playstat","NSTQSTN" },
-	{ "reset",   "RSTALL"  },
-	{ "mgver",   "MGVQSTN" },
+
+	/* NRI commands */
+	{ "setup",   "NRIQSTN" },
+	{ "serial",  "NRIQSTN" },
+	{ "ethmac",  "NRIQSTN" },
+	{ "iconurl", "NRIQSTN" },
+	{ "model",   "NRIQSTN" },
+	{ "tidalver","NRIQSTN" },
+	{ "ecover",  "NRIQSTN" },
+	{ "prodid",  "NRIQSTN" },
 
 	/* Hardware input sources */
 	{ "usbf",    "SLI29"   },
@@ -531,7 +485,7 @@ int parseCommand(char *buff, int bufflen)
 		goto FREE;
 	}
 
-	/* Some commands take arguments */
+	/* Some commands take arguments or we store command num for NRI */
 	switch(comnum)
 	{
 	case COM_UP:
@@ -596,6 +550,17 @@ int parseCommand(char *buff, int bufflen)
 		if (!sendCommand(repeat_cnt,cmd,cmd_len)) ret = ERR_CMD_FAIL;
 		free(cmd);
 		goto FREE;
+
+	case COM_SETUP:
+	case COM_SERIAL:
+	case COM_ETHMAC:
+	case COM_ICONURL:
+	case COM_MODEL:
+	case COM_TIDALVER:
+	case COM_ECOVER:
+	case COM_PRODID:
+		nri_command = comnum;
+		break;
 	}
 
 	/* Send translated command(s) to the streamer */
@@ -1312,6 +1277,7 @@ int comWait(int comnum, char *param)
 	u_int end;
 
 	secs = 0;
+	end = 0;
 	tvp = NULL;
 
 	/* wait_menu can also take a timeout just in case we never receive
