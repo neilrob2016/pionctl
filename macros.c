@@ -42,23 +42,23 @@ int initMultiLineMacro(char *name)
 {
 	if (!(name = trim(name)))
 	{
-		errprintf("Empty macro name.\n");
+		errPrintf("Empty macro name.\n");
 		return ERR_MACRO;
 	}
 	if (!validName(name))
 	{
-		errprintf("Invalid macro name.\n");
+		errPrintf("Invalid macro name.\n");
 		return ERR_MACRO;
 	}
 	if (findMacro(name) != -1)
 	{
-		errprintf("Macro \"%s\" already exists.\n",name);
+		errPrintf("Macro \"%s\" already exists.\n",name);
 		return ERR_MACRO;
 	}
 	/* Check the new macro name isn't already used */
 	if (getCommand(name,strlen(name)) != -1)
 	{
-		errprintf(CMDERR_STR);
+		errPrintf(CMDERR_STR);
 		return ERR_MACRO;
 	}
 	macro_name = strdup(name);
@@ -76,7 +76,7 @@ int initMultiLineMacroAppend(char *name)
 {
 	if ((macro_append = findMacro(name)) == -1)
 	{
-		errprintf("Macro \"%s\" does not exist.\n",name);
+		errPrintf("Macro \"%s\" does not exist.\n",name);
 		return ERR_MACRO;
 	}
 	macro_line_tmp = NULL;
@@ -113,28 +113,28 @@ int insertMacro(char *name, char *comlist)
 
 	if (!(name = trim(name)))
 	{
-		errprintf("Empty macro name.\n");
+		errPrintf("Empty macro name.\n");
 		return ERR_MACRO;
 	}
 	if (!validName(name))
 	{
-		errprintf("Invalid macro name.\n");
+		errPrintf("Invalid macro name.\n");
 		return ERR_MACRO;
 	}
 	if (findMacro(name) != -1)
 	{
-		errprintf("Macro \"%s\" already exists.\n",name);
+		errPrintf("Macro \"%s\" already exists.\n",name);
 		return ERR_MACRO;
 	}
 	if (!(comlist = trim(comlist))) 
 	{
-		errprintf("Empty command list.\n");
+		errPrintf("Empty command list.\n");
 		return ERR_MACRO;
 	}
 	/* Check the new macro name isn't already used */
 	if (getCommand(name,strlen(name)) != -1)
 	{
-		errprintf(CMDERR_STR);
+		errPrintf(CMDERR_STR);
 		return ERR_MACRO;
 	}
 	if ((m = findEmptySlot()) == -1)
@@ -154,7 +154,7 @@ int insertMacro(char *name, char *comlist)
 	assert(macro->name && macro->comlist);
 	macro->len = strlen(comlist);
 	macro->running = 0;
-	colprintf("Macro \"%s\" ~FGadded.\n",name);
+	colPrintf("Macro \"%s\" ~FGadded.\n",name);
 	return OK;
 }
 
@@ -177,7 +177,7 @@ void addMacroLine(char *line, int len)
 	if (*line == '.' && *(line+1) < 33)
 	{
 		/* Done */
-		if (!macro_line_tmp) errprintf("Empty macro.\n");
+		if (!macro_line_tmp) errPrintf("Empty macro.\n");
 		else switch(input_state)
 		{
 		case INPUT_MACRO_DEF:
@@ -219,12 +219,12 @@ int appendMacroComlist(char *name, char *comlist)
 
 	if ((m = findMacro(name)) == -1)
 	{
-		errprintf("Macro \"%s\" does not exist.\n",name);
+		errPrintf("Macro \"%s\" does not exist.\n",name);
 		return ERR_MACRO;
 	}
 	if (!(comlist = trim(comlist))) 
 	{
-		errprintf("Empty command list.\n");
+		errPrintf("Empty command list.\n");
 		return ERR_MACRO;
 	}
 	appendMacroSlotComlist(m,comlist);
@@ -260,12 +260,12 @@ int deleteMacro(char *name)
 	if (!strcmp(name,"*")) return deleteAllMacros();
 	if ((m = findMacro(name)) == -1)
 	{
-		errprintf("Macro \"%s\" does not exist.\n",name);
+		errPrintf("Macro \"%s\" does not exist.\n",name);
 		return ERR_MACRO;
 	}
 	if (clearMacro(m))
 	{
-		colprintf("Macro \"%s\" ~FRdeleted.\n",name);
+		colPrintf("Macro \"%s\" ~FRdeleted.\n",name);
 		return OK;
 	}
 	return ERR_MACRO;
@@ -288,7 +288,7 @@ int deleteAllMacros()
 			initMacros();
 		}
 	}
-	colprintf("%d macros ~FRdeleted.\n",cnt);
+	colPrintf("%d macros ~FRdeleted.\n",cnt);
 	return (cnt == macro_cnt) ? OK : ERR_MACRO;
 }
 
@@ -304,7 +304,7 @@ int runMacro(char *name)
 
 	if ((m = findMacro(name)) == -1)
 	{
-		errprintf("Macro \"%s\" does not exist.\n",name);
+		errPrintf("Macro \"%s\" does not exist.\n",name);
 		return ERR_MACRO;
 	}
 	macro = &macros[m];
@@ -313,7 +313,7 @@ int runMacro(char *name)
 	   loop */
 	if (macro->running)
 	{
-		errprintf("Macro recursion.\n");
+		errPrintf("Macro recursion.\n");
 		return ERR_MACRO;
 	}
 
@@ -321,7 +321,7 @@ int runMacro(char *name)
 	recurse++;
 	macro->running = 1; 
 
-	if (flags.verbose) colprintf("~FMRunning macro:~RS \"%s\"\n",name);
+	if (flags.verbose) colPrintf("~FMRunning macro:~RS \"%s\"\n",name);
 	ret = parseInputLine(macros[m].comlist,macros[m].len);
 
 	macro->running = 0;
@@ -329,7 +329,7 @@ int runMacro(char *name)
 
 	if (ret != OK)
 	{
-		errprintf("Macro \"%s\" FAILED.\n",macro->name);
+		errPrintf("Macro \"%s\" FAILED.\n",macro->name);
 		return ERR_MACRO;
 	}
 	return OK;
@@ -362,18 +362,18 @@ int loadMacros(char *filename)
 	   have write permission so have to fuck about with lstat() */
 	if (lstat(path,&st) == -1)
 	{
-		errprintf("Can't stat file: %s\n",strerror(errno));
+		errPrintf("Can't stat file: %s\n",strerror(errno));
 		return ERR_MACRO;
 	}
 	if (!S_ISREG(st.st_mode))
 	{
-		errprintf("Not a regular file.\n");
+		errPrintf("Not a regular file.\n");
 		return ERR_MACRO;
 	}
 	fp = fopen(path,"r");
 	if (!fp)
 	{
-		errprintf("Can't open file to read: %s\n",strerror(errno));
+		errPrintf("Can't open file to read: %s\n",strerror(errno));
 		return ERR_MACRO;
 	}
 
@@ -388,7 +388,7 @@ int loadMacros(char *filename)
 			if (*ptr == '#')
 			{
 				ptr = trim(ptr+1);
-				if (*ptr) colprintf("~FMComment:~RS %s\n",ptr);
+				if (*ptr) colPrintf("~FMComment:~RS %s\n",ptr);
 			}
 			else
 			{
@@ -397,7 +397,7 @@ int loadMacros(char *filename)
 					++good;
 				else if (++bad == MAX_BAD)
 				{
-					errprintf("Too many load errors.\n");
+					errPrintf("Too many load errors.\n");
 					return ERR_MACRO;
 				}
 				get_name = !get_name;
@@ -424,14 +424,14 @@ int saveMacro(char *filename, char *name, int append)
 
 	if ((m = findMacro(name)) == -1)
 	{
-		errprintf("Macro \"%s\" does not exist.\n",name);
+		errPrintf("Macro \"%s\" does not exist.\n",name);
 		return ERR_MACRO;
 	}
 	if (!expandPath(filename,path)) return ERR_MACRO;
 
 	if (hasWildCards(path))
 	{
-		errprintf("Invalid file name.\n");
+		errPrintf("Invalid file name.\n");
 		return ERR_MACRO;
 	}
 
@@ -439,7 +439,7 @@ int saveMacro(char *filename, char *name, int append)
 	fp = fopen(path,append ? "a" : "w");
 	if (!fp)
 	{
-		errprintf("Can't open file to write: %s\n",strerror(errno));
+		errPrintf("Can't open file to write: %s\n",strerror(errno));
 		return ERR_MACRO;
 	}
 	ret = writeMacro(fp,m,append);
@@ -466,7 +466,7 @@ int saveAllMacros(char *filename, int append)
 
 	if (hasWildCards(path))
 	{
-		errprintf("Invalid file name.\n");
+		errPrintf("Invalid file name.\n");
 		return ERR_MACRO;
 	}
 
@@ -474,7 +474,7 @@ int saveAllMacros(char *filename, int append)
 	fp = fopen(path,append ? "a" : "w");
 	if (!fp)
 	{
-		errprintf("Can't open file to write: %s\n",strerror(errno));
+		errPrintf("Can't open file to write: %s\n",strerror(errno));
 		return ERR_MACRO;
 	}
 
@@ -509,9 +509,9 @@ void listMacros()
 		return;
 	}
 
-	colprintf("\n~BM~FW*** Macros ***\n\n");
-	colprintf("~FB~OLName          ~FGCommands\n");
-	colprintf("~FT----          --------\n");
+	colPrintf("\n~BM~FW*** Macros ***\n\n");
+	colPrintf("~FB~OLName          ~FGCommands\n");
+	colPrintf("~FT----          --------\n");
 	for(m=cnt=0;m < macro_cnt;++m)
 	{
 		if (!macros[m].name) continue;
@@ -566,7 +566,7 @@ int writeMacro(FILE *fp, int m, int append)
 	if (fprintf(fp,"%s\n",macros[m].name) == -1 ||
 	    fprintf(fp,"%s\n",macros[m].comlist) == -1)
 	{
-		errprintf("Write failed: %s\n",strerror(errno));
+		errPrintf("Write failed: %s\n",strerror(errno));
 		return ERR_MACRO;
 	}
 	printf("Macro \"%s\" %s.\n",macros[m].name,append ? "appended" : "saved");
@@ -583,7 +583,7 @@ int clearMacro(int m)
 	int ret;
 	if (macros[m].running)
 	{
-		errprintf("Cannot delete running macro \"%s\".\n",macros[m].name);
+		errPrintf("Cannot delete running macro \"%s\".\n",macros[m].name);
 		return 0;
 	}
 	if (macros[m].name)
@@ -740,15 +740,15 @@ int expandPath(char *search_path, char *found_path)
 	{
 		if (found_path[0])
 		{
-			errprintf("Invalid path from \"%s\": %s\n",
+			errPrintf("Invalid path from \"%s\": %s\n",
 				found_path,strerror(errno));
 		}
-		else errprintf("Invalid path: %s\n",strerror(errno));
+		else errPrintf("Invalid path: %s\n",strerror(errno));
 	}
 	else if (found_path[0])
-		errprintf("Invalid path from \"%s\".\n",found_path);
+		errPrintf("Invalid path from \"%s\".\n",found_path);
 	else
-		errprintf("Invalid path.\n");
+		errPrintf("Invalid path.\n");
 	return 0;
 }
 

@@ -104,7 +104,7 @@ void clearRXList()
 		FREEIF(list[i]);
 	}
 	bzero(list,sizeof(list));
-	colprintf("RX list ~FGcleared.\n");
+	colPrintf("RX list ~FGcleared.\n");
 }
 
 
@@ -120,14 +120,15 @@ int dumpRXList(char *pat, int max)
 
 	if (max < 0)
 	{
-		usageprintf("showr [<pattern> [<count>]]\n");
+		usagePrintf("showr [<pattern> [<count>]]\n");
 		return ERR_CMD_FAIL;
 	}
 
-	colprintf("\n~BB~FW*** Raw streamer RX (%s : %sCONNECTED) ***\n\n",
+	colPrintf("\n~BB~FW*** Raw streamer RX (%s : %sCONNECTED) ***\n\n",
 		inet_ntoa(con_addr.sin_addr),tcp_sock ? "" : "DIS");
-	colprintf("~FRCom   ~FGBytes   ~FBMessage\n");
-	colprintf("~FT---   -----   -------\n");
+	colPrintf("~FRCom   ~FGBytes   ~FBMessage\n");
+	colPrintf("~FT---   -----   -------\n");
+
 	for(i=unknown_cnt=entry_cnt=total=0;i < 256;++i)
 	{
 		for(entry=list[i];entry;entry=entry->next)

@@ -10,12 +10,12 @@ void printPrompt()
 	if (input_state != INPUT_CMD)
 	{
 		/* Macro input */
-		colprintf("~FM]~RS ");
+		colPrintf("~FM]~RS ");
 		fflush(stdout);
 		return;
 	}
 	putchar('\r');
-	if (prompt_type > PROMPT_BASE) colprintf("~FTPIONCTL~RS");
+	if (prompt_type > PROMPT_BASE) colPrintf("~FTPIONCTL~RS");
 
 	switch(prompt_type)
 	{
@@ -63,7 +63,7 @@ void printPrompt()
 
 void printPromptLocalTime()
 {
-	colprintf(" ~FBL~RS%s",getTime());
+	colPrintf(" ~FBL~RS%s",getTime());
 }
 
 
@@ -71,7 +71,7 @@ void printPromptLocalTime()
 
 void printPromptConnectTime()
 {
-	colprintf(" ~FRC~RS%s",getTimeString(connect_time));
+	colPrintf(" ~FRC~RS%s",getTimeString(connect_time));
 }
 
 
@@ -79,7 +79,7 @@ void printPromptConnectTime()
 
 void printPromptTrackTime()
 {
-	colprintf(" ~FGT~RS%s",track_time_str);
+	colPrintf(" ~FGT~RS%s",track_time_str);
 }
 
 

@@ -237,7 +237,7 @@ void mainloop()
 		{
 		case -1:
 			if (flags.interrupted) continue;
-			errprintf("mainLoop(): select(): %s\n",strerror(errno));
+			errPrintf("mainLoop(): select(): %s\n",strerror(errno));
 			doExit(1);
 		case 0:
 			/* Timeout */
@@ -263,7 +263,7 @@ void runImmediate()
 
 	if (flags.exit_after_cmds)
 	{
-		exitprintf("after immediate commands");
+		quitPrintf("after immediate commands");
 		doExit(0);
 	}
 }

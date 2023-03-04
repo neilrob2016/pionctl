@@ -69,16 +69,16 @@ int printTitles(int xtitles, char *pat, int max)
 		return OK;
 	}
 
-	colprintf("\n~BB~FW*** Titles ***\n\n");
+	colPrintf("\n~BB~FW*** Titles ***\n\n");
 	if (xtitles) 
 	{
-		colprintf("~FRCon time~RS  ~FGTrk time~RS  ~FBLoc time~RS  Bytes  Text\n");
-		colprintf("~FT--------  --------  --------  -----  ----\n");
+		colPrintf("~FRCon time~RS  ~FGTrk time~RS  ~FBLoc time~RS  Bytes  Text\n");
+		colPrintf("~FT--------  --------  --------  -----  ----\n");
 	}
 	else
 	{
-		colprintf("~FBLoc time~RS  Bytes  Text\n");
-		colprintf("~FT--------  -----  ----\n");
+		colPrintf("~FBLoc time~RS  Bytes  Text\n");
+		colPrintf("~FT--------  -----  ----\n");
 	}
 	for(pos=cnt=0;pos < titles_pos && (!max || cnt < max);++pos)
 	{
@@ -107,5 +107,5 @@ void clearTitles()
 	for(i=0;i < titles_pos;++i) free(titles[i]);
 	free(titles);
 	initTitles();
-	colprintf("Titles ~FGcleared.\n");
+	colPrintf("Titles ~FGcleared.\n");
 }

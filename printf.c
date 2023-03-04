@@ -4,10 +4,10 @@
 #define RESET_CODE    0
 
 
-void errprintf(const char *fmt, ...)
+void errPrintf(const char *fmt, ...)
 {
 	va_list args;
-	colprintf("\07~BR~FWERROR:~RS ");
+	colPrintf("\07~BR~FWERROR:~RS ");
 	va_start(args,fmt);
 	vprintf(fmt,args);
 	va_end(args);
@@ -16,10 +16,10 @@ void errprintf(const char *fmt, ...)
 
 
 
-void nlerrprintf(const char *fmt, ...)
+void nlErrPrintf(const char *fmt, ...)
 {
 	va_list args;
-	colprintf("\n\07~BR~FWERROR:~RS ");
+	colPrintf("\n\07~BR~FWERROR:~RS ");
 	va_start(args,fmt);
 	vprintf(fmt,args);
 	va_end(args);
@@ -28,10 +28,10 @@ void nlerrprintf(const char *fmt, ...)
 
 
 
-void warnprintf(const char *fmt, ...)
+void warnPrintf(const char *fmt, ...)
 {
 	va_list args;
-	colprintf("~BM~FWWARNING:~RS ");
+	colPrintf("~BM~FWWARNING:~RS ");
 	va_start(args,fmt);
 	vprintf(fmt,args);
 	va_end(args);
@@ -40,10 +40,10 @@ void warnprintf(const char *fmt, ...)
 
 
 
-void nlwarnprintf(const char *fmt, ...)
+void nlWarnPrintf(const char *fmt, ...)
 {
 	va_list args;
-	colprintf("\n~BM~FWWARNING:~RS ");
+	colPrintf("\n~BM~FWWARNING:~RS ");
 	va_start(args,fmt);
 	vprintf(fmt,args);
 	va_end(args);
@@ -52,10 +52,10 @@ void nlwarnprintf(const char *fmt, ...)
 
 
 
-void usageprintf(const char *fmt, ...)
+void usagePrintf(const char *fmt, ...)
 {
 	va_list args;
-	colprintf("~FMUsage:~RS ");
+	colPrintf("~FMUsage:~RS ");
 	va_start(args,fmt);
 	vprintf(fmt,args);
 	va_end(args);
@@ -64,16 +64,16 @@ void usageprintf(const char *fmt, ...)
 
 
 
-void exitprintf(const char *fmt, ...)
+void quitPrintf(const char *fmt, ...)
 {
 	va_list args;
-	colprintf("\n~BR~FW*** ~LIEXIT~RS~BR~FW ");
+	colPrintf("\n~BR~FW*** ~LIQUIT~RS~BR~FW ");
 
 	va_start(args,fmt);
 	vprintf(fmt,args);
 	va_end(args);
 
-	colprintf(" ***\n");
+	colPrintf(" ***\n");
 }
 
 
@@ -81,7 +81,7 @@ void exitprintf(const char *fmt, ...)
 
 /*** Print a string in colour if it has embedded colour commands. Taken
      from Nine Mens Morris with some updates. ***/
-void colprintf(const char *fmt, ...)
+void colPrintf(const char *fmt, ...)
 {
 	/* Static so we don't keep allocing and deleting memory each time the
 	   function is called */
@@ -130,7 +130,7 @@ void colprintf(const char *fmt, ...)
 		len = print_len * 2;
 		if (len > fmt_alloc && !(newfmt = (char *)realloc(newfmt,len)))
 		{
-			perror("ERROR: colprintf(): realloc() 1");
+			perror("ERROR: colPrintf(): realloc() 1");
 			exit(1);
 		}
 		fmt_alloc = len;
@@ -148,7 +148,7 @@ void colprintf(const char *fmt, ...)
 		out_alloc = len * 5 + 1;
 		if (!(output = (char *)realloc(output,out_alloc)))
 		{
-			perror("ERROR: colprintf(): realloc() 2");
+			perror("ERROR: colPrintf(): realloc() 2");
 			exit(1);
 		}
 	}

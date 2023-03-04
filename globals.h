@@ -29,7 +29,7 @@
 #define EXTERN extern
 #endif
 
-#define VERSION "20221230"
+#define VERSION "20230304"
 
 #define STDIN          0
 #define STDOUT         1
@@ -120,7 +120,7 @@ enum
 enum
 {
 	/* 0. Client commands */
-	COM_EXIT,
+	COM_QUIT,
 	COM_TOGGLE,
 	COM_PROMPT,
 	COM_RAW,
@@ -385,13 +385,13 @@ void listMacros();
 int  findMacro(char *name);
 
 /* printf.c */
-void errprintf(const char *fmt, ...);
-void nlerrprintf(const char *fmt, ...);
-void warnprintf(const char *fmt, ...);
-void nlwarnprintf(const char *fmt, ...);
-void usageprintf(const char *fmt, ...);
-void exitprintf(const char *fmt, ...);
-void colprintf(const char *fmt, ...);
+void errPrintf(const char *fmt, ...);
+void nlErrPrintf(const char *fmt, ...);
+void warnPrintf(const char *fmt, ...);
+void nlWarnPrintf(const char *fmt, ...);
+void usagePrintf(const char *fmt, ...);
+void quitPrintf(const char *fmt, ...);
+void colPrintf(const char *fmt, ...);
 
 /* prompt.c */
 void  printPrompt();

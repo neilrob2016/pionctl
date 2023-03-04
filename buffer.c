@@ -42,7 +42,7 @@ void addToBuffer(int buffnum, char *data, int data_len)
 		if (!(buffer[buffnum].data = (char *)realloc(
 			buffer[buffnum].data,alloc+1)))
 		{
-			/* Don't use errprintf as colprintf allocs too */
+			/* Don't use errPrintf as colPrintf allocs too */
 			perror("ERROR: realloc()");
 			doExit(1);
 		}

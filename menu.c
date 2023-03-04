@@ -65,10 +65,10 @@ void printMenuList()
 
 	if (menu_option_cnt)
 	{
-		colprintf("\n~BB~FW*** Menu list ***\n\n");
+		colPrintf("\n~BB~FW*** Menu list ***\n\n");
 		for(i=0;i < menu_option_cnt;++i)
 		{
-			colprintf("~FG%s ~FM%2d:~RS %s\n",
+			colPrintf("~FG%s ~FM%2d:~RS %s\n",
 				i == menu_cursor_pos ? "->" : "  ",
 				i,menu_options[i]);
 		}
@@ -97,5 +97,5 @@ void clearMenu(int prt)
 	for(i=0;i < menu_option_cnt;++i) free(menu_options[i]);
 	free(menu_options);
 	initMenu();
-	if (prt) colprintf("Menu ~FGcleared.\n");
+	if (prt) colPrintf("Menu ~FGcleared.\n");
 }

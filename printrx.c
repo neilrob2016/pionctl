@@ -1,8 +1,8 @@
 #include "globals.h"
 
 #define PRINT_ON_OFF() \
-	if (!memcmp(mesg,"00",2)) colprintf("~FROFF\n"); \
-	else if (!memcmp(mesg,"01",2)) colprintf("~FGON\n"); \
+	if (!memcmp(mesg,"00",2)) colPrintf("~FROFF\n"); \
+	else if (!memcmp(mesg,"01",2)) colPrintf("~FGON\n"); \
 	else printMesg(mesg,len);
 
 /* Forward declarations */
@@ -160,7 +160,7 @@ void prettyPrint(t_iscp_data *pkt_data, int print_prompt)
 
 	if (!comfunc[i].func)
 	{
-		colprintf("~FYUnknown response:~RS %.3s",pkt_data->command);
+		colPrintf("~FYUnknown response:~RS %.3s",pkt_data->command);
 		printMesg(pkt_data->mesg,mesg_len);
 		setUnknownRXKey(pkt_data->command);
 	}
@@ -185,11 +185,11 @@ int prettyPrintRXList(char *pat, int max)
 
 	if (max < 0)
 	{
-		usageprintf("show [<pattern> [<count>]]\n");
+		usagePrintf("show [<pattern> [<count>]]\n");
 		return ERR_CMD_FAIL;
 	}
 
-	colprintf("\n~BB~FW*** Processed streamer RX (%s : %sCONNECTED) ***\n\n",
+	colPrintf("\n~BB~FW*** Processed streamer RX (%s : %sCONNECTED) ***\n\n",
 		inet_ntoa(con_addr.sin_addr),tcp_sock ? "" : "DIS");
 
 	flags.pretty_printing = 1;
@@ -253,7 +253,7 @@ void printRXCommands(char *pat)
 	int cnt;
 	int i;
 
-	colprintf("\n~BB~FW*** RX streamer commands parsed by this client ***\n\n");
+	colPrintf("\n~BB~FW*** RX streamer commands parsed by this client ***\n\n");
 	for(i=cnt=0;comfunc[i].func;++i)
 	{
 		if (!pat || wildMatch(comfunc[i].com,pat))
@@ -313,9 +313,9 @@ void printDGF(char *mesg, uint32_t len)
 	{
 		switch(mesg[1])
 		{
-		case '0': colprintf("~FMSLOW\n");     return;
-		case '1': colprintf("~FB~OLSHARP\n"); return;
-		case '2': colprintf("~FGSHORT\n");    return;
+		case '0': colPrintf("~FMSLOW\n");     return;
+		case '1': colPrintf("~FB~OLSHARP\n"); return;
+		case '2': colPrintf("~FGSHORT\n");    return;
 		}
 	}
 	printMesg(mesg,len);
@@ -348,8 +348,8 @@ void printEDF(char *mesg, uint32_t len)
 void printEDV(char *mesg, uint32_t len)
 {
 	printf("Action    : ");
-	if (!memcmp(mesg,"00",2)) colprintf("~FRNot approved\n");
-	else if (!memcmp(mesg,"01",2)) colprintf("~FGApproved\n");
+	if (!memcmp(mesg,"00",2)) colPrintf("~FRNot approved\n");
+	else if (!memcmp(mesg,"01",2)) colPrintf("~FGApproved\n");
 	else printMesg(mesg,len);
 }
 
@@ -382,7 +382,7 @@ void printIFA(char *mesg, uint32_t len)
 	
 	c1 = mesg[len];
 	mesg[len] = 0;
-	colprintf("~FTAudio info:\n");
+	colPrintf("~FTAudio info:\n");
 
 	/* Not using strtok() because it modifies the string it searches */
 	for(i=0,ptr=mesg-1;i< 10 && ptr;++i,ptr=end)
@@ -422,7 +422,7 @@ void printHBT(char *mesg, uint32_t len)
 
 void printMDI(char *mesg, uint32_t len)
 {
-	colprintf("~FTStreamer info:\n");
+	colPrintf("~FTStreamer info:\n");
 	printMesg(mesg,len);
 }
 
@@ -531,12 +531,12 @@ void printNDS(char *mesg, uint32_t len)
 {
 	int i;
 
-	colprintf("~FTConnector status:\n");
+	colPrintf("~FTConnector status:\n");
 	printf("   Network  : ");
 
 	switch(mesg[0])
 	{
-	case '-': colprintf("~FRNone~RS"); break;
+	case '-': colPrintf("~FRNone~RS"); break;
 	case 'E': printf("Ethernet");      break;
 	case 'W': printf("WiFi");          break;
 	default : printf("?");
@@ -548,12 +548,12 @@ void printNDS(char *mesg, uint32_t len)
 	{
 		switch(mesg[i])
 		{
-		case '-': colprintf("~FYNothing attached~RS"); break;
+		case '-': colPrintf("~FYNothing attached~RS"); break;
 		case 'i': printf("iPod/iPhone");       break;
 		case 'M': printf("Memory/NAS");        break;
 		case 'W': printf("Wireless adaptor");  break;
 		case 'B': printf("Bluetooth adaptor"); break;
-		case 'x': colprintf("~FRDisabled\n");
+		case 'x': colPrintf("~FRDisabled\n");
 		}
 		printf(" (%c)\n",mesg[i]);
 		if (i == 1) printf("   Rear USB : ");
@@ -574,7 +574,7 @@ void printNFI(char *mesg, uint32_t len)
 
 void printNFN(char *mesg, uint32_t len)
 {
-	colprintf("~FTIdentity  :\n");
+	colPrintf("~FTIdentity  :\n");
 	/* No lookup table in docs */
 	printf("   Manufacturer ID: %d\n",mesg[0]); 
 	printf("   Friendly name  : ");
@@ -607,20 +607,20 @@ void printNJA(char *mesg, uint32_t len)
 		printMesg(mesg+2,len-2);
 		break;
 	case 'B':
-		colprintf("~FGEnabled~RS as BMP\n");
+		colPrintf("~FGEnabled~RS as BMP\n");
 		break;
 	case 'D':
-		colprintf("~FRDisabled\n");
+		colPrintf("~FRDisabled\n");
 		break;
 	case 'E':
-		colprintf("~FGEnabled\n");
+		colPrintf("~FGEnabled\n");
 		break;
 	case 'L':
-		colprintf("~FGEnabled~RS as URL\n");
+		colPrintf("~FGEnabled~RS as URL\n");
 		break;
 	case 'n':
 		/* Sends 'n' when switched off */
-		colprintf("~FRImage not available\n");
+		colPrintf("~FRImage not available\n");
 		break;
 	default:
 		printf("Unknown response \"%c\"\n",mesg[0]);
@@ -728,23 +728,23 @@ void printNMS(char *mesg, uint32_t len)
 	int val;
 	int i;
 
-	colprintf("~FTNet/USB menu status:\n");
+	colPrintf("~FTNet/USB menu status:\n");
 
 	printf("   Track menu    : ");
 	switch(mesg[0])
 	{
-	case 'M': colprintf("~FGEnabled");  break;
-	case 'x': colprintf("~FRDisabled"); break;
+	case 'M': colPrintf("~FGEnabled");  break;
+	case 'x': colPrintf("~FRDisabled"); break;
 	default : printf("?");
 	}
-	colprintf("~RS (%c)\n",mesg[0]);
+	colPrintf("~RS (%c)\n",mesg[0]);
 
 	printf("   F1 button icon: ");
 	for(i=1;i < 5;i+=2)
 	{
 		/* Seems to be disabled with streamer but put options here
 		   anyway. God knows what half of them mean. */
-		if (!memcmp(mesg+1,"xx",2)) colprintf("~FRDisabled~RS");
+		if (!memcmp(mesg+1,"xx",2)) colPrintf("~FRDisabled~RS");
 		else
 		{
 			switch(hexToInt(mesg+i,2))
@@ -770,21 +770,21 @@ void printNMS(char *mesg, uint32_t len)
 	printf("   Time seek     : ");
 	switch(mesg[5])
 	{
-	case 'S': colprintf("~FGEnabled "); break;
-	case 'x': colprintf("~FRDisabled"); break;
+	case 'S': colPrintf("~FGEnabled "); break;
+	case 'x': colPrintf("~FRDisabled"); break;
 	default : printf("?");
 	}
-	colprintf("~RS (%c)\n",mesg[5]);
+	colPrintf("~RS (%c)\n",mesg[5]);
 
 	printf("   Time display  : ");
 	switch(mesg[6])
 	{
 	case '1': printf("Elapsed/total time"); break;
 	case '2': printf("Elapsed time");       break;
-	case 'x': colprintf("~FRDisabled");     break;
+	case 'x': colPrintf("~FRDisabled");     break;
 	default : printf("?");
 	}
-	colprintf("~RS (%c)\n",mesg[6]);
+	colPrintf("~RS (%c)\n",mesg[6]);
 
 	printf("   Service icon  : ");
 	switch((val = (int)hexToInt(mesg+7,2)))
@@ -854,7 +854,7 @@ void printNLT(char *mesg, uint32_t len)
 	};	
 	int val;
 
-	colprintf("~FTNet/USB screen:\n");
+	colPrintf("~FTNet/USB screen:\n");
 
 	/* Info in what seems like a sane order to me, not the order its
 	   presented in the string */
@@ -910,12 +910,12 @@ void printNLT(char *mesg, uint32_t len)
 	}
 	printf(" (%c)\n",mesg[3]);
 
-	colprintf("   First?    : %s~RS\n",
+	colPrintf("   First?    : %s~RS\n",
 		mesg[14] == '1' ? "~FGYES" : "~FRNO");
 
 	/* Skip icon info and go to status */
 	val = (int)hexToInt(mesg+20,2);
-	colprintf("   Status    : %s~RS (0x%02X)\n",
+	colPrintf("   Status    : %s~RS (0x%02X)\n",
 		val < 16 ? status[val] : "?",val);
 }
 
@@ -930,38 +930,38 @@ void printNRI(char *mesg, uint32_t len)
 	{
 	case COM_SERIAL:
 		/* Colour output because it depends on last command */
-		colprintf("~FB~OLSerial num:~RS ");
+		colPrintf("~FB~OLSerial num:~RS ");
 		printXMLField("deviceserial",0,mesg,len);
 		break;
 	case COM_ETHMAC:
 		/* Ethernet MAC, not wifi MAC. The latter isn't given in the
 		   setup data and there doesn't seem to be any alternative way
 		   to get it */
-		colprintf("~FB~OLEther MAC :~RS ");
+		colPrintf("~FB~OLEther MAC :~RS ");
 		printXMLField("macaddress",1,mesg,len);
 		break;
 	case COM_ICONURL:
-		colprintf("~FB~OLIcon URL  :~RS ");
+		colPrintf("~FB~OLIcon URL  :~RS ");
 		printXMLField("modeliconurl",0,mesg,len);
 		break;
 	case COM_MODEL:
-		colprintf("~FB~OLModel type:~RS ");
+		colPrintf("~FB~OLModel type:~RS ");
 		printXMLField("model",0,mesg,len);
 		break;
 	case COM_TIDALVER:
-		colprintf("~FB~OLTidal vers:~RS ");
+		colPrintf("~FB~OLTidal vers:~RS ");
 		printXMLField("tidaloauthversion",0,mesg,len);
 		break;
 	case COM_ECOVER:
-		colprintf("~FB~OLEcosys ver:~RS ");
+		colPrintf("~FB~OLEcosys ver:~RS ");
 		printXMLField("ecosystemversion",0,mesg,len);
 		break;
 	case COM_PRODID:
-		colprintf("~FB~OLProduct ID:~RS ");
+		colPrintf("~FB~OLProduct ID:~RS ");
 		printXMLField("productid",0,mesg,len);
 		break;
 	default:
-		colprintf("~FB~OLDevice setup:\n");
+		colPrintf("~FB~OLDevice setup:\n");
 		printMesg(mesg,len);
 	}
 }
@@ -980,39 +980,39 @@ void printNSB(char *mesg, uint32_t len)
 
 void printNST(char *mesg, uint32_t len)
 {
-	colprintf("~FTNet/USB play status:\n");
+	colPrintf("~FTNet/USB play status:\n");
 
 	printf("   Play   : ");
 	switch(mesg[0])
 	{
-	case 'S': colprintf("~FRSTOPPED\n"); break;
-	case 'P': colprintf("~FGPLAYING\n"); break;
-	case 'p': colprintf("~FYPAUSED\n");  break;
-	case 'F': colprintf("~FB~OLFF\n");   break;
-	case 'R': colprintf("~FMFR\n");      break;
-	case 'E': colprintf("~FYEOF\n");     break;
+	case 'S': colPrintf("~FRSTOPPED\n"); break;
+	case 'P': colPrintf("~FGPLAYING\n"); break;
+	case 'p': colPrintf("~FYPAUSED\n");  break;
+	case 'F': colPrintf("~FB~OLFF\n");   break;
+	case 'R': colPrintf("~FMFR\n");      break;
+	case 'E': colPrintf("~FYEOF\n");     break;
 	default : printf("%c\n",mesg[0]);
 	}
 
 	printf("   Repeat : ");
 	switch(mesg[1])
 	{
-	case '-': colprintf("~FMOFF\n");       break;
-	case '1': colprintf("~FB~OLREPEAT\n"); break;
-	case 'F': colprintf("~FYFOLDER\n");    break;
-	case 'R': colprintf("~FGALL\n");       break;
-	case 'x': colprintf("~FRDISABLED\n");  break;
+	case '-': colPrintf("~FMOFF\n");       break;
+	case '1': colPrintf("~FB~OLREPEAT\n"); break;
+	case 'F': colPrintf("~FYFOLDER\n");    break;
+	case 'R': colPrintf("~FGALL\n");       break;
+	case 'x': colPrintf("~FRDISABLED\n");  break;
 	default : printf("%c\n",mesg[1]);
 	}
 
 	printf("   Shuffle: ");
 	switch(mesg[2])
 	{
-	case '-': colprintf("~FMOFF\n");      break;
-	case 'A': colprintf("~FB~OLALBUM\n"); break;
-	case 'F': colprintf("~FYFOLDER\n");   break;
-	case 'S': colprintf("~FGALL\n");      break;
-	case 'x': colprintf("~FRDISABLED\n"); break;
+	case '-': colPrintf("~FMOFF\n");      break;
+	case 'A': colPrintf("~FB~OLALBUM\n"); break;
+	case 'F': colPrintf("~FYFOLDER\n");   break;
+	case 'S': colPrintf("~FGALL\n");      break;
+	case 'x': colPrintf("~FRDISABLED\n"); break;
 	default : printf("%c\n",mesg[2]);
 	}
 }
@@ -1039,7 +1039,7 @@ void printNTM(char *mesg, uint32_t len)
 
 void printNTR(char *mesg, uint32_t len)
 {
-	colprintf("~FTTracks    :\n");
+	colPrintf("~FTTracks    :\n");
 	if (len > 3)
 	{
 		printf("   Current: ");
@@ -1059,7 +1059,7 @@ void printNTR(char *mesg, uint32_t len)
 
 void printNLU(char *mesg, uint32_t len)
 {
-	colprintf("~FTNet/USB list info:\n");
+	colPrintf("~FTNet/USB list info:\n");
 	if (len != 8)
 	{
 		printMesg(mesg,len);
@@ -1119,7 +1119,7 @@ void printUPD(char *mesg, uint32_t len)
 	switch(mesg[0])
 	{
 	case 'C':
-		colprintf("~FGCOMPLETE\n");
+		colPrintf("~FGCOMPLETE\n");
 		return;
 	case 'D':
 		if (isdigit(mesg[1]))
@@ -1128,19 +1128,19 @@ void printUPD(char *mesg, uint32_t len)
 			printf("DOWNLOAD state %.2s\n",mesg+1);
 		return;
 	case 'E':
-		colprintf("~FRERROR~RS %.4s\n",mesg+1);
+		colPrintf("~FRERROR~RS %.4s\n",mesg+1);
 		return;
 	case '0':
 		switch(mesg[1])
 		{
 		case '0':
-			colprintf("~FYNo new firmware available.\n");
+			colPrintf("~FYNo new firmware available.\n");
 			return;
 		case '1':
-			colprintf("~FB~OLNew firmware available.\n");
+			colPrintf("~FB~OLNew firmware available.\n");
 			return;
 		case '2':
-			colprintf("~FMNew firmware available (forced upgrade).\n");
+			colPrintf("~FMNew firmware available (forced upgrade).\n");
 			return;
 		}
 	}
@@ -1159,15 +1159,15 @@ void printUPS(char *mesg, uint32_t len)
 		   for completeness */
 		switch(mesg[1])
 		{
-		case '0': colprintf("~FROFF"); break;
-		case '1': colprintf("~FMON x2");  break;
-		case '2': colprintf("~FYON x4");  break;
-		case '3': colprintf("~FGON x8");  break;
-		default : colprintf("?");
+		case '0': colPrintf("~FROFF"); break;
+		case '1': colPrintf("~FMON x2");  break;
+		case '2': colPrintf("~FYON x4");  break;
+		case '3': colPrintf("~FGON x8");  break;
+		default : colPrintf("?");
 		}
 	}
 	else printf("?");
-	colprintf("~RS (%.2s)\n",mesg);
+	colPrintf("~RS (%.2s)\n",mesg);
 }
 
 
@@ -1199,11 +1199,11 @@ void printDIM(char *mesg, uint32_t len)
 	{
 		switch(mesg[1])
 		{
-		case '0': colprintf("~FGBright~RS");   break;
-		case '1': colprintf("~FYDim~RS");      break;
-		case '2': colprintf("~FMDark~RS");     break;
-		case '3': colprintf("~FRShut-off~RS"); break;
-		case '8': colprintf("~FRLED-OFF~RS");  break;
+		case '0': colPrintf("~FGBright~RS");   break;
+		case '1': colPrintf("~FYDim~RS");      break;
+		case '2': colPrintf("~FMDark~RS");     break;
+		case '3': colPrintf("~FRShut-off~RS"); break;
+		case '8': colPrintf("~FRLED-OFF~RS");  break;
 		default : printf("?");
 		}
 	}
@@ -1282,7 +1282,7 @@ void printMMT(char *mesg, uint32_t len)
 	else
 		putchar('?');
 	
-	colprintf(" (%.2s)\n",mesg);
+	colPrintf(" (%.2s)\n",mesg);
 }
 
 

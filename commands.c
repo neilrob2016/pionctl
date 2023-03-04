@@ -2,7 +2,7 @@
 
 #define MAX_WORDS       5
 #define CMD_SEPERATOR   ';'
-#define PRINT_ON_OFF(F) colprintf(F ? "~FGON\n" : "~FROFF\n");
+#define PRINT_ON_OFF(F) colPrintf(F ? "~FGON\n" : "~FROFF\n");
 #define OFFLINE_ERROR   "Offline, command cannot be sent.\n"
 
 static struct st_command
@@ -12,7 +12,7 @@ static struct st_command
 } commands[] =
 {
 	/* 0. Built in commands */
-	{ "exit",  NULL },
+	{ "quit",  NULL },
 	{ "toggle",NULL },
 	{ "prompt",NULL },
 	{ "raw",   NULL },
@@ -260,7 +260,7 @@ int parseInputLine(char *data, int len)
 		}
 		if (in_quotes)
 		{
-			errprintf("Unterminated quotes.\n");
+			errPrintf("Unterminated quotes.\n");
 			if (!flags.macro_running)
 				keyb_buffnum = (keyb_buffnum + 1) % MAX_HIST_BUFFERS;
 			break;
@@ -279,7 +279,7 @@ int parseInputLine(char *data, int len)
 				for(ptr2=ptr;*ptr2 < 33;++ptr2);
 				if (flags.verbose)
 				{
-					colprintf("~FB~OLExec cmd:~RS %.*s\n",
+					colPrintf("~FB~OLExec cmd:~RS %.*s\n",
 						len - (int)(ptr2-ptr),ptr2);
 				}
 			}
@@ -323,6 +323,7 @@ int parseCommand(char *buff, int bufflen)
 
 	if (!bufflen) return ERR_CMD_MISSING;
 	end = buff + bufflen;
+	comnum = 0;
 
 	/* Make sure we have something other than whitespace */
 	for(s=buff;s < end;++s) if (!isspace(*s)) break;
@@ -335,12 +336,12 @@ int parseCommand(char *buff, int bufflen)
 		for(s=buff+1;s < end && isdigit(*s);++s);
 		if (s < end)
 		{
-			errprintf("'!' requires a number.\n");
+			errPrintf("'!' requires a number.\n");
 			return ERR_CMD_MISSING;
 		}
 		if (!copyHistoryBuffer(atoi((buff + 1))))
 		{
-			errprintf("Invalid or empty history buffer.\n");
+			errPrintf("Invalid or empty history buffer.\n");
 			return ERR_CMD_MISSING;
 		}
 		putchar('\n');
@@ -386,7 +387,7 @@ int parseCommand(char *buff, int bufflen)
 		}
 		if (i == MAX_WORDS)
 		{
-			errprintf("Too many words or strings. Maximum is %d.\n",MAX_WORDS);
+			errPrintf("Too many words or strings. Maximum is %d.\n",MAX_WORDS);
 			return ERR_CMD_FAIL;
 		}
 
@@ -409,13 +410,13 @@ int parseCommand(char *buff, int bufflen)
 	{
 		if (!(repeat_cnt = atoi(words[0]))) 
 		{
-			errprintf("Repeat count must be > 0.\n");
+			errPrintf("Repeat count must be > 0.\n");
 			ret = ERR_CMD_FAIL;
 			goto FREE;
 		}
 		if (!word_len[1])
 		{
-			errprintf("Missing command.\n");
+			errPrintf("Missing command.\n");
 			ret = ERR_CMD_FAIL;
 			goto FREE;
 		}
@@ -429,13 +430,13 @@ int parseCommand(char *buff, int bufflen)
 	{
 		if (!tcp_sock)
 		{
-			errprintf(OFFLINE_ERROR);
+			errPrintf(OFFLINE_ERROR);
 			ret = ERR_CMD_FAIL;
 			goto FREE;
 		}
 		if (word_len[cmd_word] < 3)
 		{
-			errprintf("Raw streamer commands need a minimum of 3 letters. eg: NTC\n");
+			errPrintf("Raw streamer commands need a minimum of 3 letters. eg: NTC\n");
 			ret = ERR_CMD_FAIL;
 			goto FREE;
 		}
@@ -458,7 +459,7 @@ int parseCommand(char *buff, int bufflen)
 			ret = runMacro(comword);
 			goto FREE;
 		}
-		errprintf("Unknown command or macro \"%s\". Type \"help std\" for a list of\n",comword);
+		errPrintf("Unknown command or macro \"%s\". Type \"help std\" for a list of\n",comword);
 		puts("       commands or \"macro list\" for a list of macros.");
 		ret = ERR_CMD_FAIL;
 		goto FREE;
@@ -480,7 +481,7 @@ int parseCommand(char *buff, int bufflen)
 	}
 	if (!tcp_sock)
 	{
-		errprintf(OFFLINE_ERROR);
+		errPrintf(OFFLINE_ERROR);
 		ret = ERR_CMD_FAIL;
 		goto FREE;
 	}
@@ -510,7 +511,7 @@ int parseCommand(char *buff, int bufflen)
 		if (save_state != SAVE_INACTIVE)
 		{
 			/* Should never happen, just in case */
-			warnprintf("Currently saving - resetting.\n");
+			warnPrintf("Currently saving - resetting.\n");
 		}
 		/* Ignore repeat_cnt in preparing */
 		prepareSave(word_cnt > cmd_word ? words[cmd_word+1] : NULL);
@@ -520,7 +521,7 @@ int parseCommand(char *buff, int bufflen)
 		/* Setname requires an argument */
 		if (word_cnt < cmd_word + 2)
 		{
-			usageprintf("setname <name>\n");
+			usagePrintf("setname <name>\n");
 			ret = ERR_CMD_FAIL;
 			goto FREE;
 		}
@@ -540,7 +541,7 @@ int parseCommand(char *buff, int bufflen)
 		    !isNumber(words[cmd_word+1]) || 
 		    (val = atoi(words[cmd_word+1])) > 99)
 		{
-			usageprintf("%s <number>\n",commands[comnum].com);
+			usagePrintf("%s <number>\n",commands[comnum].com);
 			ret = ERR_CMD_FAIL;
 			goto FREE;
 		}
@@ -614,7 +615,7 @@ int getCommand(char *word, int len)
 	if (comnum < NUM_COMMANDS)
 	{
 		if (flags.verbose)
-			colprintf("~FTExpanded to:~RS \"%s\"\n",commands[comnum].com);
+			colPrintf("~FTExpanded to:~RS \"%s\"\n",commands[comnum].com);
 		return comnum;
 	}
 	return -1;
@@ -686,8 +687,8 @@ int processBuiltInCommand(
 
 	switch(comnum)
 	{
-	case COM_EXIT:
-		exitprintf("by command");
+	case COM_QUIT:
+		quitPrintf("by command");
 		doExit(0);
 	case COM_TOGGLE:
 		return comToggle(param1);
@@ -765,7 +766,7 @@ int comToggle(char *opt)
 		}
 	}
 	USAGE:
-	usageprintf("toggle tracktm\n");
+	usagePrintf("toggle tracktm\n");
 	puts("              colour");
 	puts("              htmlamp");
 	puts("              verbose");
@@ -788,7 +789,7 @@ int comPrompt(char *param)
 			return OK;
 		}
 	}
-	usageprintf("prompt [0 to %d]\n",NUM_PROMPTS-1);
+	usagePrintf("prompt [0 to %d]\n",NUM_PROMPTS-1);
 	return ERR_CMD_FAIL;
 }
 
@@ -809,7 +810,7 @@ int comRaw(char *param)
 			return OK;
 		}
 	}
-	usageprintf("raw [0 to %d]\n",NUM_RAW_LEVELS-1);
+	usagePrintf("raw [0 to %d]\n",NUM_RAW_LEVELS-1);
 	return ERR_CMD_FAIL;
 }
 
@@ -890,7 +891,7 @@ int comShow(char *opt, char *pat, int max)
 	}
 
 	USAGE:
-	usageprintf("show titles  [<pattern>  [<count>]]\n");
+	usagePrintf("show titles  [<pattern>  [<count>]]\n");
 	puts("            xtitles [<pattern>  [<count>]]");
 	puts("            rx      [<pattern>  [<count>]]");
 	puts("            rawrx   [<pattern>  [<count>]]");
@@ -911,7 +912,7 @@ int comShow(char *opt, char *pat, int max)
 
 void optShowFlags()
 {
-	colprintf("\n~BB~FW*** Toggle flags ***\n\n");
+	colPrintf("\n~BB~FW*** Toggle flags ***\n\n");
 	printFlagTrackTime();
 	printFlagColour();
 	printFlagHTML();
@@ -930,7 +931,7 @@ void optShowTXCommands(char *pat)
 	int cnt2;
 	int i;
 
-	colprintf("\n~BB~FW*** TX streamer command mappings ***\n\n");
+	colPrintf("\n~BB~FW*** TX streamer command mappings ***\n\n");
 	for(i=cnt1=cnt2=0;i < NUM_COMMANDS;++i)
 	{
 		if (commands[i].data)
@@ -953,7 +954,7 @@ void optShowTXCommands(char *pat)
 				else
 					strcpy(str,data);
 
-				colprintf("%-8s = ~FT%-15s~RS",
+				colPrintf("%-8s = ~FT%-15s~RS",
 					commands[i].com,str);
 				++cnt2;
 			}
@@ -970,7 +971,7 @@ void optShowTXCommands(char *pat)
 
 void optShowTimes()
 {
-	colprintf("\n~BB~FW*** Times ***\n\n");
+	colPrintf("\n~BB~FW*** Times ***\n\n");
 	printf("Local  : %s\n",getTime());
 	printf("Run    : %s\n",getRawTimeString(start_time));
 	printf("Connect: %s\n",getTimeString(connect_time));
@@ -985,10 +986,10 @@ void optShowConStat()
 {
 	t_iscp_data *pkt_data;
 
-	colprintf("\n~BB~FW*** Connection status and traffic ***\n\n");
+	colPrintf("\n~BB~FW*** Connection status and traffic ***\n\n");
 	printf("Streamer TCP: %s:%d\n",inet_ntoa(con_addr.sin_addr),tcp_port);
 	printf("Status      : ");
-	colprintf(connect_time ? "~FGCONNECTED\n" : "~FRDISCONNECTED\n");
+	colPrintf(connect_time ? "~FGCONNECTED\n" : "~FRDISCONNECTED\n");
 	printf("Connect time: %s\n",getTimeString(connect_time));
 	printf("Last RX ago : %s\n",getTimeString(last_rx_time));
 	printf("Last TX ago : %s\n",getTimeString(last_tx_time));
@@ -996,7 +997,7 @@ void optShowConStat()
 	if (buffer[BUFF_TCP].data)
 	{
 		pkt_data = (t_iscp_data *)(buffer[BUFF_TCP].data + pkt_hdr->hdr_len);
-		colprintf("Last RX com : ~FT%.3s\n",pkt_data->command);
+		colPrintf("Last RX com : ~FT%.3s\n",pkt_data->command);
 	}
 	else puts("Last RX com : ---");
 
@@ -1015,12 +1016,12 @@ void optShowHistory()
 	int bn;
 	int i;
 
-	colprintf("\n~BB~FW*** Command history ***\n\n");
+	colPrintf("\n~BB~FW*** Command history ***\n\n");
 	bn = (keyb_buffnum + 2) % MAX_HIST_BUFFERS;
 	for(i=cnt=0;i < MAX_HIST_BUFFERS-1;++i)
 	{
 		if (buffer[bn].len)
-			colprintf("~FM%3d:~RS %s\n",++cnt,buffer[bn].data);
+			colPrintf("~FM%3d:~RS %s\n",++cnt,buffer[bn].data);
 		bn = (bn + 1) % MAX_HIST_BUFFERS;
 	}
 	puts("\nEnter !<number> or up/down arrow keys to select.\n");
@@ -1072,7 +1073,7 @@ int comClear(char *opt)
 	return OK;
 
 	USAGE:
-	usageprintf("clear rx\n");
+	usagePrintf("clear rx\n");
 	puts("             menu");
 	puts("             titles");
 	puts("             history");
@@ -1126,7 +1127,7 @@ int comHelp(char *opt, char *pat)
 	}
 
 	USAGE:
-	usageprintf("help [extra  [<pattern>]]\n");
+	usagePrintf("help [extra  [<pattern>]]\n");
 	puts("            [sorted [<pattern>]]");
 	puts("            [notes]");
 	puts("            [usage]");
@@ -1144,13 +1145,13 @@ void optHelpMain(int extra, char *pat)
 
 	nlafter = 5;
 
-	colprintf("\n~BM~FW*** Client commands ***\n\n");
+	colPrintf("\n~BM~FW*** Client commands ***\n\n");
 	for(i=cnt=0;i < NUM_COMMANDS;++i)
 	{
 		if (i && commands[i].data && !commands[i-1].data)
 		{
 			if (cnt % nlafter) putchar('\n');
-			colprintf("\n~BT~FW*** Streamer commands ***\n\n");
+			colPrintf("\n~BT~FW*** Streamer commands ***\n\n");
 			if (extra) nlafter = 4;
 			cnt = 0;
 		}
@@ -1174,7 +1175,7 @@ void optHelpMain(int extra, char *pat)
 
 	if (extra)
 	{
-		colprintf("\n~FMUsage:~RS [<repeat count>] <client/streamer command>   eg: 3 up\n");
+		colPrintf("\n~FMUsage:~RS [<repeat count>] <client/streamer command>   eg: 3 up\n");
 		puts("                                                        con 192.168.0.1");
 		puts("       [<repeat count>] <raw streamer command>      eg: 3 OSDUP\n");
 	}
@@ -1187,7 +1188,7 @@ void optHelpMain(int extra, char *pat)
 
 void optHelpNotes()
 {
-	colprintf("\n~BB~FW*** Help notes ***\n\n");
+	colPrintf("\n~BB~FW*** Help notes ***\n\n");
 	puts("1) Any commands starting with a capital letter are passed to the streamer");
 	puts("   unchanged as raw commands. eg: OSDUP\n");
 	puts("2) Commands and their sub options can be shortened to any matching substring"); 
@@ -1215,7 +1216,7 @@ void optHelpSorted(char *pat)
 	int cnt;
 	int i;
 
-	colprintf("\n~BM~FW*** Sorted commands ***\n\n");
+	colPrintf("\n~BM~FW*** Sorted commands ***\n\n");
 	for(i=cnt=0;i < NUM_COMMANDS;++i)
 	{
 		if (!pat || wildMatch(sorted_commands[i],pat))
@@ -1237,7 +1238,7 @@ int comConnect(char *param)
 	{
 		if (connect_time)
 		{
-			errprintf("Already connected.\n");
+			errPrintf("Already connected.\n");
 			return ERR_CMD_FAIL;
 		}
 		networkClear();
@@ -1259,7 +1260,7 @@ int comDisconnect()
 		networkClear();
 		return OK;
 	}
-	errprintf("Not connected.\n");
+	errPrintf("Not connected.\n");
 	return ERR_CMD_FAIL;
 }
 
@@ -1315,7 +1316,7 @@ int comWait(int comnum, char *param)
 				/* Wait time expired */
 				if (comnum == COM_WAIT_MENU)
 				{
-					errprintf("TIMEOUT\n");
+					errPrintf("TIMEOUT\n");
 					return ERR_CMD_FAIL;
 				}
 				return OK;
@@ -1335,9 +1336,9 @@ int comWait(int comnum, char *param)
 
 	ERROR:
 	if (comnum == COM_WAIT)
-		usageprintf("wait <seconds>\n");
+		usagePrintf("wait <seconds>\n");
 	else
-		usageprintf("wait_menu [<seconds>]\n");
+		usagePrintf("wait_menu [<seconds>]\n");
 	return ERR_CMD_FAIL;
 }
 
@@ -1348,10 +1349,10 @@ void comEcho(int cmd_word, int word_cnt, char **words)
 {
 	int i;
 
-	for(i=cmd_word+1;i < word_cnt;++i) colprintf("%s ",words[i]);
+	for(i=cmd_word+1;i < word_cnt;++i) colPrintf("%s ",words[i]);
 
 	/* Sends an ansi reset code along with nl */
-	colprintf("\n"); 
+	colPrintf("\n"); 
 }
 
 
@@ -1417,7 +1418,7 @@ int comMacro(char *opt, char *name, int cmd_word, int word_cnt, char **words)
 	if (ret != ERR_CMD_FAIL) return ret;
 
 	USAGE:
-	usageprintf("macro define <macro name>   [\"<macro command list>\"]\n");
+	usagePrintf("macro define <macro name>   [\"<macro command list>\"]\n");
 	puts("             append <macro name>   [\"<macro command list>\"]");
 	puts("             delete <macro name>/*");
 	puts("             run    <macro name>");
@@ -1470,7 +1471,7 @@ int optMacroSave(int append, int cmd_word, int word_cnt, char **words)
 		filename = words[cmd_word+2];
 		if (!append && !access(filename,F_OK))
 		{
-			errprintf("File \"%s\" already exists.\n",filename);
+			errPrintf("File \"%s\" already exists.\n",filename);
 			return ERR_FILE;
 		}
 
@@ -1550,7 +1551,7 @@ void clearHistory()
 {
 	int i;
 	for(i=0;i < MAX_HIST_BUFFERS;++i) clearBuffer(i);
-	colprintf("History ~FGcleared.\n");
+	colPrintf("History ~FGcleared.\n");
 }
 
 

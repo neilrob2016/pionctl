@@ -21,3 +21,9 @@ Older versions skipped.
 - Split some functions from misc.c out into strings.c, time.c
 - Fixed bug in clearPrompt()
 - Minor code tidying.
+
+20220304
+========
+- Changed "exit" command to "quit" as accidently typing 'e' instead of "en",
+  "ex" or "echo" etc would exit the program.
+- Renamed some functions

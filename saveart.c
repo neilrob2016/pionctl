@@ -54,7 +54,7 @@ void saveArtDataLine(uint32_t data_len, t_iscp_data *pkt_data)
 		if (data_len > 1 && cmd[0] == 'n')
 			puts("\nArtwork is not available.");
 		else
-			nlerrprintf("Bad art data.\n");
+			nlErrPrintf("Bad art data.\n");
 		goto DONE;
 	}
 
@@ -64,7 +64,7 @@ void saveArtDataLine(uint32_t data_len, t_iscp_data *pkt_data)
 	case '0':
 		if (save_state > SAVE_START)
 		{
-			nlerrprintf("Invalid state %c\n",cmd[1]);
+			nlErrPrintf("Invalid state %c\n",cmd[1]);
 			goto DONE;
 		}
 
@@ -83,7 +83,7 @@ void saveArtDataLine(uint32_t data_len, t_iscp_data *pkt_data)
 				ext = "jpg";
 				break;
 			default:
-				nlerrprintf("Invalid image format %c\n",cmd[0]);
+				nlErrPrintf("Invalid image format %c\n",cmd[0]);
 				goto DONE;
 			}
 			asprintf(&tmp,"%s.%s",save_filename,ext);
@@ -95,7 +95,7 @@ void saveArtDataLine(uint32_t data_len, t_iscp_data *pkt_data)
 		if ((save_fd = open(
 			save_filename,O_WRONLY|O_CREAT|O_TRUNC,0666)) == -1)
 		{
-			errprintf("saveArtDataLine(): open(): %s\n",
+			errPrintf("saveArtDataLine(): open(): %s\n",
 				strerror(errno));
 			goto DONE;
 		}
@@ -105,7 +105,7 @@ void saveArtDataLine(uint32_t data_len, t_iscp_data *pkt_data)
 	case '1':		
 		if (save_state != SAVE_NEXT)
 		{
-			nlerrprintf("Invalid state %c\n",cmd[1]);
+			nlErrPrintf("Invalid state %c\n",cmd[1]);
 			goto DONE;
 		}
 		break;
@@ -115,7 +115,7 @@ void saveArtDataLine(uint32_t data_len, t_iscp_data *pkt_data)
 
 	default:
 		if (!strncmp(cmd,"BMP",3)) return;
-		nlerrprintf("Invalid state %c\n",cmd[1]);
+		nlErrPrintf("Invalid state %c\n",cmd[1]);
 		goto DONE;
 	}
 
@@ -133,7 +133,7 @@ void saveArtDataLine(uint32_t data_len, t_iscp_data *pkt_data)
 		}
 		if (write(save_fd,&byte,1) != 1) 
 		{
-			nlerrprintf("saveArt(): write(): %s\n",strerror(errno));
+			nlErrPrintf("saveArt(): write(): %s\n",strerror(errno));
 			goto DONE;
 		}
 		ptr[2] = c;
@@ -159,7 +159,7 @@ void checkSaveTimeout()
 	if (save_state != SAVE_INACTIVE &&
 	    time(0) - save_rx_time >= SAVE_TIMEOUT)
 	{
-		nlwarnprintf("Save timeout - some or all image data not received.\n");
+		nlWarnPrintf("Save timeout - some or all image data not received.\n");
 		resetSave();
 		printPrompt();
 	}

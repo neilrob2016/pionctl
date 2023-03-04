@@ -16,7 +16,7 @@ void sigHandler(int sig)
 	switch(sig)
 	{
 	case SIGINT:
-		colprintf("~FY~OL*** BREAK ***\n");
+		colPrintf("~FY~OL*** BREAK ***\n");
 		clearBuffer(keyb_buffnum);
 		discardMultiLineMacro();
 		if (!flags.macro_running) printPrompt();
@@ -24,7 +24,7 @@ void sigHandler(int sig)
 		break;
 	case SIGQUIT:
 	case SIGTERM:
-		exitprintf("on signal %d",sig);
+		quitPrintf("on signal %d",sig);
 		doExit(sig);
 	default:
 		assert(0);
@@ -36,11 +36,11 @@ void sigHandler(int sig)
 
 void version(int print_pid)
 {
-	colprintf("\n~BM~FW*** PIONCTL - Pioneer N-70AE control client ***\n\n");
-	colprintf("~FTCopyright (C) Neil Robertson 2021-2022\n\n");
-	colprintf("~FYVersion~RS   : %s\n",VERSION);
-	colprintf("~FGBuild date~RS: %s\n",BUILD_DATE);
-	if (print_pid) colprintf("~FBPID~RS       : %d\n",getpid());
+	colPrintf("\n~BM~FW*** PIONCTL - Pioneer N-70AE control client ***\n\n");
+	colPrintf("~FTCopyright (C) Neil Robertson 2021-2023\n\n");
+	colPrintf("~FYVersion~RS   : %s\n",VERSION);
+	colPrintf("~FGBuild date~RS: %s\n",BUILD_DATE);
+	if (print_pid) colPrintf("~FBPID~RS       : %d\n",getpid());
 	putchar('\n');
 }
 
@@ -49,5 +49,5 @@ void version(int print_pid)
 
 void ok()
 {
-	colprintf("~FGOK\n");
+	colPrintf("~FGOK\n");
 }
