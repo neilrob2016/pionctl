@@ -4,7 +4,7 @@ void setEntryValue(t_entry *entry, char *value, int val_len);
 t_entry *findInList(char *key);
 
 
-void initRXList()
+void initRXList(void)
 {
 	bzero(list,sizeof(list));
 }
@@ -89,7 +89,7 @@ void clearValueOfRXKey(char *key)
 
 
 
-void clearRXList()
+void clearRXList(void)
 {
 	t_entry *entry;
 	int i;

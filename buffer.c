@@ -1,6 +1,6 @@
 #include "globals.h"
 
-void initBuffers()
+void initBuffers(void)
 {
 	bzero(buffer,sizeof(buffer));
 }
@@ -15,7 +15,7 @@ void copyBuffer(int buff_from, int buff_to)
 	if (buffer[buff_from].alloc > buffer[buff_to].alloc)
 	{
 		buffer[buff_to].data = (char *)realloc(
-			buffer[buff_to].data,datalen);
+			buffer[buff_to].data,buffer[buff_from].alloc);
 		buffer[buff_to].alloc = buffer[buff_from].alloc;
 	}
 	memcpy(buffer[buff_to].data,buffer[buff_from].data,datalen);

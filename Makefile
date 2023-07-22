@@ -1,9 +1,14 @@
 CC=cc
 
+# -fsanitize is for runtime OOB memory checking. Debug use only as it has a
+# severe speed penalty and doesn't work with -O. Linker needs it too
+#SANI=-fsanitize=address
+
 # ARM Linux
 #CC=aarch64-poky-linux-gcc --sysroot=/opt/fsl-imx-wayland/4.19-warrior/sysroots/aarch64-poky-linux
 
-ARGS=-Wall -pedantic -g -c -O
+ARGS=-Wall -Wextra -pedantic -g -c -O
+#ARGS=-Wall -Wextra -pedantic -g -c $(SANI)
 COMP=$(CC) $(ARGS)
 DEPS=globals.h Makefile
 OBJS=\
@@ -26,7 +31,7 @@ OBJS=\
 BIN=pionctl
 
 $(BIN): build_date.h $(OBJS) Makefile
-	$(CC) $(OBJS) -o $(BIN)
+	$(CC) $(OBJS) $(SANI) -o $(BIN)
 
 build_date.h:
 	echo "#define BUILD_DATE \"`date -u +'%F %T %Z'`\"" > build_date.h

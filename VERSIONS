@@ -22,8 +22,15 @@ Older versions skipped.
 - Fixed bug in clearPrompt()
 - Minor code tidying.
 
-20220304
+20230304
 ========
 - Changed "exit" command to "quit" as accidently typing 'e' instead of "en",
   "ex" or "echo" etc would exit the program.
 - Renamed some functions
+
+20230722
+========
+- Added "artdis" command to disable jacket art
+- 2 crash bug fixes
+- Misc code updates and improvements
+- Added -fsanitize=address option to makefile

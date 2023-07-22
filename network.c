@@ -7,10 +7,10 @@
 #define PKT_HDR_LEN    (int)sizeof(t_iscp_hdr)
 #define START_CHAR     '!'
 
-int  resolveAddress();
-void printPacketDetails(t_iscp_hdr *hdr, t_iscp_data *data);
+int  resolveAddress(void);
+void printPacketDetails(t_iscp_hdr *hdr, t_iscp_data *data, int rx);
 
-int networkStart()
+int networkStart(void)
 {
 	char *ptr;
 	int cnt;
@@ -81,7 +81,7 @@ int networkStart()
 
 
 /*** Create the socket to listen for EZPROXY packets on ***/
-int createUDPSocket()
+int createUDPSocket(void)
 {
 	struct sockaddr_in addr;
 	int on;
@@ -122,7 +122,7 @@ int createUDPSocket()
 
 
 /*** Listen out for EZPROXY packets ***/
-int getStreamerAddress()
+int getStreamerAddress(void)
 {
 	struct sockaddr_in addr;
 	struct timeval tvs;
@@ -205,7 +205,7 @@ int getStreamerAddress()
 
 
 /*** Resolve the the command line address ***/
-int resolveAddress()
+int resolveAddress(void)
 {
 	struct hostent *he;
 
@@ -232,7 +232,7 @@ int resolveAddress()
 
 
 
-int connectToStreamer()
+int connectToStreamer(void)
 {
 	struct timeval tvs;
 	fd_set mask;
@@ -413,13 +413,22 @@ void readSocket(int print_prompt)
 	if (!strncmp(pkt_data->command,"NTM",3))
 	{
 		if (data_len >= 8)
-			sprintf(track_time_str,"%.8s",pkt_data->command+3);
-		else
-			strcpy(track_time_str,TIME_DEF_STR);
+		{
+			snprintf(
+				track_time_str,
+				sizeof(track_time_str),
+				"%.8s",pkt_data->command+3);
+		}
+		else strcpy(track_time_str,TIME_DEF_STR);
+
 		if (data_len >= 20)
-			sprintf(track_len_str,"%.8s",pkt_data->command+12);
-		else
-			strcpy(track_len_str,TIME_DEF_STR);
+		{
+			snprintf(
+				track_len_str,
+				sizeof(track_time_str),
+				"%.8s",pkt_data->command+12);
+		}
+		else strcpy(track_len_str,TIME_DEF_STR);
 
 		/* Ignore unless told otherwise */
 		if (!flags.show_track_time)
@@ -445,7 +454,7 @@ void readSocket(int print_prompt)
 		{
 			/* Header */
 			colPrintf("\n~FGRX %d bytes:\n",buffer[BUFF_TCP].len);
-			printPacketDetails(pkt_hdr,pkt_data);
+			printPacketDetails(pkt_hdr,pkt_data,1);
 		}
 		else
 		{
@@ -457,7 +466,7 @@ void readSocket(int print_prompt)
 		/* Minor issue - any ampersand codes won't get translated even
 		   if translate flag set. Oh well. */
 		if (data_len > 2 && !memcmp(pkt_data->command,"NTI",3))
-			addTitle(pkt_data->mesg,data_len - 3);
+			addTitle(pkt_data->mesg,data_len - MESG_TERM_LEN);
 		clearBuffer(BUFF_TCP);
 		if (print_prompt) printPrompt();
 
@@ -546,7 +555,7 @@ int writeSocket(char *write_data, int write_data_len)
 		/* Reset back to host ordering before printing */
 		hdr.hdr_len = PKT_HDR_LEN;
 		hdr.data_len = data_len;
-		printPacketDetails(&hdr,(t_iscp_data *)data);
+		printPacketDetails(&hdr,(t_iscp_data *)data,0);
 		break;
 	default:
 		assert(0);
@@ -581,28 +590,46 @@ int writeSocket(char *write_data, int write_data_len)
 
 
 /*** Lengths must be in host byte order ***/
-void printPacketDetails(t_iscp_hdr *hdr, t_iscp_data *data)
+void printPacketDetails(t_iscp_hdr *hdr, t_iscp_data *data, int rx)
 {
+	int bytes;
+	int i;
+
 	colPrintf("   ~FYHeader:\n");
-	printf("      Header length: %d bytes\n",hdr->hdr_len);
-	printf("      Data length  : %d bytes\n",hdr->data_len);
-	printf("      ISCP Version : %d\n",hdr->version);
+	printf("      Header length : %d bytes\n",hdr->hdr_len);
+	printf("      Data length   : %d bytes\n",hdr->data_len);
+	printf("      ISCP Version  : %d\n",hdr->version);
 
+	/* Has EOF-CR-LF on the end hence term len */
 	colPrintf("   ~FMData:\n");
-	printf("      Start char  : %c\n",data->start_char);
-	printf("      Device code : %c\n",data->device_code);
-	printf("      Command     : %.3s\n",data->command);
-	printf("      Command mesg: ");
+	printf("      Start char   : %c\n",data->start_char);
+	printf("      Device code  : %c\n",data->device_code);
+	printf("      Command      : %.3s\n",data->command);
 
-	/* Data length includes start char, device code and command 
-	   hence the - MESG_OFFSET */
-	printMesg(data->mesg,hdr->data_len - MESG_OFFSET);
+ 	bytes = hdr->data_len - MESG_OFFSET;
+	/* 3 byte terminator for RX, only 1 for TX */
+	bytes -= (rx ? MESG_TERM_LEN : 1);
+	if (bytes < 0)
+	{
+		colPrintf("   ~FRMessage length error\n");
+		return;
+	}
+	printf("      Message bytes: %d\n",bytes);
+	printf("      Message      : ");
+	printMesg(data->mesg,bytes);
+	printf("      Terminator   : ");
+	if (rx)
+	{
+		for(i=0;i < 3;++i) printf("0x%02X ",data->mesg[bytes + i]);
+	}
+	else printf("0x%02X",data->mesg[bytes]);
+	putchar('\n');
 }
 
 
 
 
-void networkClear()
+void networkClear(void)
 {
 	if (flags.verbose) 
 	{

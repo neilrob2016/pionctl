@@ -5,6 +5,7 @@
 #define PRINT_ON_OFF(F) colPrintf(F ? "~FGON\n" : "~FROFF\n");
 #define OFFLINE_ERROR   "Offline, command cannot be sent.\n"
 
+/* IMPORTANT! If you change this array update the enum in globals.h */
 static struct st_command
 {
 	char *com;
@@ -51,7 +52,11 @@ static struct st_command
 	{ "filter",  "DGF"     },
 	{ "filstat", "DGFQSTN" },
 
-	/* Content */
+	/* Content. NJADIS simply disables streamer from sending the art bitmap
+	   when we initially tune in to a station. We don't use that anyway as
+	   we request the art manually so not much use but can reduce network 
+	   traffic. */
+	{ "artdis",  "NJADIS"         },
 	{ "artbmp",  "NJABMP"         },
 	{ "arturl",  "NJALINK;NJAREQ" },
 	{ "artstat", "NJAQSTN"        },
@@ -178,21 +183,21 @@ int  comToggle(char *opt);
 int  comPrompt(char *param);
 int  comRaw(char *param);
 int  comShow(char *opt, char *pat, int max);
-void optShowFlags();
+void optShowFlags(void);
 void optShowTXCommands(char *pat);
-void optShowTimes();
-void optShowConStat();
-void optShowHistory();
+void optShowTimes(void);
+void optShowConStat(void);
+void optShowHistory(void);
 
 int  comClear(char *opt);
 int  comHelp(char *opt, char *pat);
 void optHelpMain(int extra, char *pat);
 void optHelpSorted(char *pat);
-void optHelpNotes();
+void optHelpNotes(void);
 
 int  comConnect(char *param);
-int  comDisconnect();
-void comClearHistory();
+int  comDisconnect(void);
+void comClearHistory(void);
 int  comWait(int comnum, char *param);
 void comEcho(int cmd_word, int word_cnt, char **words);
 
@@ -201,14 +206,14 @@ int  optMacroDefine(int cmd_word, int word_cnt, char **words);
 int  optMacroAppend(int cmd_word, int word_cnt, char **words);
 int  optMacroSave(int append, int cmd_word, int word_cnt, char **words);
 
-void printFlagTrackTime();
-void printFlagColour();
-void printFlagHTML();
-void printFlagVerb();
+void printFlagTrackTime(void);
+void printFlagColour(void);
+void printFlagHTML(void);
+void printFlagVerb(void);
 
-void  clearHistory();
+void  clearHistory(void);
 char *bytesSizeStr(u_long num);
-u_int getUsecTime();
+u_int getUsecTime(void);
 
 /******************************** INTERFACE *********************************/
 
@@ -690,6 +695,8 @@ int processBuiltInCommand(
 	case COM_QUIT:
 		quitPrintf("by command");
 		doExit(0);
+		/* Avoids gcc warning */
+		break;
 	case COM_TOGGLE:
 		return comToggle(param1);
 	case COM_PROMPT:
@@ -910,7 +917,7 @@ int comShow(char *opt, char *pat, int max)
 
 
 
-void optShowFlags()
+void optShowFlags(void)
 {
 	colPrintf("\n~BB~FW*** Toggle flags ***\n\n");
 	printFlagTrackTime();
@@ -947,7 +954,7 @@ void optShowTXCommands(char *pat)
 				    !strcmp(data,"DGF") ||
 				    !strcmp(data,"LRA"))
 				{
-					sprintf(str,"%snn",data);
+					snprintf(str,sizeof(str),"%snn",data);
 				}
 				else if (!strcmp(data,"NFN"))
 					strcpy(str,"NFN*");
@@ -969,7 +976,7 @@ void optShowTXCommands(char *pat)
 
 
 
-void optShowTimes()
+void optShowTimes(void)
 {
 	colPrintf("\n~BB~FW*** Times ***\n\n");
 	printf("Local  : %s\n",getTime());
@@ -982,7 +989,7 @@ void optShowTimes()
 
 
 
-void optShowConStat()
+void optShowConStat(void)
 {
 	t_iscp_data *pkt_data;
 
@@ -1010,7 +1017,7 @@ void optShowConStat()
 
 
 
-void optShowHistory()
+void optShowHistory(void)
 {
 	int cnt;
 	int bn;
@@ -1186,7 +1193,7 @@ void optHelpMain(int extra, char *pat)
 
 
 
-void optHelpNotes()
+void optHelpNotes(void)
 {
 	colPrintf("\n~BB~FW*** Help notes ***\n\n");
 	puts("1) Any commands starting with a capital letter are passed to the streamer");
@@ -1253,7 +1260,7 @@ int comConnect(char *param)
 
 
 
-int comDisconnect()
+int comDisconnect(void)
 {
 	if (tcp_sock)
 	{
@@ -1489,7 +1496,7 @@ int optMacroSave(int append, int cmd_word, int word_cnt, char **words)
 
 /********************************** FLAGS *************************************/
 
-void printFlagTrackTime()
+void printFlagTrackTime(void)
 {
 	printf("Show track time : ");
 	PRINT_ON_OFF(flags.show_track_time);
@@ -1498,7 +1505,7 @@ void printFlagTrackTime()
 
 
 
-void printFlagColour()
+void printFlagColour(void)
 {
 	printf("Ansi colour     : ");
 	PRINT_ON_OFF(flags.use_colour);
@@ -1507,7 +1514,7 @@ void printFlagColour()
 
 
 
-void printFlagHTML()
+void printFlagHTML(void)
 {
 	printf("Trans HTML codes: ");
 	PRINT_ON_OFF(flags.trans_html_amps);
@@ -1516,7 +1523,7 @@ void printFlagHTML()
 
 
 
-void printFlagVerb()
+void printFlagVerb(void)
 {
 	printf("Verbose output  : ");
 	PRINT_ON_OFF(flags.verbose);
@@ -1535,7 +1542,7 @@ int compareComs(const void *addr1, const void *addr2)
 
 
 /*** Sort the commands into alphabetic order for 'shelp' ***/
-void sortCommands()
+void sortCommands(void)
 {
 	int i;
 
@@ -1547,7 +1554,7 @@ void sortCommands()
 
 
 
-void clearHistory()
+void clearHistory(void)
 {
 	int i;
 	for(i=0;i < MAX_HIST_BUFFERS;++i) clearBuffer(i);
@@ -1564,11 +1571,11 @@ char *bytesSizeStr(u_long bytes)
 	/* Only start printing in kilobytes from 10000 as eg 2345 bytes is 
 	   still easy to read */
 	if (bytes < 1e4) 
-		sprintf(str,"%lu bytes",bytes);
+		snprintf(str,sizeof(str),"%lu bytes",bytes);
 	else if (bytes < 1e6)
-		sprintf(str,"%.1fK",(double)bytes / 1e3);
+		snprintf(str,sizeof(str),"%.1fK",(double)bytes / 1e3);
 	else 
-		sprintf(str,"%.1fM",(double)bytes / 1e6);
+		snprintf(str,sizeof(str),"%.1fM",(double)bytes / 1e6);
 	return str;
 }
 
@@ -1577,7 +1584,7 @@ char *bytesSizeStr(u_long bytes)
 
 /*** Get the current time down to the microsecond. Value wraps once every
      1000 seconds. Goes from 0 -> 999999999 (1 billion - 1) ***/
-u_int getUsecTime()
+u_int getUsecTime(void)
 {
 	struct timeval tv;
 	gettimeofday(&tv,NULL);

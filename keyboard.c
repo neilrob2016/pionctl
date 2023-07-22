@@ -5,7 +5,7 @@
 #define DEL1      8   /* ASCII/terminal backspace */
 #define DEL2      127 /* PC keyboard backspace */
 
-void initKeyboard()
+void initKeyboard(void)
 {
 	struct termios tio;
 
@@ -44,7 +44,7 @@ void initKeyboard()
 
 
 
-void readKeyboard()
+void readKeyboard(void)
 {
 	enum 
 	{
@@ -89,6 +89,8 @@ void readKeyboard()
 	case CONTROL_D:
 		quitPrintf("by Control-D");
 		doExit(0);
+		/* Avoids gcc warning */
+		break;
 
 	case ESC:
 		if (len == 1)
@@ -152,7 +154,7 @@ void readKeyboard()
 
 
 
-void resetKeyboard()
+void resetKeyboard(void)
 {
 	tcsetattr(STDIN,TCSANOW,&saved_tio);
 }

@@ -9,8 +9,8 @@
 
 static char *home_dir;
 
-int   deleteAllMacros();
-int   findEmptySlot();
+int   deleteAllMacros(void);
+int   findEmptySlot(void);
 int   writeMacro(FILE *fp, int m, int append);
 int   clearMacro(int m);
 char *firstNonWhitespacePos(char *str);
@@ -20,7 +20,7 @@ int   expandPath(char *search_path, char *found_path);
 int   hasWildCards(char *str);
 
 
-void initMacros()
+void initMacros(void)
 {
 	struct passwd *pwd;
 
@@ -88,7 +88,7 @@ int initMultiLineMacroAppend(char *name)
 
 
 
-void discardMultiLineMacro()
+void discardMultiLineMacro(void)
 {
 	switch(input_state)
 	{
@@ -274,7 +274,7 @@ int deleteMacro(char *name)
 
 
 
-int deleteAllMacros()
+int deleteAllMacros(void)
 {
 	int m;
 	int cnt = 0;
@@ -494,7 +494,7 @@ int saveAllMacros(char *filename, int append)
 
 
 
-void listMacros()
+void listMacros(void)
 {
 	char *ptr;
 	char *ptr2;
@@ -550,7 +550,7 @@ int findMacro(char *name)
 
 /********************************* SUPPORT ***********************************/
 
-int findEmptySlot()
+int findEmptySlot(void)
 {
 	int m;
 	for(m=0;m < macro_cnt;++m) if (!macros[m].name) return m;
@@ -641,18 +641,16 @@ int expandPath(char *search_path, char *found_path)
 {
 	struct passwd *pwd;
 	struct dirent *ds;
-	DIR *dir;
+	DIR *dir = NULL;
 	char *start;
 	char *entry;
 	char *ptr;
-	int add_slash;
-	int found;
+	int add_slash = 1;
+	int found = 0;
 	
 	errno = 0;
 	if (!search_path) goto ERROR;
 
-	add_slash = 1;
-	found = 0;
 	found_path[0] = 0;
 
 	switch(*search_path)
@@ -719,15 +717,25 @@ int expandPath(char *search_path, char *found_path)
 				{
 					entry = ds->d_name;
 					found = 1;
+					goto DONE;
 					break;
 				}
 			}
 			closedir(dir);
+			dir = NULL;
 		}
 		if (!found) goto ERROR;
 
+		DONE:
 		if (add_slash) strncat(found_path,"/",PATH_MAX);
 		strncat(found_path,entry,PATH_MAX);
+		/* Close it after we use ds->d_name as it becomes invalid
+		   once closed */
+		if (dir)
+		{
+			closedir(dir);
+			dir = NULL;
+		}
 		if (!ptr) break;
 
 		start = ptr + 1;

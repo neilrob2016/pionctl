@@ -3,7 +3,7 @@
 static int menu_options_alloc;
 
 
-void initMenu()
+void initMenu(void)
 {
 	menu_options = NULL;
 	menu_option_cnt = 0;
@@ -42,7 +42,7 @@ void addMenuOption(char *mesg, uint32_t len)
 
 
 
-void setMenuSelection()
+void setMenuSelection(void)
 {
 	if (menu_selection)
 	{
@@ -59,7 +59,7 @@ void setMenuSelection()
 /*** Wanted to have the menu selection as another cursor pointing to the
      selected option but it was too complex figuring out when the menus
      changed so just using a string copy of the option ***/
-void printMenuList()
+void printMenuList(void)
 {
 	int i;
 
@@ -82,7 +82,7 @@ void printMenuList()
 
 
 
-void printMenuSelection()
+void printMenuSelection(void)
 {
 	printf("Current menu selection: %s\n",
 		menu_selection ? menu_selection : "<not set>");

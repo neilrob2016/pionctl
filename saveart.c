@@ -3,7 +3,7 @@
 #define CMD_END_LEN 3
 #define MAX_HEX_LEN 1024
 
-void initSave()
+void initSave(void)
 {
 	save_state = SAVE_INACTIVE;
 	save_fd = 0;
@@ -14,7 +14,7 @@ void initSave()
 
 
 
-void resetSave()
+void resetSave(void)
 {
 	if (save_state != SAVE_INACTIVE)
 	{
@@ -154,7 +154,7 @@ void saveArtDataLine(uint32_t data_len, t_iscp_data *pkt_data)
 
 
 /*** For some reason it sometimes simply won't send us the image data ***/
-void checkSaveTimeout()
+void checkSaveTimeout(void)
 {
 	if (save_state != SAVE_INACTIVE &&
 	    time(0) - save_rx_time >= SAVE_TIMEOUT)

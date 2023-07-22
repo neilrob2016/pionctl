@@ -1,8 +1,8 @@
 #include "globals.h"
 
-char *getTime()
+char *getTime(void)
 {
-	static char text[9];
+	static char text[20];
 	time_t now = time(0);
 
 	strftime(text,sizeof(text),"%T",localtime(&now));
@@ -22,7 +22,7 @@ char *getTimeString(time_t tm)
 
 char *getRawTimeString(time_t tm)
 {
-	static char text[9];
+	static char text[20];
 	time_t diff;
 	int hours;
 	int mins;
@@ -32,7 +32,7 @@ char *getRawTimeString(time_t tm)
 	hours = (diff / 3600) % 100;
 	mins = (diff % 3600) / 60;
 	secs = diff % 60;
-	snprintf(text,9,"%02d:%02d:%02d",hours,mins,secs);
+	snprintf(text,sizeof(text),"%02d:%02d:%02d",hours,mins,secs);
 
 	return text;
 }

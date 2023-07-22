@@ -29,7 +29,7 @@
 #define EXTERN extern
 #endif
 
-#define VERSION "20230304"
+#define VERSION "20230722"
 
 #define STDIN          0
 #define STDOUT         1
@@ -38,6 +38,7 @@
 #define ALLOC_BLOCK    10
 #define ADDR_LIST_SIZE 20
 #define MESG_OFFSET    5
+#define MESG_TERM_LEN  3
 #define SAVE_TIMEOUT   5
 #define TIME_DEF_STR   "--:--:--"
 
@@ -159,14 +160,15 @@ enum
 
 	/* 25 */
 	COM_FILSTAT,
+	COM_ARTDIS,
 	COM_ARTBMP,
 	COM_ARTURL,
 	COM_ARTSTAT,
 	COM_ARTSAVE,
 
 	/* Enums beyond saveart not required except for these */
-	COM_SETNAME = 82,
-	COM_SETUP   = 88,
+	COM_SETNAME = 83,
+	COM_SETUP   = 89,
 	COM_SERIAL,
 	COM_ETHMAC,
 	COM_ICONURL,
@@ -306,23 +308,23 @@ EXTERN char *macro_name;
 /*** Forward declarations ***/
 
 /* keyboard.c */
-void initKeyboard();
-void readKeyboard();
-void resetKeyboard();
+void initKeyboard(void);
+void readKeyboard(void);
+void resetKeyboard(void);
 
 /* commands.c */
 int  parseInputLine(char *data, int len);
 int  getCommand(char *word, int len);
-void sortCommands();
+void sortCommands(void);
 
 /* network.c */
-int  networkStart();
-int  createUDPSocket();
-int  getStreamerAddress();
-int  connectToStreamer();
+int  networkStart(void);
+int  createUDPSocket(void);
+int  getStreamerAddress(void);
+int  connectToStreamer(void);
 void readSocket(int print_prompt);
 int  writeSocket(char *write_data, int write_data_len);
-void networkClear();
+void networkClear(void);
 
 /* printrx.c */
 void printMesg(char *mesg, int len);
@@ -332,46 +334,46 @@ void printRXCommands(char *pat);
 void printTrackTime(int rx);
 
 /* buffer.c */
-void initBuffers();
+void initBuffers(void);
 void copyBuffer(int buff_from, int buff_to);
 void addToBuffer(int buffnum, char *data, int data_len);
 int  delLastCharFromBuffer(int buffnum);
 void clearBuffer(int buffnum);
 
 /* rxlist.c */
-void initRXList();
+void initRXList(void);
 int  updateRXList(char *key, char *value, int val_len);
 void setUnknownRXKey(char *key);
 void clearValueOfRXKey(char *key);
-void clearRXList();
+void clearRXList(void);
 int  dumpRXList(char *pat, int max);
 
 /* titles.c */
-void initTitles();
+void initTitles(void);
 void addTitle(char *mesg, uint32_t len);
 int  printTitles(int xtitles, char *param, int max);
-void clearTitles();
+void clearTitles(void);
 
 /* menu.c */
-void initMenu();
-void addMenuOption();
-void setMenuSelection();
-void printMenuList();
-void printMenuSelection();
+void initMenu(void);
+void addMenuOption(char *mesg, uint32_t len);
+void setMenuSelection(void);
+void printMenuList(void);
+void printMenuSelection(void);
 void clearMenu(int prt);
 
 /* save.c */
-void initSave();
-void resetSave();
+void initSave(void);
+void resetSave(void);
 void prepareSave(char *filename);
-void saveArtDataLine();
-void checkSaveTimeout();
+void saveArtDataLine(uint32_t data_len, t_iscp_data *pkt_data);
+void checkSaveTimeout(void);
 
 /* macros.c */
-void initMacros();
+void initMacros(void);
 int  initMultiLineMacro(char *name);
 int  initMultiLineMacroAppend(char *name);
-void discardMultiLineMacro();
+void discardMultiLineMacro(void);
 int  insertMacro(char *name, char *comlist);
 void addMacroLine(char *line, int len);
 int  appendMacroComlist(char *name, char *comlist);
@@ -381,7 +383,7 @@ int  runMacro(char *name);
 int  loadMacros(char *filename);
 int  saveMacro(char *filename, char *name, int append);
 int  saveAllMacros(char *filename, int append);
-void listMacros();
+void listMacros(void);
 int  findMacro(char *name);
 
 /* printf.c */
@@ -394,8 +396,8 @@ void quitPrintf(const char *fmt, ...);
 void colPrintf(const char *fmt, ...);
 
 /* prompt.c */
-void  printPrompt();
-void  clearPrompt();
+void  printPrompt(void);
+void  clearPrompt(void);
 
 /* strings.c */
 #ifdef __linux__
@@ -406,7 +408,7 @@ int   isNumberWithLen(char *str, int len);
 int   isNumber(char *str);
 
 /* time.c */
-char *getTime();
+char *getTime(void);
 char *getTimeString(time_t tm);
 char *getRawTimeString(time_t tm);
 
@@ -414,4 +416,4 @@ char *getRawTimeString(time_t tm);
 void  doExit(int code);
 void  sigHandler(int sig);
 void  version(int print_pid);
-void  ok();
+void  ok(void);

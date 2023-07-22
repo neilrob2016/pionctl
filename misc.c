@@ -26,6 +26,8 @@ void sigHandler(int sig)
 	case SIGTERM:
 		quitPrintf("on signal %d",sig);
 		doExit(sig);
+		/* Avoids gcc warning */
+		break;
 	default:
 		assert(0);
 	}
@@ -47,7 +49,7 @@ void version(int print_pid)
 
 
 
-void ok()
+void ok(void)
 {
 	colPrintf("~FGOK\n");
 }

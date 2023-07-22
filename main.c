@@ -15,9 +15,9 @@
 char *cmd_list;
 
 void parseCmdLine(int argc, char **argv);
-void init();
-void mainloop();
-void runImmediate();
+void init(void);
+void mainloop(void);
+void runImmediate(void);
 
 int main(int argc, char **argv)
 {
@@ -176,7 +176,7 @@ void parseCmdLine(int argc, char **argv)
 
 
 
-void init()
+void init(void)
 {
 	initBuffers();
 	initKeyboard();
@@ -211,7 +211,7 @@ void init()
 
 
 
-void mainloop()
+void mainloop(void)
 {
 	struct timeval tvs;
 	struct timeval *tvp;
@@ -239,6 +239,8 @@ void mainloop()
 			if (flags.interrupted) continue;
 			errPrintf("mainLoop(): select(): %s\n",strerror(errno));
 			doExit(1);
+			/* Avoids gcc warning */
+			break; 
 		case 0:
 			/* Timeout */
 			checkSaveTimeout();
@@ -253,7 +255,7 @@ void mainloop()
 
 
 
-void runImmediate()
+void runImmediate(void)
 {
 	printPrompt();
 	puts(cmd_list);

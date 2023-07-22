@@ -8,7 +8,7 @@ static int titles_pos;
 static int titles_alloc;
 
 
-void initTitles()
+void initTitles(void)
 {
 	titles = NULL;
 	titles_pos = 0;
@@ -101,7 +101,7 @@ int printTitles(int xtitles, char *pat, int max)
 
 
 
-void clearTitles()
+void clearTitles(void)
 {
 	int i;
 	for(i=0;i < titles_pos;++i) free(titles[i]);

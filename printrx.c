@@ -5,6 +5,13 @@
 	else if (!memcmp(mesg,"01",2)) colPrintf("~FGON\n"); \
 	else printMesg(mesg,len);
 
+#define CHECK_LEN(L) \
+	if (len < L) \
+	{ \
+		colPrintf("~FRUnavailable\n"); \
+		return; \
+	} 
+
 /* Forward declarations */
 void printAMT(char *mesg, uint32_t len);
 void printDGF(char *mesg, uint32_t len);
@@ -376,11 +383,10 @@ void printIFA(char *mesg, uint32_t len)
 	};
 	char *ptr;
 	char *end;
-	char c1;
-	char c2;
+	char c1 = mesg[len];
+	char c2 = 0;
 	int i;
 	
-	c1 = mesg[len];
 	mesg[len] = 0;
 	colPrintf("~FTAudio info:\n");
 
@@ -531,7 +537,10 @@ void printNDS(char *mesg, uint32_t len)
 {
 	int i;
 
-	colPrintf("~FTConnector status:\n");
+	colPrintf("~FTConnector status: ");
+	CHECK_LEN(1);
+	colPrintf("\n");
+
 	printf("   Network  : ");
 
 	switch(mesg[0])
@@ -543,6 +552,8 @@ void printNDS(char *mesg, uint32_t len)
 	}
 	printf(" (%c)\n",mesg[0]);
 	
+	if (len < 3) return;
+
 	printf("   Front USB: ");
 	for(i=1;i < 3;++i)
 	{
@@ -728,7 +739,9 @@ void printNMS(char *mesg, uint32_t len)
 	int val;
 	int i;
 
-	colPrintf("~FTNet/USB menu status:\n");
+	colPrintf("~FTNet/USB menu status: ");
+	CHECK_LEN(1);
+	colPrintf("\n");
 
 	printf("   Track menu    : ");
 	switch(mesg[0])
@@ -738,6 +751,8 @@ void printNMS(char *mesg, uint32_t len)
 	default : printf("?");
 	}
 	colPrintf("~RS (%c)\n",mesg[0]);
+
+	if (len < 5) return;
 
 	printf("   F1 button icon: ");
 	for(i=1;i < 5;i+=2)
@@ -767,6 +782,8 @@ void printNMS(char *mesg, uint32_t len)
 		if (i == 1) printf("   F2 button icon: ");
 	}
 
+	if (len < 6) return;
+
 	printf("   Time seek     : ");
 	switch(mesg[5])
 	{
@@ -775,6 +792,8 @@ void printNMS(char *mesg, uint32_t len)
 	default : printf("?");
 	}
 	colPrintf("~RS (%c)\n",mesg[5]);
+
+	if (len < 7) return;
 
 	printf("   Time display  : ");
 	switch(mesg[6])
@@ -785,6 +804,8 @@ void printNMS(char *mesg, uint32_t len)
 	default : printf("?");
 	}
 	colPrintf("~RS (%c)\n",mesg[6]);
+
+	if (len < 8) return;
 
 	printf("   Service icon  : ");
 	switch((val = (int)hexToInt(mesg+7,2)))
@@ -980,7 +1001,9 @@ void printNSB(char *mesg, uint32_t len)
 
 void printNST(char *mesg, uint32_t len)
 {
-	colPrintf("~FTNet/USB play status:\n");
+	colPrintf("~FTNet/USB play status: ");
+	CHECK_LEN(1);
+	colPrintf("\n");
 
 	printf("   Play   : ");
 	switch(mesg[0])
@@ -994,6 +1017,8 @@ void printNST(char *mesg, uint32_t len)
 	default : printf("%c\n",mesg[0]);
 	}
 
+	if (len < 2) return;
+
 	printf("   Repeat : ");
 	switch(mesg[1])
 	{
@@ -1004,6 +1029,8 @@ void printNST(char *mesg, uint32_t len)
 	case 'x': colPrintf("~FRDISABLED\n");  break;
 	default : printf("%c\n",mesg[1]);
 	}
+
+	if (len < 3) return;
 
 	printf("   Shuffle: ");
 	switch(mesg[2])
@@ -1096,6 +1123,8 @@ void printSLI(char *mesg, uint32_t len)
 	int val;
 
 	printf("Input type: ");
+	CHECK_LEN(2);
+
 	switch((val = (int)hexToInt(mesg,2)))
 	{
 	case 0x27: printf("Music server"); break;
@@ -1153,6 +1182,8 @@ void printUPD(char *mesg, uint32_t len)
 void printUPS(char *mesg, uint32_t len)
 {
 	printf("Upsampling: ");
+	CHECK_LEN(1);
+
 	if (mesg[0] == '0')
 	{
 		/* N70 doesn't seem to support x2 and x4 but they're here
@@ -1176,6 +1207,8 @@ void printUPS(char *mesg, uint32_t len)
 void printPPS(char *mesg, uint32_t len)
 {
 	printf("Privacy policy status: ");
+	CHECK_LEN(1);
+
 	switch(mesg[0])
 	{
 	case '0':
@@ -1195,6 +1228,8 @@ void printPPS(char *mesg, uint32_t len)
 void printDIM(char *mesg, uint32_t len)
 {
 	printf("Dimmer lev: ");
+	CHECK_LEN(1);
+
 	if (mesg[0] == '0')
 	{
 		switch(mesg[1])

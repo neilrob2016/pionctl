@@ -1,11 +1,11 @@
 #include "globals.h"
 
-void printPromptLocalTime();
-void printPromptConnectTime();
-void printPromptTrackTime();
+void printPromptLocalTime(void);
+void printPromptConnectTime(void);
+void printPromptTrackTime(void);
 
 
-void printPrompt()
+void printPrompt(void)
 {
 	if (input_state != INPUT_CMD)
 	{
@@ -61,7 +61,7 @@ void printPrompt()
 
 
 
-void printPromptLocalTime()
+void printPromptLocalTime(void)
 {
 	colPrintf(" ~FBL~RS%s",getTime());
 }
@@ -69,7 +69,7 @@ void printPromptLocalTime()
 
 
 
-void printPromptConnectTime()
+void printPromptConnectTime(void)
 {
 	colPrintf(" ~FRC~RS%s",getTimeString(connect_time));
 }
@@ -77,7 +77,7 @@ void printPromptConnectTime()
 
 
 
-void printPromptTrackTime()
+void printPromptTrackTime(void)
 {
 	colPrintf(" ~FGT~RS%s",track_time_str);
 }
@@ -85,7 +85,7 @@ void printPromptTrackTime()
 
 
 
-void clearPrompt()
+void clearPrompt(void)
 {
 	putchar('\r');
 	write(STDOUT,"\033[2K\r",5); /* Clears the whole line */
