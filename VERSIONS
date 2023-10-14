@@ -39,5 +39,5 @@ Older versions skipped.
 ========
 - Renamed "model" command to "modinfo" which now also prints the model year.
 - Renamed "sysinfo" to "xinfo" as is a fairly random mix of extra information
-- Tidied up output of sysinfo
+  and tidied up the output.
 - Removed some almost unreadable colours from some NRI fields.
