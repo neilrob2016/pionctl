@@ -130,7 +130,7 @@ static struct st_command
 	{ "scr",     "NLTQSTN" },
 	{ "pps",     "PPSQSTN" },
 	{ "fwver",   "FWVQSTN" },
-	{ "sysinfo", "MDIQSTN" },
+	{ "xinfo",   "MDIQSTN" },
 	{ "auinfo",  "IFAQSTN" },
 	{ "stop",    "NTCSTOP" },
 	{ "id",      "NFNQSTN" },
@@ -146,7 +146,7 @@ static struct st_command
 	{ "serial",  "NRIQSTN" },
 	{ "ethmac",  "NRIQSTN" },
 	{ "iconurl", "NRIQSTN" },
-	{ "model",   "NRIQSTN" },
+	{ "modinfo", "NRIQSTN" },
 	{ "tidalver","NRIQSTN" },
 	{ "ecover",  "NRIQSTN" },
 	{ "prodid",  "NRIQSTN" },
@@ -561,7 +561,7 @@ int parseCommand(char *buff, int bufflen)
 	case COM_SERIAL:
 	case COM_ETHMAC:
 	case COM_ICONURL:
-	case COM_MODEL:
+	case COM_MODINFO:
 	case COM_TIDALVER:
 	case COM_ECOVER:
 	case COM_PRODID:

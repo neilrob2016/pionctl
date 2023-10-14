@@ -29,7 +29,7 @@
 #define EXTERN extern
 #endif
 
-#define VERSION "20230722"
+#define VERSION "20231013"
 
 #define STDIN          0
 #define STDOUT         1
@@ -172,7 +172,7 @@ enum
 	COM_SERIAL,
 	COM_ETHMAC,
 	COM_ICONURL,
-	COM_MODEL,
+	COM_MODINFO,
 	COM_TIDALVER,
 	COM_ECOVER,
 	COM_PRODID,

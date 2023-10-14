@@ -53,7 +53,7 @@ void printMGV(char *mesg, uint32_t len);
 void printMRM(char *mesg, uint32_t len);
 void printMMT(char *mesg, uint32_t len);
 void printRST(char *mesg, uint32_t len);
-void printXMLField(char *field, int mac, char *mesg, uint32_t len);
+void printXMLField(char *field, int ftype, char *mesg, uint32_t len);
 void printTranslatedMesg(char *mesg, uint32_t len, int add_title);
 char *replaceAmpCodes(char *str, uint32_t *len);
 char translateAmpCode(char *code);
@@ -128,6 +128,14 @@ static struct st_comfunc
 
 #define RX_COM_NJA 17
 #define RX_COM_NLS 18
+
+/* XML field types with NRI and MDI */
+enum
+{
+	XFLD_TEXT,
+	XFLD_MAC,
+	XFLD_FLOAT
+};
 
 /******************************** EXTERNAL *********************************/
 
@@ -426,10 +434,15 @@ void printHBT(char *mesg, uint32_t len)
 
 
 
+/*** Not sure what this command is. Seems to send an eclectic mix ***/
 void printMDI(char *mesg, uint32_t len)
 {
-	colPrintf("~FTStreamer info:\n");
-	printMesg(mesg,len);
+	colPrintf("~FTExtra info:\n   Device id   : ");
+	printXMLField("deviceid",XFLD_TEXT,mesg,len);
+	printf("   Net standby : ");
+	printXMLField("netstandby",XFLD_TEXT,mesg,len);
+	printf("   Mltroom vers: ");
+	printXMLField("currentversion",XFLD_FLOAT,mesg,len);
 }
 
 
@@ -951,35 +964,37 @@ void printNRI(char *mesg, uint32_t len)
 	{
 	case COM_SERIAL:
 		/* Colour output because it depends on last command */
-		colPrintf("~FB~OLSerial num:~RS ");
-		printXMLField("deviceserial",0,mesg,len);
+		printf("Serial num: ");
+		printXMLField("deviceserial",XFLD_TEXT,mesg,len);
 		break;
 	case COM_ETHMAC:
 		/* Ethernet MAC, not wifi MAC. The latter isn't given in the
 		   setup data and there doesn't seem to be any alternative way
 		   to get it */
-		colPrintf("~FB~OLEther MAC :~RS ");
-		printXMLField("macaddress",1,mesg,len);
+		printf("Ether MAC : ");
+		printXMLField("macaddress",XFLD_MAC,mesg,len);
 		break;
 	case COM_ICONURL:
-		colPrintf("~FB~OLIcon URL  :~RS ");
-		printXMLField("modeliconurl",0,mesg,len);
+		printf("Icon URL  : ");
+		printXMLField("modeliconurl",XFLD_TEXT,mesg,len);
 		break;
-	case COM_MODEL:
-		colPrintf("~FB~OLModel type:~RS ");
-		printXMLField("model",0,mesg,len);
+	case COM_MODINFO:
+		colPrintf("~FTModel info:\n   Type: ");
+		printXMLField("model",XFLD_TEXT,mesg,len);
+		printf("   Year: ");
+		printXMLField("year",XFLD_TEXT,mesg,len);
 		break;
 	case COM_TIDALVER:
-		colPrintf("~FB~OLTidal vers:~RS ");
-		printXMLField("tidaloauthversion",0,mesg,len);
+		printf("Tidal vers: ");
+		printXMLField("tidaloauthversion",XFLD_TEXT,mesg,len);
 		break;
 	case COM_ECOVER:
-		colPrintf("~FB~OLEcosys ver:~RS ");
-		printXMLField("ecosystemversion",0,mesg,len);
+		printf("Ecosys ver: ");
+		printXMLField("ecosystemversion",XFLD_FLOAT,mesg,len);
 		break;
 	case COM_PRODID:
-		colPrintf("~FB~OLProduct ID:~RS ");
-		printXMLField("productid",0,mesg,len);
+		printf("Product ID: ");
+		printXMLField("productid",XFLD_TEXT,mesg,len);
 		break;
 	default:
 		colPrintf("~FB~OLDevice setup:\n");
@@ -1333,7 +1348,7 @@ void printRST(char *mesg, uint32_t len)
 
 /********************************** SUPPORT ***********************************/
 
-void printXMLField(char *field, int mac, char *mesg, uint32_t len)
+void printXMLField(char *field, int ftype, char *mesg, uint32_t len)
 {
 	char *ptr;
 	char *mptr;
@@ -1358,9 +1373,25 @@ void printXMLField(char *field, int mac, char *mesg, uint32_t len)
 			    fptr < mend && *fptr != '<';++fptr)
 			{
 				putchar(*fptr);
-				/* Put the colons in the MAC address */
-				if (mac && cnt < 10 && !(++cnt % 2))
-					putchar(':');
+
+				switch(ftype)
+				{
+				case XFLD_TEXT:
+					break;
+				case XFLD_MAC:
+					/* Put the colons in the MAC address */
+					if (cnt < 10 && !(++cnt % 2))
+						putchar(':');
+					break;
+				case XFLD_FLOAT:
+					/* Version numbers are XYZ format which
+					   means X.YZ. If this changes this
+					   formatting will break */
+					if (++cnt == 1) putchar('.');
+					break;
+				default:
+					assert(0);
+				}
 			}
 			putchar('\n');
 			return;

@@ -34,3 +34,10 @@ Older versions skipped.
 - 2 crash bug fixes
 - Misc code updates and improvements
 - Added -fsanitize=address option to makefile
+
+20231013
+========
+- Renamed "model" command to "modinfo" which now also prints the model year.
+- Renamed "sysinfo" to "xinfo" as is a fairly random mix of extra information
+- Tidied up output of sysinfo
+- Removed some almost unreadable colours from some NRI fields.
