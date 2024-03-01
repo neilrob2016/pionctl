@@ -59,6 +59,14 @@ int wildMatch(char *str, char *pat)
 
 
 
+int isPattern(char *str)
+{
+	return (strchr(str,'*') || strchr(str,'?'));
+}
+
+
+
+
 int isNumber(char *str)
 {
 	char *s;

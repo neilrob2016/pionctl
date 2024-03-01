@@ -29,16 +29,13 @@
 #define EXTERN extern
 #endif
 
-#define VERSION "20231013"
+#define VERSION "20240301"
 
-#define STDIN          0
-#define STDOUT         1
 #define UDP_PORT       10102
 #define TCP_PORT       60128
 #define ALLOC_BLOCK    10
 #define ADDR_LIST_SIZE 20
 #define MESG_OFFSET    5
-#define MESG_TERM_LEN  3
 #define SAVE_TIMEOUT   5
 #define TIME_DEF_STR   "--:--:--"
 
@@ -69,7 +66,7 @@ enum
 	NUM_BUFFERS
 };
 
-#define MAX_HIST_BUFFERS BUFF_TCP
+#define MAX_HIST_BUFFERS BUFF_TCP 
 
 enum
 {
@@ -139,36 +136,38 @@ enum
 	COM_CLS,
 	COM_ECHO,
 	COM_MACRO,
-	LAST_CLIENT_COM = COM_MACRO,
+	COM_BACK,
+	LAST_CLIENT_COM = COM_BACK,
 
-	/* 14. Streamer commands */
+	/* 15. Streamer commands */
 	COM_MENU,
-
-	/* 15 */
+	FIRST_STREAMER_COM = COM_MENU,
 	COM_MENUSTAT,
 	COM_UP,
 	COM_DN,
 	COM_EN,
-	COM_EX,
 
 	/* 20 */
+	COM_EX,
 	COM_FLIP,
 	COM_DS,
 	COM_DSD,
 	COM_DSSTAT,
-	COM_FILTER,
 
 	/* 25 */
+	COM_FILTER,
 	COM_FILSTAT,
 	COM_ARTDIS,
 	COM_ARTBMP,
 	COM_ARTURL,
+
+	/* 30 */
 	COM_ARTSTAT,
 	COM_ARTSAVE,
 
 	/* Enums beyond saveart not required except for these */
-	COM_SETNAME = 83,
-	COM_SETUP   = 89,
+	COM_SETNAME = 84,
+	COM_SETUP   = 90,
 	COM_SERIAL,
 	COM_ETHMAC,
 	COM_ICONURL,
@@ -176,9 +175,181 @@ enum
 	COM_TIDALVER,
 	COM_ECOVER,
 	COM_PRODID,
-	COM_LRA     = 104
+	COM_LRA     = 105,
+
+	NUM_COMMANDS
 };
 
+
+struct st_command
+{
+	char *com;
+	char *data;
+};
+
+#ifdef MAINFILE
+struct st_command commands[] =
+{
+	/* 0. Built in commands */
+	{ "quit",  NULL },
+	{ "toggle",NULL },
+	{ "prompt",NULL },
+	{ "raw",   NULL },
+	{ "show",  NULL },
+
+	/* 5 */
+	{ "clear",     NULL },
+	{ "help",      NULL },
+	{ "connect",   NULL },
+	{ "disconnect",NULL },
+	{ "wait",      NULL },
+
+	/* 10 */
+	{ "wait_menu",NULL },
+	{ "cls",      NULL },
+	{ "echo",     NULL },
+	{ "macro",    NULL },
+	{ "back",     NULL },
+
+	/* Menu navigation */
+	{ "menu",    "NTCMENU"  },
+	{ "menustat","NMSQSTN"  },
+	{ "up",      "OSDUP"    }, 
+	{ "dn",      "OSDDOWN"  },
+	{ "en",      "OSDENTER" },
+	{ "ex",      "OSDEXIT"  }, 
+	{ "flip",    "NTCLIST"  },
+
+	/* It seems the display command system is broken - you can dim the 
+	   display but not make it brighter again. Can only reset it via the 
+	   remote control */
+	{ "ds",      "DIM"     },
+	{ "dsd",     "DIMDIM"  },
+	{ "dsstat",  "DIMQSTN" }, 
+
+	/* Digital filter */
+	{ "filter",  "DGF"     },
+	{ "filstat", "DGFQSTN" },
+
+	/* Content. NJADIS simply disables streamer from sending the art bitmap
+	   when we initially tune in to a station. We don't use that anyway as
+	   we request the art manually so not much use but can reduce network 
+	   traffic. */
+	{ "artdis",  "NJADIS"         },
+	{ "artbmp",  "NJABMP"         },
+	{ "arturl",  "NJALINK;NJAREQ" },
+	{ "artstat", "NJAQSTN"        },
+	{ "artsave", "NJABMP;NJAREQ"  },
+	{ "album",   "NALQSTN"        },
+	{ "artist",  "NATQSTN"        },
+	{ "title",   "NTIQSTN"        },
+	{ "tracks",  "NTRQSTN"        },
+		
+	/* Audio muting */
+	{ "mute",    "AMT01"   },
+	{ "unmute",  "AMT00"   },
+	{ "mutestat","AMTQSTN" },
+
+	/* Network standby - if off then streamer switches completely off 
+	   when standby pressed on remote */
+	{ "sbon",    "NSBON"   },  
+	{ "sboff",   "NSBOFF"  },
+	{ "sbstat" , "NSBQSTN" },
+
+	/* Upsampling (called music optimisation in the docs) */
+	{ "upson",   "UPS03"   },
+	{ "upsoff",  "UPS00"   },
+	{ "upsstat", "UPSQSTN" },
+
+	/* Hi bit */
+	{ "hbon",    "HBT01" },
+	{ "hboff",   "HBT00" },
+
+	/* Direct on/off */
+	{ "diron",   "DIR01"   },
+	{ "diroff",  "DIR00"   },
+	{ "dirstat", "DIRQSTN" },
+
+	/* Power on/off */
+	{ "pwron",   "PWR01"   },
+	{ "pwroff",  "PWR00"   },
+	{ "pwrstat", "PWRQSTN" },
+
+	/* Auto power down */
+	{ "apdon",   "APD01"   },
+	{ "apdoff",  "APD00"   },
+	{ "apdstat", "APDQSTN" },
+
+	/* Music optimisation - ASR on remote */
+	{ "asron",   "MOT01"   },
+	{ "asroff",  "MOT00"   },
+	{ "asrstat", "MOTQSTN" },
+
+	/* Network services */
+	{ "msv",     "SLI27"   },
+	{ "net",     "SLI2B"   },
+	{ "dts",     "NSV420"  },
+	{ "tidal",   "NSV1B0"  },
+	{ "playq",   "NSV1D0"  },
+	{ "flare",   "NSV430"  },
+	{ "tunein",  "NSV0E0"  },
+	{ "deezer",  "NSV120"  },
+	{ "chrome",  "NSV400"  },
+	{ "spotify", "NSV0A0"  },
+	{ "airplay", "NSV180"  },
+	{ "svcstat", "NSVQSTN" },
+	{ "mrmstat", "MRMQSTN" },
+	{ "mmtstat", "MMTQSTN" },
+
+	/* Misc */
+	{ "cnstat",  "NDSQSTN" },
+	{ "top",     "NTCTOP"  },
+	{ "dev",     "NDNQSTN" },
+	{ "mem",     "EDFQSTN" },
+	{ "scr",     "NLTQSTN" },
+	{ "pps",     "PPSQSTN" },
+	{ "fwver",   "FWVQSTN" },
+	{ "xinfo",   "MDIQSTN" },
+	{ "auinfo",  "IFAQSTN" },
+	{ "stop",    "NTCSTOP" },
+	{ "id",      "NFNQSTN" },
+	{ "setname", "NFN"     },  /* NFN only here for help print out */
+	{ "reset",   "RSTALL"  },
+	{ "mgver",   "MGVQSTN" },
+	{ "updstat", "UPDQSTN" },
+	{ "codec",   "NFIQSTN" },
+	{ "playstat","NSTQSTN" },
+
+	/* NRI commands */
+	{ "setup",   "NRIQSTN" },
+	{ "serial",  "NRIQSTN" },
+	{ "ethmac",  "NRIQSTN" },
+	{ "iconurl", "NRIQSTN" },
+	{ "modinfo", "NRIQSTN" },
+	{ "tidalver","NRIQSTN" },
+	{ "ecover",  "NRIQSTN" },
+	{ "prodid",  "NRIQSTN" },
+
+	/* Hardware input sources */
+	{ "usbf",    "SLI29"   },
+	{ "usbr",    "SLI2A"   },
+	{ "usbdac",  "SLI2F"   },
+	{ "dig1",    "SLI45"   },
+	{ "dig2",    "SLI44"   },
+	{ "inpup",   "SLIUP"   },
+	{ "inpdn",   "SLIDOWN" },
+	{ "inpstat", "SLIQSTN" },
+
+	/* LRA - Lock range adjust which is to do with the accuracy of the
+	   decoding clock */
+	{ "lra",     "LRA"     },
+	{ "lraup",   "LRAUP"   },
+	{ "lradn",   "LRADOWN" },
+	{ "lrastat", "LRAQSTN" }
+};
+#else
+extern struct st_command commands[];
+#endif
 
 struct st_flags
 {
@@ -196,8 +367,8 @@ struct st_flags
 	unsigned in_menu         : 1;
 	unsigned com_up          : 1;
 	unsigned com_dn          : 1;
+	unsigned reset_reverse   : 1;
 	unsigned interrupted     : 1;
-	unsigned rx_menu         : 1;
 };
 
 
@@ -213,6 +384,14 @@ struct st_buffer
 	char *data;
 	int len;
 	int alloc;
+};
+
+
+struct st_rev_com
+{
+	int com;
+	int repeat_cnt;
+	int seq_start;
 };
 
 
@@ -267,6 +446,7 @@ EXTERN struct termios saved_tio;
 EXTERN struct sockaddr_in con_addr;
 EXTERN struct st_addr addr_list[ADDR_LIST_SIZE];
 EXTERN struct st_buffer buffer[NUM_BUFFERS];
+EXTERN struct st_rev_com revcom[2][MAX_HIST_BUFFERS];
 EXTERN t_iscp_hdr *pkt_hdr;
 EXTERN t_entry *list[256];
 EXTERN t_macro *macros;
@@ -292,6 +472,10 @@ EXTERN int macro_alloc;
 EXTERN int macro_append;
 EXTERN int raw_level;
 EXTERN int nri_command;
+EXTERN int rev_arr;
+EXTERN int rev_bot[2];
+EXTERN int rev_top[2];
+EXTERN int rev_start[2];
 EXTERN size_t rx_bytes;
 EXTERN size_t tx_bytes;
 EXTERN u_long rx_reads;
@@ -315,7 +499,9 @@ void resetKeyboard(void);
 /* commands.c */
 int  parseInputLine(char *data, int len);
 int  getCommand(char *word, int len);
+int  sendCommand(int repeat_cnt, char *cmd, int cmd_len);
 void sortCommands(void);
+
 
 /* network.c */
 int  networkStart(void);
@@ -404,6 +590,7 @@ void  clearPrompt(void);
 char *strnstr(char *haystack, char *needle, size_t len);
 #endif
 int   wildMatch(char *str, char *pat);
+int   isPattern(char *str);
 int   isNumberWithLen(char *str, int len);
 int   isNumber(char *str);
 
@@ -412,8 +599,18 @@ char *getTime(void);
 char *getTimeString(time_t tm);
 char *getRawTimeString(time_t tm);
 
+/* reverse.c */
+void initReverse();
+void clearReverse();
+void addReverseCom(int ra, int com, int cnt);
+int  getReverseCom(int com);
+void runShowReverse(int run, char *param);
+
 /* misc.c */
+int   doWait(int comnum, float secs);
 void  doExit(int code);
 void  sigHandler(int sig);
+u_int getUsecTime(void);
 void  version(int print_pid);
+void  errNotConnected();
 void  ok(void);

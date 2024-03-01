@@ -39,5 +39,14 @@ Older versions skipped.
 ========
 - Renamed "model" command to "modinfo" which now also prints the model year.
 - Renamed "sysinfo" to "xinfo" as is a fairly random mix of extra information
-  and tidied up the output.
+- Tidied up output of sysinfo
 - Removed some almost unreadable colours from some NRI fields.
+
+20240301
+========
+- Added "back" reverse menu navigation command for up,dn,ex,en so if you use 
+  these commands to navigate you can use the "back" command to exactly reverse 
+  what you did and get back to where you started.
+- New option "back" for show and clear commands.
+- Updated wait_menu code to make it more reliable.
+- Misc minor code improvements.

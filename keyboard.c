@@ -13,7 +13,7 @@ void initKeyboard(void)
 	fflush(stdout);
 
 	/* Get current state */
-	if (tcgetattr(STDIN,&tio) == -1)
+	if (tcgetattr(STDIN_FILENO,&tio) == -1)
 	{
 		errPrintf("initKeyboard(): tcgetattr(): %s\n",strerror(errno));
 		doExit(1);
@@ -29,7 +29,7 @@ void initKeyboard(void)
 	tio.c_cc[VTIME] = 0;
 
 	/* Set new state */
-	if (tcsetattr(STDIN,TCSANOW,&tio) == -1)
+	if (tcsetattr(STDIN_FILENO,TCSANOW,&tio) == -1)
 	{
 		errPrintf("initKeyboard(): tcsetattr()\n",strerror(errno));
 		doExit(1);
@@ -71,7 +71,7 @@ void readKeyboard(void)
 	/* If user presses a key that produces an escape code, eg arrow keys,
 	   or does a cut and paste then all the characters will be returned in 
 	   1 read hence reading in an array not just a single character */
-	if ((len = read(STDIN,s,sizeof(s)-1)) == -1)
+	if ((len = read(STDIN_FILENO,s,sizeof(s)-1)) == -1)
 	{
 		errPrintf("readKeyboard(): read()\n",strerror(errno));
 		return;
@@ -108,7 +108,7 @@ void readKeyboard(void)
 		case ESC_LEFT_ARROW:
 		case ESC_DELETE:
 			delLastCharFromBuffer(keyb_buffnum);
-			write(STDOUT,"\b ",2);
+			write(STDOUT_FILENO,"\b ",2);
 			break;
 
 		case ESC_UP_ARROW:
@@ -140,11 +140,11 @@ void readKeyboard(void)
 	case DEL1:  /* ASCII/terminal backspace */
 	case DEL2:  /* PC keyboard backspace */
 		if (delLastCharFromBuffer(keyb_buffnum))
-			write(STDOUT,"\b \b",3);
+			write(STDOUT_FILENO,"\b \b",3);
 		return;
 
 	default:
-		write(STDOUT,s,len);
+		write(STDOUT_FILENO,s,len);
 		addToBuffer(keyb_buffnum,s,len);
 		return;
 	}
@@ -156,5 +156,5 @@ void readKeyboard(void)
 
 void resetKeyboard(void)
 {
-	tcsetattr(STDIN,TCSANOW,&saved_tio);
+	tcsetattr(STDIN_FILENO,TCSANOW,&saved_tio);
 }

@@ -7,8 +7,8 @@ CC=cc
 # ARM Linux
 #CC=aarch64-poky-linux-gcc --sysroot=/opt/fsl-imx-wayland/4.19-warrior/sysroots/aarch64-poky-linux
 
-ARGS=-Wall -Wextra -pedantic -g -c -O
-#ARGS=-Wall -Wextra -pedantic -g -c $(SANI)
+ARGS=-Wall -Wextra -pedantic -g -c $(SANI)
+#ARGS=-Wall -pedantic -g -c -O
 COMP=$(CC) $(ARGS)
 DEPS=globals.h Makefile
 OBJS=\
@@ -27,6 +27,7 @@ OBJS=\
 	macros.o \
 	strings.o \
 	time.o \
+	reverse.o \
 	misc.o
 BIN=pionctl
 
@@ -80,6 +81,9 @@ strings.o: strings.c $(DEPS)
 
 time.o: time.c $(DEPS)
 	$(COMP) time.c
+
+reverse.o: reverse.c $(DEPS)
+	$(COMP) reverse.c
 
 misc.o: misc.c build_date.h $(DEPS)
 	$(COMP) misc.c

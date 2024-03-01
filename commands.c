@@ -1,177 +1,13 @@
 #include "globals.h"
 
-#define MAX_WORDS       5
-#define CMD_SEPERATOR   ';'
-#define PRINT_ON_OFF(F) colPrintf(F ? "~FGON\n" : "~FROFF\n");
-#define OFFLINE_ERROR   "Offline, command cannot be sent.\n"
+#define MAX_WORDS         5
+#define NUM_CLIENT_COMS   (LAST_CLIENT_COM + 1)
+#define NUM_STREAMER_COMS (NUM_COMMANDS - NUM_CLIENT_COMS)
+#define CMD_SEPERATOR     ';'
+#define PRINT_ON_OFF(F)   colPrintf(F ? "~FGON\n" : "~FROFF\n");
 
-/* IMPORTANT! If you change this array update the enum in globals.h */
-static struct st_command
-{
-	char *com;
-	char *data;
-} commands[] =
-{
-	/* 0. Built in commands */
-	{ "quit",  NULL },
-	{ "toggle",NULL },
-	{ "prompt",NULL },
-	{ "raw",   NULL },
-	{ "show",  NULL },
-
-	/* 5 */
-	{ "clear",     NULL },
-	{ "help",      NULL },
-	{ "connect",   NULL },
-	{ "disconnect",NULL },
-	{ "wait",      NULL },
-
-	/* 10 */
-	{ "wait_menu",NULL },
-	{ "cls",      NULL },
-	{ "echo",     NULL },
-	{ "macro",    NULL },
-
-	/* Menu navigation */
-	{ "menu",    "NTCMENU"  },
-	{ "menustat","NMSQSTN"  },
-	{ "up",      "OSDUP"    }, 
-	{ "dn",      "OSDDOWN"  },
-	{ "en",      "OSDENTER" },
-	{ "ex",      "OSDEXIT"  }, 
-	{ "flip",    "NTCLIST"  },
-
-	/* It seems the display command system is broken - you can dim the 
-	   display but not make it brighter again. Can only reset it via the 
-	   remote control */
-	{ "ds",      "DIM"     },
-	{ "dsd",     "DIMDIM"  },
-	{ "dsstat",  "DIMQSTN" }, 
-
-	/* Digital filter */
-	{ "filter",  "DGF"     },
-	{ "filstat", "DGFQSTN" },
-
-	/* Content. NJADIS simply disables streamer from sending the art bitmap
-	   when we initially tune in to a station. We don't use that anyway as
-	   we request the art manually so not much use but can reduce network 
-	   traffic. */
-	{ "artdis",  "NJADIS"         },
-	{ "artbmp",  "NJABMP"         },
-	{ "arturl",  "NJALINK;NJAREQ" },
-	{ "artstat", "NJAQSTN"        },
-	{ "artsave", "NJABMP;NJAREQ"  },
-	{ "album",   "NALQSTN"        },
-	{ "artist",  "NATQSTN"        },
-	{ "title",   "NTIQSTN"        },
-	{ "tracks",  "NTRQSTN"        },
-		
-	/* Audio muting */
-	{ "mute",    "AMT01"   },
-	{ "unmute",  "AMT00"   },
-	{ "mutestat","AMTQSTN" },
-
-	/* Network standby - if off then streamer switches completely off 
-	   when standby pressed on remote */
-	{ "sbon",    "NSBON"   },  
-	{ "sboff",   "NSBOFF"  },
-	{ "sbstat" , "NSBQSTN" },
-
-	/* Upsampling (called music optimisation in the docs) */
-	{ "upson",   "UPS03"   },
-	{ "upsoff",  "UPS00"   },
-	{ "upsstat", "UPSQSTN" },
-
-	/* Hi bit */
-	{ "hbon",    "HBT01" },
-	{ "hboff",   "HBT00" },
-
-	/* Direct on/off */
-	{ "diron",   "DIR01"   },
-	{ "diroff",  "DIR00"   },
-	{ "dirstat", "DIRQSTN" },
-
-	/* Power on/off */
-	{ "pwron",   "PWR01"   },
-	{ "pwroff",  "PWR00"   },
-	{ "pwrstat", "PWRQSTN" },
-
-	/* Auto power down */
-	{ "apdon",   "APD01"   },
-	{ "apdoff",  "APD00"   },
-	{ "apdstat", "APDQSTN" },
-
-	/* Music optimisation - ASR on remote */
-	{ "asron",   "MOT01"   },
-	{ "asroff",  "MOT00"   },
-	{ "asrstat", "MOTQSTN" },
-
-	/* Network services */
-	{ "msv",     "SLI27"   },
-	{ "net",     "SLI2B"   },
-	{ "dts",     "NSV420"  },
-	{ "tidal",   "NSV1B0"  },
-	{ "playq",   "NSV1D0"  },
-	{ "flare",   "NSV430"  },
-	{ "tunein",  "NSV0E0"  },
-	{ "deezer",  "NSV120"  },
-	{ "chrome",  "NSV400"  },
-	{ "spotify", "NSV0A0"  },
-	{ "airplay", "NSV180"  },
-	{ "svcstat", "NSVQSTN" },
-	{ "mrmstat", "MRMQSTN" },
-	{ "mmtstat", "MMTQSTN" },
-
-	/* Misc */
-	{ "cnstat",  "NDSQSTN" },
-	{ "top",     "NTCTOP"  },
-	{ "dev",     "NDNQSTN" },
-	{ "mem",     "EDFQSTN" },
-	{ "scr",     "NLTQSTN" },
-	{ "pps",     "PPSQSTN" },
-	{ "fwver",   "FWVQSTN" },
-	{ "xinfo",   "MDIQSTN" },
-	{ "auinfo",  "IFAQSTN" },
-	{ "stop",    "NTCSTOP" },
-	{ "id",      "NFNQSTN" },
-	{ "setname", "NFN"     },  /* NFN only here for help print out */
-	{ "reset",   "RSTALL"  },
-	{ "mgver",   "MGVQSTN" },
-	{ "updstat", "UPDQSTN" },
-	{ "codec",   "NFIQSTN" },
-	{ "playstat","NSTQSTN" },
-
-	/* NRI commands */
-	{ "setup",   "NRIQSTN" },
-	{ "serial",  "NRIQSTN" },
-	{ "ethmac",  "NRIQSTN" },
-	{ "iconurl", "NRIQSTN" },
-	{ "modinfo", "NRIQSTN" },
-	{ "tidalver","NRIQSTN" },
-	{ "ecover",  "NRIQSTN" },
-	{ "prodid",  "NRIQSTN" },
-
-	/* Hardware input sources */
-	{ "usbf",    "SLI29"   },
-	{ "usbr",    "SLI2A"   },
-	{ "usbdac",  "SLI2F"   },
-	{ "dig1",    "SLI45"   },
-	{ "dig2",    "SLI44"   },
-	{ "inpup",   "SLIUP"   },
-	{ "inpdn",   "SLIDOWN" },
-	{ "inpstat", "SLIQSTN" },
-
-	/* LRA - Lock range adjust which is to do with the accuracy of the
-	   decoding clock */
-	{ "lra",     "LRA"     },
-	{ "lraup",   "LRAUP"   },
-	{ "lradn",   "LRADOWN" },
-	{ "lrastat", "LRAQSTN" }
-};
-
-#define NUM_COMMANDS (int)(sizeof(commands) / sizeof(struct st_command))
-
-char *sorted_commands[NUM_COMMANDS];
+char *sorted_client_coms[NUM_CLIENT_COMS];
+char *sorted_streamer_coms[NUM_STREAMER_COMS];
 
 int  parseCommand(char *buff, int bufflen);
 int  sendCommand(int repeat_cnt, char *cmd, int cmd_len);
@@ -191,8 +27,8 @@ void optShowHistory(void);
 
 int  comClear(char *opt);
 int  comHelp(char *opt, char *pat);
-void optHelpMain(int extra, char *pat);
-void optHelpSorted(char *pat);
+int  optHelpMain(int extra, char *pat);
+int  optHelpSorted(char *pat);
 void optHelpNotes(void);
 
 int  comConnect(char *param);
@@ -213,7 +49,6 @@ void printFlagVerb(void);
 
 void  clearHistory(void);
 char *bytesSizeStr(u_long num);
-u_int getUsecTime(void);
 
 /******************************** INTERFACE *********************************/
 
@@ -435,7 +270,7 @@ int parseCommand(char *buff, int bufflen)
 	{
 		if (!tcp_sock)
 		{
-			errPrintf(OFFLINE_ERROR);
+			errNotConnected();
 			ret = ERR_CMD_FAIL;
 			goto FREE;
 		}
@@ -464,8 +299,8 @@ int parseCommand(char *buff, int bufflen)
 			ret = runMacro(comword);
 			goto FREE;
 		}
-		errPrintf("Unknown command or macro \"%s\". Type \"help std\" for a list of\n",comword);
-		puts("       commands or \"macro list\" for a list of macros.");
+		errPrintf("Unknown command or macro \"%s\". Type \"help\" for a list of commands\n",comword);
+		puts("       or \"macro list\" for a list of macros.");
 		ret = ERR_CMD_FAIL;
 		goto FREE;
 	}
@@ -486,7 +321,7 @@ int parseCommand(char *buff, int bufflen)
 	}
 	if (!tcp_sock)
 	{
-		errPrintf(OFFLINE_ERROR);
+		errNotConnected();
 		ret = ERR_CMD_FAIL;
 		goto FREE;
 	}
@@ -496,19 +331,23 @@ int parseCommand(char *buff, int bufflen)
 	{
 	case COM_UP:
 		flags.com_up = 1;
+		addReverseCom(rev_arr,COM_UP,repeat_cnt);
 		break;
 
 	case COM_DN:
 		flags.com_dn = 1;
+		addReverseCom(rev_arr,COM_DN,repeat_cnt);
 		break;
 
 	case COM_EX:
 		clearMenu(0);
+		addReverseCom(rev_arr,COM_EX,repeat_cnt);
 		menu_cursor_pos = -1;
 		break;
 
 	case COM_EN:
 		setMenuSelection();
+		addReverseCom(rev_arr,COM_EN,repeat_cnt);
 		menu_cursor_pos = -1;
 		break;
 
@@ -595,6 +434,23 @@ int parseCommand(char *buff, int bufflen)
 	for(i=0;i < word_cnt;++i) free(words[i]);
 	if (comnum != COM_UP) flags.com_up = 0;
 	if (comnum != COM_DN) flags.com_dn = 0;
+
+	/* Set the flag that causes the reverse nav commands to be reset
+	   so we don't end up with some really long sequence */
+	switch(comnum)
+	{
+	case COM_MACRO:
+		flags.reset_reverse = 1;
+		break;
+	case COM_UP:
+	case COM_DN:
+	case COM_EN:
+	case COM_EX:
+		flags.reset_reverse = 0;
+		break;
+	default:
+		if (comnum > LAST_CLIENT_COM) flags.reset_reverse = 1;
+	}
 	return ret;
 }
 
@@ -718,10 +574,13 @@ int processBuiltInCommand(
 		return comWait(comnum,param1);
 	case COM_CLS:
 		/* [2J clears screen, [H makes the cursor go to the top left */
-		write(STDOUT,"\033[2J\033[H",7);
+		write(STDOUT_FILENO,"\033[2J\033[H",7);
 		break;
 	case COM_ECHO:
 		comEcho(cmd_word,word_cnt,words);
+		break;
+	case COM_BACK:
+		runShowReverse(1,param1);
 		break;
 	case COM_MACRO:
 		return comMacro(param1,param2,cmd_word,word_cnt,words);
@@ -826,7 +685,7 @@ int comRaw(char *param)
 
 int comShow(char *opt, char *pat, int max)
 {
-	char *options[13] =
+	char *options[14] =
 	{
 		/* 0 */
 		"titles",
@@ -845,14 +704,15 @@ int comShow(char *opt, char *pat, int max)
 		/* 10 */
 		"connection",
 		"history",
-		"version"
+		"version",
+		"back"
 	};
 	int len;
 	int i;
 
 	if (!opt) goto USAGE;
 	len = strlen(opt);
-	for(i=0;i < 13;++i)
+	for(i=0;i < 14;++i)
 	{
 		if (strncmp(opt,options[i],len)) continue;
 
@@ -893,6 +753,9 @@ int comShow(char *opt, char *pat, int max)
 		case 12:
 			version(1);
 			break;
+		case 13:
+			runShowReverse(0,NULL);
+			break;
 		}
 		return OK;
 	}
@@ -907,6 +770,7 @@ int comShow(char *opt, char *pat, int max)
 	puts("            times");
 	puts("            flags");
 	puts("            menu");
+	puts("            back");
 	puts("            selected");
 	puts("            connection");
 	puts("            history");
@@ -1039,20 +903,22 @@ void optShowHistory(void)
 
 int comClear(char *opt)
 {
-	char *options[5] =
+	char *options[6] =
 	{
 		"rx",
+		"back",
 		"menu",
 		"titles",
 		"history",
-		"*"
+		"all"
 	};
 	int len;
 	int i;
 
 	if (!opt) goto USAGE;
+
 	len = strlen(opt);
-	for(i=0;i < 5;++i)
+	for(i=0;i < 6;++i)
 	{
 		if (strncmp(opt,options[i],len)) continue;
 
@@ -1060,31 +926,36 @@ int comClear(char *opt)
 		{
 		case 0:
 			clearRXList();
-			break;
+			return OK;
 		case 1:
-			clearMenu(1);
-			break;
+			clearReverse();
+			return OK;
 		case 2:
-			clearTitles();
-			break;
+			clearMenu(1);
+			return OK;
 		case 3:
-			clearHistory();
-			break;
+			clearTitles();
+			return OK;
 		case 4:
+			clearHistory();
+			return OK;
+		case 5:
 			clearRXList();
 			clearMenu(1);
 			clearTitles();
 			clearHistory();
+			clearReverse();
+			return OK;
 		}
 	}
-	return OK;
 
 	USAGE:
 	usagePrintf("clear rx\n");
 	puts("             menu");
+	puts("             back");
 	puts("             titles");
 	puts("             history");
-	puts("             *       (Clear all the above)");
+	puts("             all      (Clear all the above)");
 	return ERR_CMD_FAIL;
 }
 
@@ -1101,17 +972,15 @@ int comHelp(char *opt, char *pat)
 		"usage"
 	};
 	int len;
-	int ret;
 	int i;
 
 	/* If no option given do standard help */
 	if (!opt)
 	{
 		optHelpMain(0,NULL);
-		return OK;
+		goto DONE;
 	}
 	len = strlen(opt);
-	ret = ERR_CMD_FAIL;
 	for(i=0;i < 4;++i)
 	{
 		if (strncmp(opt,options[i],len)) continue;
@@ -1119,38 +988,44 @@ int comHelp(char *opt, char *pat)
 		switch(i)
 		{
 		case 0:
-			optHelpMain(1,pat);
-			return OK;
+			if (optHelpMain(1,pat) != OK) goto USAGE;
+			goto DONE;
 		case 1:
-			optHelpSorted(pat);
-			return OK;
+			if (optHelpSorted(pat) != OK) goto USAGE;
+			goto DONE;
 		case 2:
 			optHelpNotes();
-			return OK;
+			goto DONE;
 		case 3:
-			ret = OK;
 			goto USAGE;
 		}
 	}
+	/* Not found, just assume its a pattern */
+	if (optHelpMain(0,opt) != OK) goto USAGE;
+
+	DONE:
+	puts("Enter \"help usage\" for further help options.\n");
+	return OK;
 
 	USAGE:
-	usagePrintf("help [extra  [<pattern>]]\n");
-	puts("            [sorted [<pattern>]]");
+	usagePrintf("help [<pattern>]\n");
+	puts("            [extra      [<pattern>]]");
+	puts("            [sorted     [<pattern>]]");
 	puts("            [notes]");
 	puts("            [usage]");
-	return ret;
+	return ERR_CMD_FAIL;
 }
 
 
 
 
-void optHelpMain(int extra, char *pat)
+int optHelpMain(int extra, char *pat)
 {
-	int nlafter;
+	int nlafter = 5;
 	int cnt;
 	int i;
 
-	nlafter = 5;
+	if (pat && !isPattern(pat)) return ERR_CMD_FAIL;
 
 	colPrintf("\n~BM~FW*** Client commands ***\n\n");
 	for(i=cnt=0;i < NUM_COMMANDS;++i)
@@ -1187,8 +1062,7 @@ void optHelpMain(int extra, char *pat)
 		puts("       [<repeat count>] <raw streamer command>      eg: 3 OSDUP\n");
 	}
 	else putchar('\n');
-
-	puts("Enter \"help usage\" for further help options.\n");
+	return OK;
 }
 
 
@@ -1218,22 +1092,36 @@ void optHelpNotes(void)
 
 
 
-void optHelpSorted(char *pat)
+int optHelpSorted(char *pat)
 {
 	int cnt;
 	int i;
 
-	colPrintf("\n~BM~FW*** Sorted commands ***\n\n");
-	for(i=cnt=0;i < NUM_COMMANDS;++i)
+	if (pat && !isPattern(pat)) return ERR_CMD_FAIL;
+
+	colPrintf("\n~BM~FW*** Sorted client commands ***\n\n");
+	for(i=cnt=0;i < NUM_CLIENT_COMS;++i)
 	{
-		if (!pat || wildMatch(sorted_commands[i],pat))
+		if (!pat || wildMatch(sorted_client_coms[i],pat))
 		{
-			printf("   %-10s",sorted_commands[i]);
+			printf("   %-10s",sorted_client_coms[i]);
+			if (!(++cnt % 5)) putchar('\n');
+		}
+	}
+	if (cnt % 5) putchar('\n');
+
+	colPrintf("\n~BT~FW*** Sorted streamer commands ***\n\n");
+	for(i=cnt=0;i < NUM_STREAMER_COMS;++i)
+	{
+		if (!pat || wildMatch(sorted_streamer_coms[i],pat))
+		{
+			printf("   %-10s",sorted_streamer_coms[i]);
 			if (!(++cnt % 5)) putchar('\n');
 		}
 	}
 	if (cnt % 5) putchar('\n');
 	putchar('\n');
+	return OK;
 }
 
 
@@ -1267,7 +1155,7 @@ int comDisconnect(void)
 		networkClear();
 		return OK;
 	}
-	errPrintf("Not connected.\n");
+	errNotConnected();
 	return ERR_CMD_FAIL;
 }
 
@@ -1277,71 +1165,29 @@ int comDisconnect(void)
 /*** WAIT and WAIT_MENU ***/
 int comWait(int comnum, char *param)
 {
-	struct timeval tv;
-	struct timeval *tvp;
-	fd_set mask;
-	float secs;
+	float secs = 0;
 	u_int usecs;
-	u_int end;
 
-	secs = 0;
-	end = 0;
-	tvp = NULL;
-
-	/* wait_menu can also take a timeout just in case we never receive
+	/* COM_WAIT_MENU can also take a timeout just in case we never receive
 	   a menu. If the timeout expires it errors. */
 	if (param)
 	{
-		if ((secs = atof(param)) <= 0) goto ERROR;
-		tvp = &tv;
+		if ((secs = atof(param)) <= 0) goto USAGE;
 	}
-	else if (comnum == COM_WAIT) goto ERROR;
+	else if (comnum == COM_WAIT) goto USAGE;
 
-	usecs = (u_int)(secs * 1000000);
-	if (tcp_sock)
+	if (tcp_sock) return doWait(comnum,secs);
+
+	/* We're not connected to anything */
+	if (comnum == COM_WAIT_MENU)
 	{
-		if (usecs) end = getUsecTime() + usecs;
-
-		while(1)
-		{
-			/* Wait for timeout */
-			FD_ZERO(&mask);
-			FD_SET(tcp_sock,&mask);
-
-			if (usecs)
-			{
-				usecs = end - getUsecTime();
-				tv.tv_sec = usecs / 1000000;
-				tv.tv_usec = usecs % 1000000;
-			}
-
-			switch(select(FD_SETSIZE,&mask,0,0,tvp))
-			{
-			case -1:
-				return (errno == EINTR) ? ERR_CMD_FAIL : OK;
-			case 0:
-				/* Wait time expired */
-				if (comnum == COM_WAIT_MENU)
-				{
-					errPrintf("TIMEOUT\n");
-					return ERR_CMD_FAIL;
-				}
-				return OK;
-			}
-
-			/* Process anything coming from the streamer while we 
-			   wait */
-			flags.rx_menu = 0;
-			readSocket(0);
-			if (comnum == COM_WAIT_MENU && flags.rx_menu)
-				return OK;
-		}
-	}
-	else if (usleep(usecs) == -1 && errno == EINTR)
+		errNotConnected();
 		return ERR_CMD_FAIL;
-	return OK;
+	}
+	usecs = (u_int)(secs * 1000000);
+	return (usleep(usecs) == -1 && errno == EINTR) ? ERR_CMD_FAIL : OK;
 
-	ERROR:
+	USAGE:
 	if (comnum == COM_WAIT)
 		usagePrintf("wait <seconds>\n");
 	else
@@ -1546,9 +1392,13 @@ void sortCommands(void)
 {
 	int i;
 
-	for(i=0;i < NUM_COMMANDS;++i)
-		sorted_commands[i] = commands[i].com;
-	qsort(sorted_commands,NUM_COMMANDS,sizeof(char *),compareComs);
+	for(i=0;i < NUM_CLIENT_COMS;++i)
+		sorted_client_coms[i] = commands[i].com;
+	qsort(sorted_client_coms,NUM_CLIENT_COMS,sizeof(char *),compareComs);
+
+	for(i=0;i < NUM_STREAMER_COMS;++i)
+		sorted_streamer_coms[i] = commands[FIRST_STREAMER_COM+i].com;
+	qsort(sorted_streamer_coms,NUM_STREAMER_COMS,sizeof(char *),compareComs);
 }
 
 
@@ -1577,16 +1427,4 @@ char *bytesSizeStr(u_long bytes)
 	else 
 		snprintf(str,sizeof(str),"%.1fM",(double)bytes / 1e6);
 	return str;
-}
-
-
-
-
-/*** Get the current time down to the microsecond. Value wraps once every
-     1000 seconds. Goes from 0 -> 999999999 (1 billion - 1) ***/
-u_int getUsecTime(void)
-{
-	struct timeval tv;
-	gettimeofday(&tv,NULL);
-	return (u_int)(tv.tv_sec % 1000) * 1000000 + (u_int)tv.tv_usec;
 }

@@ -660,9 +660,6 @@ void printNLS(char *mesg, uint32_t len)
 	int prev_menu_cursor_pos;
 	int rx_cursor_pos;
 
-	/* Only used by wait_for_menu so reset there */
-	flags.rx_menu = 1;
-
 	printf("Menu      : ");
 	switch(mesg[0])
 	{

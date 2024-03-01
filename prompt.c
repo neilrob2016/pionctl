@@ -55,7 +55,7 @@ void printPrompt(void)
 	fflush(stdout);
 
 	if (buffer[keyb_buffnum].len)
-		write(STDOUT,buffer[keyb_buffnum].data,buffer[keyb_buffnum].len);
+		write(STDOUT_FILENO,buffer[keyb_buffnum].data,buffer[keyb_buffnum].len);
 }
 
 
@@ -88,6 +88,6 @@ void printPromptTrackTime(void)
 void clearPrompt(void)
 {
 	putchar('\r');
-	write(STDOUT,"\033[2K\r",5); /* Clears the whole line */
+	write(STDOUT_FILENO,"\033[2K\r",5); /* Clears the whole line */
 	fflush(stdout);
 }

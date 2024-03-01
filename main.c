@@ -184,6 +184,7 @@ void init(void)
 	initMenu();
 	initSave();
 	initMacros();
+	initReverse();
 	sortCommands();
 	menu_cursor_pos = -1;
 	menu_selection = NULL;
@@ -223,7 +224,7 @@ void mainloop(void)
 	{
 		flags.interrupted = 0;
 		FD_ZERO(&mask);
-		FD_SET(STDIN,&mask);
+		FD_SET(STDIN_FILENO,&mask);
 		if (tcp_sock) FD_SET(tcp_sock,&mask);
 		if (save_state != SAVE_INACTIVE)
 		{
@@ -247,7 +248,7 @@ void mainloop(void)
 			continue;
 		}
 		if (tcp_sock && FD_ISSET(tcp_sock,&mask)) readSocket(1);
-		if (FD_ISSET(STDIN,&mask)) readKeyboard();
+		if (FD_ISSET(STDIN_FILENO,&mask)) readKeyboard();
 		checkSaveTimeout();
 	}
 }

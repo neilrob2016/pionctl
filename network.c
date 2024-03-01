@@ -1,6 +1,7 @@
 #include "globals.h"
 
 #define READBUFF_SIZE  1000
+#define MESG_TERM_LEN  3
 #define COM_LEN        3
 #define SAVE_TIMEOUT   5
 #define MAX_ATTEMPTS   (ADDR_LIST_SIZE * 2)
