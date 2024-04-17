@@ -1,0 +1,4 @@
+broadcast UDP on port 60128 check for alive sending ECN 
+	see doc and source/network/utils/helvar/hdl
+test with USB stick
+find network version of "clear" and "now playing" buttons on remote

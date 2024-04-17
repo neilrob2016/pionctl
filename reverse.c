@@ -10,7 +10,7 @@ void initArray(int arr)
 
 
 
-void initReverse()
+void initReverse(void)
 {
 	initArray(0);
 	initArray(1);
@@ -21,7 +21,7 @@ void initReverse()
 
 
 
-void clearReverse()
+void clearReverse(void)
 {
 	initReverse();
 	colPrintf("Menu reverse navigation commands ~FGcleared.\n");

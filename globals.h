@@ -29,7 +29,7 @@
 #define EXTERN extern
 #endif
 
-#define VERSION "20240301"
+#define VERSION "20240417"
 
 #define UDP_PORT       10102
 #define TCP_PORT       60128
@@ -600,8 +600,8 @@ char *getTimeString(time_t tm);
 char *getRawTimeString(time_t tm);
 
 /* reverse.c */
-void initReverse();
-void clearReverse();
+void initReverse(void);
+void clearReverse(void);
 void addReverseCom(int ra, int com, int cnt);
 int  getReverseCom(int com);
 void runShowReverse(int run, char *param);
@@ -612,5 +612,5 @@ void  doExit(int code);
 void  sigHandler(int sig);
 u_int getUsecTime(void);
 void  version(int print_pid);
-void  errNotConnected();
+void  errNotConnected(void);
 void  ok(void);

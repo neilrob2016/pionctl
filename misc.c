@@ -133,7 +133,7 @@ void version(int print_pid)
 
 
 
-void errNotConnected()
+void errNotConnected(void)
 {
 	errPrintf("Not connected.\n");
 }

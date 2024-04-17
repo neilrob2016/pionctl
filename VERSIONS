@@ -50,3 +50,8 @@ Older versions skipped.
 - New option "back" for show and clear commands.
 - Updated wait_menu code to make it more reliable.
 - Misc minor code improvements.
+
+20240417
+========
+- Minor update to change <func>() to <func>(void) to stop endless warnings from
+  newer versions of clang.
