@@ -52,7 +52,7 @@ void saveArtDataLine(uint32_t data_len, t_iscp_data *pkt_data)
 	if (data_len < 3 || data_len > MAX_HEX_LEN)
 	{
 		if (data_len > 1 && cmd[0] == 'n')
-			puts("\nArtwork is not available.");
+			nlErrPrintf("No artwork is available.\n");
 		else
 			nlErrPrintf("Bad art data.\n");
 		goto DONE;
@@ -126,6 +126,7 @@ void saveArtDataLine(uint32_t data_len, t_iscp_data *pkt_data)
 	{
 		c = ptr[2];
 		ptr[2] = 0;
+		errno = 0;
 		if (!(byte = (char)strtol(ptr,NULL,16)) && 
 		    errno == EINVAL)
 		{

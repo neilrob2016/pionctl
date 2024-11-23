@@ -14,6 +14,7 @@
 
 char *cmd_list;
 
+void comCheck(void);
 void parseCmdLine(int argc, char **argv);
 void init(void);
 void mainloop(void);
@@ -21,6 +22,7 @@ void runImmediate(void);
 
 int main(int argc, char **argv)
 {
+	comCheck();
 	parseCmdLine(argc,argv);
 	version(1);
 	init();
@@ -28,6 +30,18 @@ int main(int argc, char **argv)
 	return 0;
 }
 
+
+
+/*** Only required to check after updating commands array and enum ***/
+void comCheck(void)
+{
+	assert(LAST_CLIENT_COM == 14);
+	assert(FIRST_STREAMER_COM == 15);
+	assert(!strcmp(commands[COM_FILTER].com,"filter"));
+	assert(!strcmp(commands[COM_SETNAME].com,"setname"));
+	assert(!strcmp(commands[COM_SETUP].com,"setup"));
+	assert(!strcmp(commands[COM_LRA].com,"lra"));
+}
 
 
 

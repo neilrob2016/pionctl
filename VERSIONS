@@ -55,3 +55,9 @@ Older versions skipped.
 ========
 - Minor update to change <func>() to <func>(void) to stop endless warnings from
   newer versions of clang.
+
+20241123
+========
+- Added play, pause, next, prev, rew5, fwd5, repeat & shuffle commands for
+  USB playback.
+- Fixed bug in art save functionality that would sometimes stop it saving.

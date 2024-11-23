@@ -8,6 +8,7 @@ CC=cc
 #CC=aarch64-poky-linux-gcc --sysroot=/opt/fsl-imx-wayland/4.19-warrior/sysroots/aarch64-poky-linux
 
 ARGS=-Wall -Wextra -pedantic -g -c $(SANI)
+#ARGS=-Wall -pedantic -g -c $(SANI)
 #ARGS=-Wall -pedantic -g -c -O
 COMP=$(CC) $(ARGS)
 DEPS=globals.h Makefile

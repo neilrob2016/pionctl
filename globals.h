@@ -29,7 +29,7 @@
 #define EXTERN extern
 #endif
 
-#define VERSION "20240417"
+#define VERSION "20241123"
 
 #define UDP_PORT       10102
 #define TCP_PORT       60128
@@ -166,8 +166,8 @@ enum
 	COM_ARTSAVE,
 
 	/* Enums beyond saveart not required except for these */
-	COM_SETNAME = 84,
-	COM_SETUP   = 90,
+	COM_SETNAME = 92,
+	COM_SETUP   = 98,
 	COM_SERIAL,
 	COM_ETHMAC,
 	COM_ICONURL,
@@ -175,7 +175,7 @@ enum
 	COM_TIDALVER,
 	COM_ECOVER,
 	COM_PRODID,
-	COM_LRA     = 105,
+	COM_LRA     = 114,
 
 	NUM_COMMANDS
 };
@@ -290,7 +290,7 @@ struct st_command commands[] =
 	{ "net",     "SLI2B"   },
 	{ "dts",     "NSV420"  },
 	{ "tidal",   "NSV1B0"  },
-	{ "playq",   "NSV1D0"  },
+	{ "plqueue", "NSV1D0"  },
 	{ "flare",   "NSV430"  },
 	{ "tunein",  "NSV0E0"  },
 	{ "deezer",  "NSV120"  },
@@ -301,6 +301,19 @@ struct st_command commands[] =
 	{ "mrmstat", "MRMQSTN" },
 	{ "mmtstat", "MMTQSTN" },
 
+	/* Playback control. Only "stop" works on TuneIn. "NTCREP/SHF" will
+	   cycle through repeat then toggle shuffle but not using it here */
+	{ "stop",   "NTCSTOP"   },
+	{ "pause",  "NTCPAUSE"  }, /* NTCPAUSE and NTCPLAY seem to do the */
+	{ "play",   "NTCPLAY"   }, /* same thing but including both anyway */
+	{ "next",   "NTCTRUP"   }, /* Next track */
+	{ "prev",   "NTCTRDN"   }, /* Previous track if track < ~3 secs in else
+	                              restart current track */
+	{ "rew5",   "NTCREW",   }, /* Rewind 5 seconds */
+	{ "fwd5",   "NTCFF",    }, /* Forward 5 seconds */
+	{ "repeat", "NTCREPEAT" }, /* Cycle through repeat modes. Off-1-All */
+	{ "shuffle","NTCRANDOM" }, /* Toggle track shuffle. Off/All seem to be 
+	                              the only modes on N-70AE */
 	/* Misc */
 	{ "cnstat",  "NDSQSTN" },
 	{ "top",     "NTCTOP"  },
@@ -311,7 +324,6 @@ struct st_command commands[] =
 	{ "fwver",   "FWVQSTN" },
 	{ "xinfo",   "MDIQSTN" },
 	{ "auinfo",  "IFAQSTN" },
-	{ "stop",    "NTCSTOP" },
 	{ "id",      "NFNQSTN" },
 	{ "setname", "NFN"     },  /* NFN only here for help print out */
 	{ "reset",   "RSTALL"  },
