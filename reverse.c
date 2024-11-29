@@ -1,5 +1,10 @@
 #include "globals.h"
 
+static int rev_bot[2];
+static int rev_top[2];
+static int rev_start[2];
+
+
 void initArray(int arr)
 {
 	rev_bot[arr] = 0;

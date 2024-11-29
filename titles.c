@@ -1,10 +1,5 @@
 #include "globals.h"
 
-#define TIME_POS 20
-#define TEXT_POS 37
-
-static char **titles;
-static int titles_pos;
 static int titles_alloc;
 
 
@@ -30,8 +25,8 @@ void addTitle(char *mesg, uint32_t len)
 	if (len && titles_pos)
 	{
 		prev_pos = titles_pos - 1;
-		if (strlen(titles[prev_pos]) == len + TEXT_POS &&
-		    !memcmp(titles[prev_pos]+TEXT_POS,mesg,len)) 
+		if (strlen(titles[prev_pos]) == len + TITLE_TEXT_POS &&
+		    !memcmp(titles[prev_pos] + TITLE_TEXT_POS,mesg,len)) 
 		{
 			return;
 		}
@@ -82,12 +77,12 @@ int printTitles(int xtitles, char *pat, int max)
 	}
 	for(pos=cnt=0;pos < titles_pos && (!max || cnt < max);++pos)
 	{
-		if (!pat || wildMatch(titles[pos]+TEXT_POS,pat))
+		if (!pat || wildMatch(titles[pos] + TITLE_TEXT_POS,pat))
 		{
 			if (xtitles)
 				puts(titles[pos]);
 			else
-				puts(titles[pos] + TIME_POS);
+				puts(titles[pos] + TITLE_TIME_POS);
 			++cnt;
 		}
 	}

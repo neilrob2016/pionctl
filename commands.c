@@ -9,16 +9,20 @@
 char *sorted_client_coms[NUM_CLIENT_COMS];
 char *sorted_streamer_coms[NUM_STREAMER_COMS];
 
-int  parseCommand(char *buff, int bufflen);
-int  sendCommand(int repeat_cnt, char *cmd, int cmd_len);
-int  copyHistoryBuffer(int buffnum);
-int  processBuiltInCommand(
+int parseCommand(char *buff, int bufflen);
+int sendCommand(int repeat_cnt, char *cmd, int cmd_len);
+int copyHistoryBuffer(int buffnum);
+int comSeek(int repeat_cnt, char *timestr);
+int comSetName(int repeat_cnt, char *name);
+int comNumeric(int comnum, int repeat_cnt, char *valstr);
+int processBuiltInCommand(
 	int comnum, int cmd_word, int word_cnt, char **words);
 
 int  comToggle(char *opt);
 int  comPrompt(char *param);
 int  comRaw(char *param);
 int  comShow(char *opt, char *pat, int max);
+
 void optShowFlags(void);
 void optShowTXCommands(char *pat);
 void optShowTimes(void);
@@ -158,7 +162,6 @@ int parseCommand(char *buff, int bufflen)
 	int in_quotes;
 	int inc;
 	int ret;
-	int val;
 	int i;
 
 	if (!bufflen) return ERR_CMD_MISSING;
@@ -358,42 +361,42 @@ int parseCommand(char *buff, int bufflen)
 			warnPrintf("Currently saving - resetting.\n");
 		}
 		/* Ignore repeat_cnt in preparing */
-		prepareSave(word_cnt > cmd_word ? words[cmd_word+1] : NULL);
+		if (!prepareSave(word_cnt > cmd_word ? words[cmd_word+1] : NULL))
+		{
+			ret = ERR_CMD_FAIL;
+			goto FREE;
+		}
 		break;
+
+	case COM_SEEK:
+		/* Requires [[HH:]MM:]SS argument for absolute seek */
+		if (word_cnt < cmd_word + 2 ||
+		    !comSeek(repeat_cnt,words[cmd_word+1]))
+		{
+			usagePrintf("seek [[HH:]MM:]SS\n");
+			ret = ERR_CMD_FAIL;
+		}
+		goto FREE;
 
 	case COM_SETNAME:
 		/* Setname requires an argument */
-		if (word_cnt < cmd_word + 2)
+		if (word_cnt < cmd_word + 2 ||
+		    !comSetName(repeat_cnt,words[cmd_word+1]))
 		{
 			usagePrintf("setname <name>\n");
 			ret = ERR_CMD_FAIL;
-			goto FREE;
 		}
-
-		clearValueOfRXKey("NFN");
-		cmd_len = asprintf(&cmd,"NFN%s",words[cmd_word+1]);
-		assert(cmd_len != -1);
-		if (!sendCommand(repeat_cnt,cmd,cmd_len)) ret = ERR_CMD_FAIL;
-		free(cmd);
 		goto FREE;
 
-	case COM_DS:
+	case COM_DIM:
 	case COM_FILTER:
 	case COM_LRA:
-		/* Commands that take a numeric argument */
 		if (word_cnt < cmd_word + 2 || 
-		    !isNumber(words[cmd_word+1]) || 
-		    (val = atoi(words[cmd_word+1])) > 99)
+		    !comNumeric(comnum,repeat_cnt,words[cmd_word+1]))
 		{
 			usagePrintf("%s <number>\n",commands[comnum].com);
 			ret = ERR_CMD_FAIL;
-			goto FREE;
 		}
-		clearValueOfRXKey(commands[comnum].data);
-		cmd_len = asprintf(&cmd,"%s%02d",commands[comnum].data,val);
-		assert(cmd_len != -1);
-		if (!sendCommand(repeat_cnt,cmd,cmd_len)) ret = ERR_CMD_FAIL;
-		free(cmd);
 		goto FREE;
 
 	case COM_SETUP:
@@ -520,7 +523,101 @@ int copyHistoryBuffer(int buffnum)
 }
 
 
+/************************* STREAMER COMMAND FUNCS ****************************/
 
+/*** Absolute seek to a given time position in a track. Can be any combination 
+     of S, SS, M:S, M:SS, MM:SS etc up to HH:MM:SS ***/
+int comSeek(int repeat_cnt, char *timestr)
+{
+	char cmd[12];
+	char *colon[2];
+	char *ptr;
+	int colcnt;
+	int hours = 0;
+	int mins = 0;
+	int secs = 0;
+	int cmd_len;
+	int len = strlen(timestr);
+
+	/* SS to HH:MM:SS */
+	if (len > 8) return 0;
+
+	for(ptr=timestr,colcnt=0;*ptr;++ptr)
+	{
+		if (*ptr == ':')
+		{
+			if (colcnt == 2) return 0;
+			colon[colcnt++] = ptr;
+		}
+		else if (!isdigit(*ptr)) return 0;
+	}
+	switch(colcnt)
+	{
+	case 0:
+		secs = atoi(timestr);
+		break;
+	case 1:
+		*colon[0] = 0;
+		mins = atoi(timestr);
+		secs = atoi(colon[0]+1);
+		break;
+	case 2:
+		secs = atoi(colon[1]+1);
+		*colon[1] = 0;
+		mins = atoi(colon[0]+1);
+		*colon[1] = 0;
+		hours = atoi(timestr);
+		break;
+	}
+	if (hours > 23 || mins > 59 || secs > 59) return 0;
+
+	cmd_len = snprintf(cmd,sizeof(cmd),"NTS%02d:%02d:%02d",hours,mins,secs);
+	assert(cmd_len != -1);
+	printf("Seeking to track time %02d:%02d:%02d...\n",hours,mins,secs);
+	return sendCommand(repeat_cnt,cmd,cmd_len);
+}
+
+
+
+
+int comSetName(int repeat_cnt, char *name)
+{
+	int ret;
+	int cmd_len;
+	char *cmd;
+
+	clearValueOfRXKey("NFN");
+	cmd_len = asprintf(&cmd,"NFN%s",name);
+	assert(cmd_len != -1);
+	ret = sendCommand(repeat_cnt,cmd,cmd_len);
+	free(cmd);
+	return ret;
+}
+
+
+
+
+/*** Commands that take a numeric argument ***/
+int comNumeric(int comnum, int repeat_cnt, char *valstr)
+{
+	int val;
+	int cmd_len;
+	int ret;
+	char *cmd;
+
+	if (!isNumber(valstr) || (val = atoi(valstr)) > 99) return 0;
+
+	clearValueOfRXKey(commands[comnum].data);
+	cmd_len = asprintf(&cmd,"%s%02d",commands[comnum].data,val);
+	assert(cmd_len != -1);
+	ret = sendCommand(repeat_cnt,cmd,cmd_len);
+	free(cmd);
+	return ret;
+}
+
+
+
+/************************* CLIENT COMMAND FUNCS ****************************/
 
 /*** A command not sent to the server ***/
 int processBuiltInCommand(
@@ -591,7 +688,7 @@ int processBuiltInCommand(
 }
 
 
-/********************************** COMMANDS **********************************/
+
 
 int comToggle(char *opt)
 {
@@ -1004,7 +1101,7 @@ int comHelp(char *opt, char *pat)
 	if (optHelpMain(0,opt) != OK) goto USAGE;
 
 	DONE:
-	puts("Enter \"help usage\" for further help options.\n");
+	colPrintf("Enter \"~FYhelp usage~RS\" for further help options.\n\n");
 	return OK;
 
 	USAGE:
@@ -1022,6 +1119,7 @@ int comHelp(char *opt, char *pat)
 int optHelpMain(int extra, char *pat)
 {
 	int nlafter = 5;
+	int nl = 0;
 	int cnt;
 	int i;
 
@@ -1033,25 +1131,93 @@ int optHelpMain(int extra, char *pat)
 		if (i && commands[i].data && !commands[i-1].data)
 		{
 			if (cnt % nlafter) putchar('\n');
-			colPrintf("\n~BT~FW*** Streamer commands ***\n\n");
+			colPrintf("\n~BB~FW*** Streamer commands ***\n\n");
 			if (extra) nlafter = 4;
 			cnt = 0;
 		}
-		if (!pat || wildMatch(commands[i].com,pat))
+		if (pat)
 		{
-			if (extra)
+			if (!wildMatch(commands[i].com,pat)) continue;
+		}
+		else
+		{
+			/* Print command category headers */
+			switch(i)
 			{
-				if (i > LAST_CLIENT_COM)
-				{
-					printf("   %-10s (%.3s)",
-						commands[i].com,
-						commands[i].data);
-				}
-				else printf("   %-10s",commands[i].com);
+			case COM_MENU:
+			case COM_DIM:
+			case COM_FILTER:
+			case COM_ALBUM:
+			case COM_ARTDIS:
+			case COM_SBON:
+			case COM_AUINFO:
+			case COM_APDON:
+			case COM_MSV:
+			case COM_DTS:
+			case COM_STOP:
+			case COM_MRMSTAT:
+				if (!nl) putchar('\n');
+				cnt = 0;
+			}
+
+			switch(i)
+			{
+			case COM_MENU:
+				colPrintf("~FTMenu navigation:\n");
+				break;
+			case COM_DIM:
+				colPrintf("~FTLCD dimming:\n");
+				break;
+			case COM_FILTER:
+				colPrintf("~FTFilter:\n");
+				break;
+			case COM_ALBUM:
+				colPrintf("~FTContent:\n");
+				break;
+			case COM_ARTDIS:
+				colPrintf("~FTArtwork:\n");
+				break;
+			case COM_SBON:
+				colPrintf("~FTStandby:\n");
+				break;
+			case COM_AUINFO:
+				colPrintf("~FTAudio:\n");
+				break;
+			case COM_APDON:
+				colPrintf("~FTAuto power down:\n");
+				break;
+			case COM_MSV:
+				colPrintf("~FTInput select:\n");
+				break;
+			case COM_DTS:
+				colPrintf("~FTNetwork services:\n");
+				break;
+			case COM_STOP:
+				colPrintf("~FTPlayback:\n");
+				break;
+			case COM_MRMSTAT:
+				colPrintf("~FTMiscellanious:\n");
+				break;
+			}
+		}
+
+		if (extra)
+		{
+			if (i > LAST_CLIENT_COM)
+			{
+				printf("   %-10s (%.3s)",
+					commands[i].com,
+					commands[i].data);
 			}
 			else printf("   %-10s",commands[i].com);
-			if (!(++cnt % nlafter)) putchar('\n');
 		}
+		else printf("   %-10s",commands[i].com);
+		if (!(++cnt % nlafter))
+		{
+			putchar('\n');
+			nl = 1;
+		}
+		else nl = 0;
 	}
 	if (cnt % nlafter) putchar('\n');
 
@@ -1110,7 +1276,7 @@ int optHelpSorted(char *pat)
 	}
 	if (cnt % 5) putchar('\n');
 
-	colPrintf("\n~BT~FW*** Sorted streamer commands ***\n\n");
+	colPrintf("\n~BB~FW*** Sorted streamer commands ***\n\n");
 	for(i=cnt=0;i < NUM_STREAMER_COMS;++i)
 	{
 		if (!pat || wildMatch(sorted_streamer_coms[i],pat))

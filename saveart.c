@@ -27,11 +27,53 @@ void resetSave(void)
 
 
 
-void prepareSave(char *filename)
+int prepareSave(char *filename)
 {
+	static char *invalid = "&~[]*?$#|\"'\\";
+	char *ptr;
+	char *dot;
+
 	resetSave();
-	save_filename = strdup(filename ? filename : "art");
+
+	if (filename)
+	{
+		for(ptr=filename;*ptr;++ptr)
+		{
+			if (strchr(invalid,*ptr))
+			{
+				errPrintf("Invalid character(s) in filename.\n");
+				return 0;
+			}
+		}
+		save_filename = strdup(filename);
+	}
+	else if (titles_pos)
+	{	
+		/* Use the current title as the filename but convert any 
+		   characters that might cause problems in a unix filename */
+		save_filename = strdup(titles[titles_pos-1] + TITLE_TEXT_POS);
+		dot = NULL;
+		for(ptr=save_filename;*ptr;++ptr)
+		{
+			/* Check '/' seperately because we allow / dir paths 
+			   in user given filename but not in a title */
+			if (*ptr < 33 || *ptr == '/' || strchr(invalid,*ptr))
+				*ptr = '_';
+			else if (*ptr == '.')
+				dot = ptr;
+		}
+
+		/* Remove any file extensions */
+		if (dot > save_filename &&
+		    (u_long)(dot - save_filename) > strlen(save_filename) - 5)
+		{
+			*dot = 0;
+		}
+	}
+	else save_filename = strdup("content_art");
+
 	save_state = SAVE_START;
+	return 1;
 }
 
 

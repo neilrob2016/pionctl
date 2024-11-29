@@ -29,7 +29,7 @@
 #define EXTERN extern
 #endif
 
-#define VERSION "20241123"
+#define VERSION "20241129"
 
 #define UDP_PORT       10102
 #define TCP_PORT       60128
@@ -41,6 +41,9 @@
 
 #define FREE(M)   { free(M); M = NULL; }
 #define FREEIF(M) if (M) FREE(M)
+
+#define TITLE_TIME_POS 20
+#define TITLE_TEXT_POS 37
 
 #ifdef __APPLE__
 /* Don't bitch about pragma pack every time it sees it */
@@ -150,32 +153,54 @@ enum
 	/* 20 */
 	COM_EX,
 	COM_FLIP,
-	COM_DS,
-	COM_DSD,
-	COM_DSSTAT,
+	COM_TOP,
+	COM_DIM,
+	COM_DIMWRAP,
 
 	/* 25 */
+	COM_DIMSTAT,
 	COM_FILTER,
 	COM_FILSTAT,
+	COM_ALBUM,
+	COM_ARTIST,
+
+	/* 30 */
+	COM_TITLE,
+	COM_TRACKS,
 	COM_ARTDIS,
 	COM_ARTBMP,
 	COM_ARTURL,
 
-	/* 30 */
+	/* 35 */
 	COM_ARTSTAT,
 	COM_ARTSAVE,
+	COM_SBON,
+	COM_SBOFF,
+	COM_SBSTAT,
 
-	/* Enums beyond saveart not required except for these */
-	COM_SETNAME = 92,
-	COM_SETUP   = 98,
+	/* 40 */
+	COM_AUINFO,
+
+	/* Enums beyond artsave not required except for these */
+	COM_LRA      = 58,
+	COM_APDON    = 62,
+	COM_MSV      = 65,
+	COM_DTS      = 75,
+	COM_TIDALVER = 77,
+	COM_STOP     = 86,
+	COM_SEEK     = 93,
+	COM_MRMSTAT  = 98,
+	COM_SETNAME  = 108,
+	COM_UPDSTAT  = 111,
+	COM_SETUP,
 	COM_SERIAL,
 	COM_ETHMAC,
+
+	/* 115 */
 	COM_ICONURL,
 	COM_MODINFO,
-	COM_TIDALVER,
 	COM_ECOVER,
 	COM_PRODID,
-	COM_LRA     = 114,
 
 	NUM_COMMANDS
 };
@@ -211,50 +236,52 @@ struct st_command commands[] =
 	{ "macro",    NULL },
 	{ "back",     NULL },
 
-	/* Menu navigation */
+	/* 15. Menu navigation */
 	{ "menu",    "NTCMENU"  },
 	{ "menustat","NMSQSTN"  },
 	{ "up",      "OSDUP"    }, 
 	{ "dn",      "OSDDOWN"  },
 	{ "en",      "OSDENTER" },
-	{ "ex",      "OSDEXIT"  }, 
+	{ "ex",      "OSDEXIT"  }, /* 20 */
 	{ "flip",    "NTCLIST"  },
+	{ "top",     "NTCTOP"   },
 
 	/* It seems the display command system is broken - you can dim the 
 	   display but not make it brighter again. Can only reset it via the 
 	   remote control */
-	{ "ds",      "DIM"     },
-	{ "dsd",     "DIMDIM"  },
-	{ "dsstat",  "DIMQSTN" }, 
+	{ "dim",     "DIM"     }, /* Takes 00 -> 03 as an argument */
+	{ "dimwrap", "DIMDIM"  }, /* Should set wrap around up but doesn't */
+	{ "dimstat", "DIMQSTN" }, /* 25 */
 
 	/* Digital filter */
 	{ "filter",  "DGF"     },
 	{ "filstat", "DGFQSTN" },
 
 	/* Content. NJADIS simply disables streamer from sending the art bitmap
-	   when we initially tune in to a station. We don't use that anyway as
+	   when we initially tune in to a station. We don't use that anyway as 
 	   we request the art manually so not much use but can reduce network 
 	   traffic. */
+	{ "album",   "NALQSTN"        },
+	{ "artist",  "NATQSTN"        },
+	{ "title",   "NTIQSTN"        }, /* 30 */
+	{ "tracks",  "NTRQSTN"        },
 	{ "artdis",  "NJADIS"         },
 	{ "artbmp",  "NJABMP"         },
 	{ "arturl",  "NJALINK;NJAREQ" },
-	{ "artstat", "NJAQSTN"        },
+	{ "artstat", "NJAQSTN"        }, /* 35 */
 	{ "artsave", "NJABMP;NJAREQ"  },
-	{ "album",   "NALQSTN"        },
-	{ "artist",  "NATQSTN"        },
-	{ "title",   "NTIQSTN"        },
-	{ "tracks",  "NTRQSTN"        },
-		
-	/* Audio muting */
-	{ "mute",    "AMT01"   },
-	{ "unmute",  "AMT00"   },
-	{ "mutestat","AMTQSTN" },
 
 	/* Network standby - if off then streamer switches completely off 
 	   when standby pressed on remote */
 	{ "sbon",    "NSBON"   },  
 	{ "sboff",   "NSBOFF"  },
 	{ "sbstat" , "NSBQSTN" },
+
+	/* Audio info & muting */
+	{ "auinfo",  "IFAQSTN" },
+	{ "mute",    "AMT01"   },
+	{ "unmute",  "AMT00"   },
+	{ "mutestat","AMTQSTN" },
 
 	/* Upsampling (called music optimisation in the docs) */
 	{ "upson",   "UPS03"   },
@@ -275,21 +302,39 @@ struct st_command commands[] =
 	{ "pwroff",  "PWR00"   },
 	{ "pwrstat", "PWRQSTN" },
 
-	/* Auto power down */
-	{ "apdon",   "APD01"   },
-	{ "apdoff",  "APD00"   },
-	{ "apdstat", "APDQSTN" },
-
 	/* Music optimisation - ASR on remote */
 	{ "asron",   "MOT01"   },
 	{ "asroff",  "MOT00"   },
 	{ "asrstat", "MOTQSTN" },
 
-	/* Network services */
+	/* LRA - Lock range adjust which is to do with the accuracy of the
+	   decoding clock */
+	{ "lra",     "LRA"     },
+	{ "lraup",   "LRAUP"   },
+	{ "lradn",   "LRADOWN" },
+	{ "lrastat", "LRAQSTN" },
+
+	/* Auto power down */
+	{ "apdon",   "APD01"   },
+	{ "apdoff",  "APD00"   },
+	{ "apdstat", "APDQSTN" },
+
+	/* Input selection */
 	{ "msv",     "SLI27"   },
 	{ "net",     "SLI2B"   },
+	{ "usbf",    "SLI29"   },
+	{ "usbr",    "SLI2A"   },
+	{ "usbdac",  "SLI2F"   },
+	{ "dig1",    "SLI45"   },
+	{ "dig2",    "SLI44"   },
+	{ "inpup",   "SLIUP"   },
+	{ "inpdn",   "SLIDOWN" },
+	{ "inpstat", "SLIQSTN" },
+
+	/* Network services */
 	{ "dts",     "NSV420"  },
 	{ "tidal",   "NSV1B0"  },
+	{ "tidalver","NRIQSTN" },
 	{ "plqueue", "NSV1D0"  },
 	{ "flare",   "NSV430"  },
 	{ "tunein",  "NSV0E0"  },
@@ -298,8 +343,6 @@ struct st_command commands[] =
 	{ "spotify", "NSV0A0"  },
 	{ "airplay", "NSV180"  },
 	{ "svcstat", "NSVQSTN" },
-	{ "mrmstat", "MRMQSTN" },
-	{ "mmtstat", "MMTQSTN" },
 
 	/* Playback control. Only "stop" works on TuneIn. "NTCREP/SHF" will
 	   cycle through repeat then toggle shuffle but not using it here */
@@ -311,53 +354,37 @@ struct st_command commands[] =
 	                              restart current track */
 	{ "rew5",   "NTCREW",   }, /* Rewind 5 seconds */
 	{ "fwd5",   "NTCFF",    }, /* Forward 5 seconds */
+	{ "seek",   "NTS",      }, /* Seek to specific time in HH:MM:SS */
 	{ "repeat", "NTCREPEAT" }, /* Cycle through repeat modes. Off-1-All */
 	{ "shuffle","NTCRANDOM" }, /* Toggle track shuffle. Off/All seem to be 
 	                              the only modes on N-70AE */
+	{ "playstat","NSTQSTN"  },
+	{ "codec",   "NFIQSTN"  },
+
 	/* Misc */
+	{ "mrmstat", "MRMQSTN" },
+	{ "mmtstat", "MMTQSTN" },
 	{ "cnstat",  "NDSQSTN" },
-	{ "top",     "NTCTOP"  },
 	{ "dev",     "NDNQSTN" },
 	{ "mem",     "EDFQSTN" },
 	{ "scr",     "NLTQSTN" },
 	{ "pps",     "PPSQSTN" },
 	{ "fwver",   "FWVQSTN" },
 	{ "xinfo",   "MDIQSTN" },
-	{ "auinfo",  "IFAQSTN" },
 	{ "id",      "NFNQSTN" },
 	{ "setname", "NFN"     },  /* NFN only here for help print out */
 	{ "reset",   "RSTALL"  },
 	{ "mgver",   "MGVQSTN" },
 	{ "updstat", "UPDQSTN" },
-	{ "codec",   "NFIQSTN" },
-	{ "playstat","NSTQSTN" },
 
-	/* NRI commands */
+	/* Misc NRI commands */
 	{ "setup",   "NRIQSTN" },
 	{ "serial",  "NRIQSTN" },
 	{ "ethmac",  "NRIQSTN" },
 	{ "iconurl", "NRIQSTN" },
 	{ "modinfo", "NRIQSTN" },
-	{ "tidalver","NRIQSTN" },
 	{ "ecover",  "NRIQSTN" },
-	{ "prodid",  "NRIQSTN" },
-
-	/* Hardware input sources */
-	{ "usbf",    "SLI29"   },
-	{ "usbr",    "SLI2A"   },
-	{ "usbdac",  "SLI2F"   },
-	{ "dig1",    "SLI45"   },
-	{ "dig2",    "SLI44"   },
-	{ "inpup",   "SLIUP"   },
-	{ "inpdn",   "SLIDOWN" },
-	{ "inpstat", "SLIQSTN" },
-
-	/* LRA - Lock range adjust which is to do with the accuracy of the
-	   decoding clock */
-	{ "lra",     "LRA"     },
-	{ "lraup",   "LRAUP"   },
-	{ "lradn",   "LRADOWN" },
-	{ "lrastat", "LRAQSTN" }
+	{ "prodid",  "NRIQSTN" }
 };
 #else
 extern struct st_command commands[];
@@ -433,16 +460,7 @@ typedef struct st_entry
 	int val_len;
 	int unknown;
 	struct st_entry *next;
-} t_entry;
-
-
-typedef struct
-{
-	char *name;
-	char *comlist;
-	int len;
-	int running;
-} t_macro;
+} t_rx_entry;
 
 /* Cmd line params */
 EXTERN struct st_flags flags;
@@ -460,8 +478,7 @@ EXTERN struct st_addr addr_list[ADDR_LIST_SIZE];
 EXTERN struct st_buffer buffer[NUM_BUFFERS];
 EXTERN struct st_rev_com revcom[2][MAX_HIST_BUFFERS];
 EXTERN t_iscp_hdr *pkt_hdr;
-EXTERN t_entry *list[256];
-EXTERN t_macro *macros;
+EXTERN t_rx_entry *rx_list[256];
 EXTERN time_t start_time;
 EXTERN time_t connect_time;
 EXTERN time_t last_rx_time;
@@ -475,7 +492,6 @@ EXTERN int from_buffnum;
 EXTERN int udp_sock;
 EXTERN int tcp_sock;
 EXTERN int addr_list_cnt;
-EXTERN int last_cmd_len;
 EXTERN int prompt_type;
 EXTERN int menu_cursor_pos;
 EXTERN int menu_option_cnt;
@@ -485,9 +501,7 @@ EXTERN int macro_append;
 EXTERN int raw_level;
 EXTERN int nri_command;
 EXTERN int rev_arr;
-EXTERN int rev_bot[2];
-EXTERN int rev_top[2];
-EXTERN int rev_start[2];
+EXTERN int titles_pos;
 EXTERN size_t rx_bytes;
 EXTERN size_t tx_bytes;
 EXTERN u_long rx_reads;
@@ -496,10 +510,7 @@ EXTERN char track_time_str[9];
 EXTERN char track_len_str[9];
 EXTERN char nja_prev;
 EXTERN char *save_filename;
-EXTERN char *menu_selection;
-EXTERN char **menu_options;
-EXTERN char *macro_line_tmp;
-EXTERN char *macro_name;
+EXTERN char **titles;
 
 /*** Forward declarations ***/
 
@@ -563,7 +574,7 @@ void clearMenu(int prt);
 /* save.c */
 void initSave(void);
 void resetSave(void);
-void prepareSave(char *filename);
+int  prepareSave(char *filename);
 void saveArtDataLine(uint32_t data_len, t_iscp_data *pkt_data);
 void checkSaveTimeout(void);
 

@@ -1,12 +1,12 @@
 #include "globals.h"
 
-void setEntryValue(t_entry *entry, char *value, int val_len);
-t_entry *findInList(char *key);
+void setEntryValue(t_rx_entry *entry, char *value, int val_len);
+t_rx_entry *findInList(char *key);
 
 
 void initRXList(void)
 {
-	bzero(list,sizeof(list));
+	bzero(rx_list,sizeof(rx_list));
 }
 
 
@@ -15,8 +15,8 @@ void initRXList(void)
 /*** Add data to the list. Returns 1 if new entry or updated value ***/
 int updateRXList(char *key, char *value, int val_len)
 {
-	t_entry *entry;
-	t_entry *end;
+	t_rx_entry *entry;
+	t_rx_entry *end;
 	char key2[4];
 	int index;
 
@@ -39,8 +39,8 @@ int updateRXList(char *key, char *value, int val_len)
 	}
 
 	/* New entry */
-	assert((entry = (t_entry *)malloc(sizeof(t_entry))));
-	bzero(entry,sizeof(t_entry));
+	assert((entry = (t_rx_entry *)malloc(sizeof(t_rx_entry))));
+	bzero(entry,sizeof(t_rx_entry));
 
 	assert((entry->key = (char *)malloc(sizeof(key2))));
 	strcpy(entry->key,key2);
@@ -48,14 +48,14 @@ int updateRXList(char *key, char *value, int val_len)
 	setEntryValue(entry,value,val_len);
 
 	index = key[0];
-	if (list[index])
+	if (rx_list[index])
 	{
 		/* Find end of particular list. We don't store the end pointer 
 		   as we'd need 256 of them */
-		for(end=list[index];end->next;end=end->next);
+		for(end=rx_list[index];end->next;end=end->next);
 		end->next = entry;
 	}
-	else list[index] = entry;
+	else rx_list[index] = entry;
 	return 1;
 }
 
@@ -64,10 +64,12 @@ int updateRXList(char *key, char *value, int val_len)
 
 void setUnknownRXKey(char *key)
 {
-	t_entry *entry;
+	t_rx_entry *entry;
 	char key2[4];
 
-	memcpy(key2,key,3);
+	key2[0] = key[0];
+	key2[1] = key[1];
+	key2[2] = key[2];
 	key2[3] = 0;
 	if ((entry = findInList(key2))) entry->unknown = 1;
 }
@@ -78,7 +80,7 @@ void setUnknownRXKey(char *key)
 /*** Assumes key is the first 3 chars of the command ***/
 void clearValueOfRXKey(char *key)
 {
-	t_entry *entry;
+	t_rx_entry *entry;
 	char key2[4];
 
 	memcpy(key2,key,3);
@@ -91,19 +93,19 @@ void clearValueOfRXKey(char *key)
 
 void clearRXList(void)
 {
-	t_entry *entry;
+	t_rx_entry *entry;
 	int i;
 
 	for(i=0;i < 256;++i)
 	{
-		for(entry=list[i];entry;entry=entry->next)
+		for(entry=rx_list[i];entry;entry=entry->next)
 		{
 			free(entry->key);
 			FREEIF(entry->value);
 		}
-		FREEIF(list[i]);
+		FREEIF(rx_list[i]);
 	}
-	bzero(list,sizeof(list));
+	bzero(rx_list,sizeof(rx_list));
 	colPrintf("RX list ~FGcleared.\n");
 }
 
@@ -112,7 +114,7 @@ void clearRXList(void)
 
 int dumpRXList(char *pat, int max)
 {
-	t_entry *entry;
+	t_rx_entry *entry;
 	int total;
 	int entry_cnt;
 	int unknown_cnt;
@@ -131,7 +133,7 @@ int dumpRXList(char *pat, int max)
 
 	for(i=unknown_cnt=entry_cnt=total=0;i < 256;++i)
 	{
-		for(entry=list[i];entry;entry=entry->next)
+		for(entry=rx_list[i];entry;entry=entry->next)
 		{
 			/* Lower case means its stored data, not a stored
 			   streamer response */
@@ -171,7 +173,7 @@ int dumpRXList(char *pat, int max)
 
 /********************************** INTERNAL *********************************/
 
-void setEntryValue(t_entry *entry, char *value, int val_len)
+void setEntryValue(t_rx_entry *entry, char *value, int val_len)
 {
 	FREEIF(entry->value);
 	if (val_len)
@@ -188,11 +190,11 @@ void setEntryValue(t_entry *entry, char *value, int val_len)
 
 
 
-t_entry *findInList(char *key)
+t_rx_entry *findInList(char *key)
 {
-	t_entry *entry;
+	t_rx_entry *entry;
 
-	for(entry=list[(int)key[0]];entry;entry=entry->next)
+	for(entry=rx_list[(int)key[0]];entry;entry=entry->next)
 		if (!strcmp(key,entry->key)) return entry;
 	return NULL;
 }

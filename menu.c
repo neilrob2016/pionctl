@@ -1,10 +1,14 @@
 #include "globals.h"
-
+ 
+static char **menu_options;
+static char *menu_selection;
+static char *menu_selection;
 static int menu_options_alloc;
 
 
 void initMenu(void)
 {
+	menu_selection = NULL;
 	menu_options = NULL;
 	menu_option_cnt = 0;
 	menu_options_alloc = 0;

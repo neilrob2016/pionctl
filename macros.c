@@ -7,7 +7,18 @@
 #define ENTER_STR    "Enter macro lines, end with a '.' on its own..."
 #define CMDERR_STR   "Macros cannot have the same name or substring as a command.\n"
 
+typedef struct
+{
+	char *name;
+	char *comlist;
+	int len;
+	int running; 
+} t_macro;
+
+static t_macro *macros;
 static char *home_dir;
+static char *macro_line_tmp;
+static char *macro_name;
 
 int   deleteAllMacros(void);
 int   findEmptySlot(void);

@@ -14,7 +14,7 @@
 
 char *cmd_list;
 
-void comCheck(void);
+void comSanityCheck(void);
 void parseCmdLine(int argc, char **argv);
 void init(void);
 void mainloop(void);
@@ -22,7 +22,7 @@ void runImmediate(void);
 
 int main(int argc, char **argv)
 {
-	comCheck();
+	comSanityCheck();
 	parseCmdLine(argc,argv);
 	version(1);
 	init();
@@ -33,14 +33,27 @@ int main(int argc, char **argv)
 
 
 /*** Only required to check after updating commands array and enum ***/
-void comCheck(void)
+void comSanityCheck(void)
 {
+	/*
+	for(int i=0;i < NUM_COMMANDS;++i)
+		printf("%-3d: %s\n",i,commands[i].com);
+	*/
+	assert(NUM_COMMANDS == 119);
 	assert(LAST_CLIENT_COM == 14);
 	assert(FIRST_STREAMER_COM == 15);
+	assert(!strcmp(commands[COM_MENU].com,"menu"));
 	assert(!strcmp(commands[COM_FILTER].com,"filter"));
+	assert(!strcmp(commands[COM_LRA].com,"lra"));
+	assert(!strcmp(commands[COM_APDON].com,"apdon"));
+	assert(!strcmp(commands[COM_MSV].com,"msv"));
+	assert(!strcmp(commands[COM_DTS].com,"dts"));
+	assert(!strcmp(commands[COM_TIDALVER].com,"tidalver"));
+	assert(!strcmp(commands[COM_STOP].com,"stop"));
+	assert(!strcmp(commands[COM_SEEK].com,"seek"));
+	assert(!strcmp(commands[COM_MRMSTAT].com,"mrmstat"));
 	assert(!strcmp(commands[COM_SETNAME].com,"setname"));
 	assert(!strcmp(commands[COM_SETUP].com,"setup"));
-	assert(!strcmp(commands[COM_LRA].com,"lra"));
 }
 
 
@@ -201,7 +214,6 @@ void init(void)
 	initReverse();
 	sortCommands();
 	menu_cursor_pos = -1;
-	menu_selection = NULL;
 	input_state = INPUT_CMD;
 	macro_append = -1;
 	connect_time = 0;

@@ -53,6 +53,7 @@ void printMGV(char *mesg, uint32_t len);
 void printMRM(char *mesg, uint32_t len);
 void printMMT(char *mesg, uint32_t len);
 void printRST(char *mesg, uint32_t len);
+void printNTC(char *mesg, uint32_t len);
 void printXMLField(char *field, int ftype, char *mesg, uint32_t len);
 void printTranslatedMesg(char *mesg, uint32_t len, int add_title);
 char *replaceAmpCodes(char *str, uint32_t *len);
@@ -123,6 +124,7 @@ static struct st_comfunc
 	{ "RST", printRST },
 
 	/* 40 */
+	{ "NTC", printNTC },
 	{ "", NULL }
 };
 
@@ -190,7 +192,7 @@ void prettyPrint(t_iscp_data *pkt_data, int print_prompt)
 /*** Pretty print the RX commands and data stored in the list ***/
 int prettyPrintRXList(char *pat, int max)
 {
-	t_entry *entry;
+	t_rx_entry *rxentry;
 	char *value;
 	int total;
 	int len;
@@ -210,16 +212,16 @@ int prettyPrintRXList(char *pat, int max)
 	flags.pretty_printing = 1;
 	for(i=cnt=total=0;i < 256;++i)
 	{
-		for(entry=list[i];entry;entry=entry->next)
+		for(rxentry=rx_list[i];rxentry;rxentry=rxentry->next)
 		{
-			if (entry->unknown) continue;
+			if (rxentry->unknown) continue;
 			++total;
 
 			/* Just to be on the safe side */
-			if (entry->value)
+			if (rxentry->value)
 			{
-				value = entry->value;
-				len = entry->val_len;
+				value = rxentry->value;
+				len = rxentry->val_len;
 			}
 			else
 			{
@@ -232,7 +234,7 @@ int prettyPrintRXList(char *pat, int max)
 
 			/* Match on raw command and value */
 			if (pat && 
-			    !wildMatch(entry->key,pat) &&
+			    !wildMatch(rxentry->key,pat) &&
 			    !wildMatch(value,pat))
 			{
 				continue;
@@ -240,7 +242,7 @@ int prettyPrintRXList(char *pat, int max)
 
 			for(j=0;comfunc[j].func;++j)
 			{
-				if (!strcmp(entry->key,comfunc[j].com))
+				if (!strcmp(rxentry->key,comfunc[j].com))
 				{
 					comfunc[j].func(value,len);
 					++cnt;
@@ -1342,6 +1344,16 @@ void printRST(char *mesg, uint32_t len)
 	printMesg(mesg,len);
 }
 
+
+
+
+/*** Will only normally get a NTC response if you manually send an NTC code
+     the streamer doesn't like. eg: NTCblah ***/
+void printNTC(char *mesg, uint32_t len)
+{
+	printf("Playback  : ");
+	printMesg(mesg,len);
+}
 
 /********************************** SUPPORT ***********************************/
 
