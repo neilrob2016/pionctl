@@ -69,3 +69,4 @@ Older versions skipped.
 - "artsave" command will now create <track title>.jpg if a track title exists
   and no alternative name was given.
 - Renamed commands: ds -> dim, dsd -> dimwrap, dsstat -> dimstat
+- Some code tidying.
