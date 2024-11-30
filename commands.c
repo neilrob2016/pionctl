@@ -569,7 +569,7 @@ int comSeek(int repeat_cnt, char *timestr)
 		hours = atoi(timestr);
 		break;
 	}
-	if (hours > 23 || mins > 59 || secs > 59) return 0;
+	if (hours > 99 || mins > 59 || secs > 59) return 0;
 
 	cmd_len = snprintf(cmd,sizeof(cmd),"NTS%02d:%02d:%02d",hours,mins,secs);
 	assert(cmd_len != -1);

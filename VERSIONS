@@ -70,3 +70,7 @@ Older versions skipped.
   and no alternative name was given.
 - Renamed commands: ds -> dim, dsd -> dimwrap, dsstat -> dimstat
 - Some code tidying.
+
+20241130
+========
+- Minor bug fix. Seek hours can go beyond 23 up to 99.
