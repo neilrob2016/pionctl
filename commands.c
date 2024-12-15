@@ -47,6 +47,7 @@ int  optMacroAppend(int cmd_word, int word_cnt, char **words);
 int  optMacroSave(int append, int cmd_word, int word_cnt, char **words);
 
 void printFlagTrackTime(void);
+void printFlagPromptTime(void);
 void printFlagColour(void);
 void printFlagHTML(void);
 void printFlagVerb(void);
@@ -479,7 +480,7 @@ int getCommand(char *word, int len)
 	if (comnum < NUM_COMMANDS)
 	{
 		if (flags.verbose)
-			colPrintf("~FTExpanded to:~RS \"%s\"\n",commands[comnum].com);
+			colPrintf("~FMExpanded to:~RS \"%s\"\n",commands[comnum].com);
 		return comnum;
 	}
 	return -1;
@@ -692,11 +693,12 @@ int processBuiltInCommand(
 
 int comToggle(char *opt)
 {
-	char *options[4] =
+	char *options[] =
 	{
 		"tracktm",
-		"colour",
+		"prompttm",
 		"htmlamp",
+		"colour",
 		"verbose"
 	};
 	int len;
@@ -704,7 +706,7 @@ int comToggle(char *opt)
 
 	if (!opt) goto USAGE;
 	len = strlen(opt);
-	for(i=0;i < 4;++i)
+	for(i=0;i < 5;++i)
 	{
 		if (strncmp(opt,options[i],len)) continue;
 
@@ -714,24 +716,29 @@ int comToggle(char *opt)
 			flags.show_track_time = !flags.show_track_time;
 			printFlagTrackTime();
 			return OK;
-		case 1:
-			flags.use_colour = !flags.use_colour;
-			printFlagColour();
+		case 1: 
+			flags.update_prompt_time = !flags.update_prompt_time;
+			printFlagPromptTime();
 			return OK;
 		case 2:
 			flags.trans_html_amps = !flags.trans_html_amps;
 			printFlagHTML();
 			return OK;
 		case 3:
+			flags.use_colour = !flags.use_colour;
+			printFlagColour();
+			return OK;
+		case 4:
 			flags.verbose = !flags.verbose;
 			printFlagVerb();
 			return OK;
 		}
 	}
 	USAGE:
-	usagePrintf("toggle tracktm\n");
+	usagePrintf("toggle tracktm  : Show track time received from streamer.\n");
+	puts("              prompttm : Update prompt times if appropriate prompt type set.");
+	puts("              htmlamp  : Translate HTML ampersand values text data.");
 	puts("              colour");
-	puts("              htmlamp");
 	puts("              verbose");
 	return ERR_CMD_FAIL;
 }
@@ -882,6 +889,7 @@ void optShowFlags(void)
 {
 	colPrintf("\n~BB~FW*** Toggle flags ***\n\n");
 	printFlagTrackTime();
+	printFlagPromptTime();
 	printFlagColour();
 	printFlagHTML();
 	printFlagVerb();
@@ -1510,8 +1518,17 @@ int optMacroSave(int append, int cmd_word, int word_cnt, char **words)
 
 void printFlagTrackTime(void)
 {
-	printf("Show track time : ");
+	printf("Show track time   : ");
 	PRINT_ON_OFF(flags.show_track_time);
+}
+
+
+
+
+void printFlagPromptTime(void)
+{
+	printf("Update prompt time: ");
+	PRINT_ON_OFF(flags.update_prompt_time);
 }
 
 
@@ -1519,7 +1536,7 @@ void printFlagTrackTime(void)
 
 void printFlagColour(void)
 {
-	printf("Ansi colour     : ");
+	printf("Ansi colour       : ");
 	PRINT_ON_OFF(flags.use_colour);
 }
 
@@ -1528,7 +1545,7 @@ void printFlagColour(void)
 
 void printFlagHTML(void)
 {
-	printf("Trans HTML codes: ");
+	printf("Trans HTML codes  : ");
 	PRINT_ON_OFF(flags.trans_html_amps);
 }
 
@@ -1537,7 +1554,7 @@ void printFlagHTML(void)
 
 void printFlagVerb(void)
 {
-	printf("Verbose output  : ");
+	printf("Verbose output    : ");
 	PRINT_ON_OFF(flags.verbose);
 }
 

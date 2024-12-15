@@ -141,6 +141,34 @@ enum
 
 /******************************** EXTERNAL *********************************/
 
+/*** Print out the raw data in various forms depending on raw_level ***/
+void printRawRX(t_iscp_data *pkt_data, uint32_t data_len, int print_prompt)
+{
+	clearPrompt();
+	if (raw_level >= RAW_HIGH1)
+	{
+		/* Header */
+		colPrintf("\n~FGRX %d bytes:\n",buffer[BUFF_TCP].len);
+		printPacketDetails(pkt_hdr,pkt_data,1);
+	}
+	else
+	{
+		colPrintf("~FGRX:~RS ");
+		printMesg(
+			buffer[BUFF_TCP].data+PKT_HDR_LEN,
+			pkt_hdr->data_len);
+	}
+	/* Minor issue - any ampersand codes won't get translated even if 
+	   translate flag set. Oh well. */
+	if (data_len > 2 && !memcmp(pkt_data->command,"NTI",3))
+		addTitle(pkt_data->mesg,data_len - MESG_TERM_LEN);
+	clearBuffer(BUFF_TCP);
+	if (print_prompt) printPrompt();
+}
+
+
+
+
 /*** Prints out message buffer data translating non printing characters ***/
 void printMesg(char *mesg, int len)
 {

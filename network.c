@@ -1,15 +1,13 @@
 #include "globals.h"
 
 #define READBUFF_SIZE  1000
-#define MESG_TERM_LEN  3
 #define COM_LEN        3
 #define SAVE_TIMEOUT   5
 #define MAX_ATTEMPTS   (ADDR_LIST_SIZE * 2)
-#define PKT_HDR_LEN    (int)sizeof(t_iscp_hdr)
 #define START_CHAR     '!'
 
 int  resolveAddress(void);
-void printPacketDetails(t_iscp_hdr *hdr, t_iscp_data *data, int rx);
+int  processNTM(t_iscp_data *pkt_data, uint32_t data_len);
 
 int networkStart(void)
 {
@@ -410,34 +408,8 @@ void readSocket(int print_prompt)
 
 	data_len = pkt_hdr->data_len - MESG_OFFSET;
 
-	/* NTM is sent every second */
-	if (!strncmp(pkt_data->command,"NTM",3))
-	{
-		if (data_len >= 8)
-		{
-			snprintf(
-				track_time_str,
-				sizeof(track_time_str),
-				"%.8s",pkt_data->command+3);
-		}
-		else strcpy(track_time_str,TIME_DEF_STR);
-
-		if (data_len >= 20)
-		{
-			snprintf(
-				track_len_str,
-				sizeof(track_time_str),
-				"%.8s",pkt_data->command+12);
-		}
-		else strcpy(track_len_str,TIME_DEF_STR);
-
-		/* Ignore unless told otherwise */
-		if (!flags.show_track_time)
-		{
-			clearBuffer(BUFF_TCP);
-			return;
-		}
-	}
+	/* NTM is sent every second when something is playing */
+	if (processNTM(pkt_data,data_len)) return;
 
 	/* See if we're waiting for jacket art info */
 	if (save_state != SAVE_INACTIVE &&
@@ -450,27 +422,7 @@ void readSocket(int print_prompt)
 	/* Print raw RX. Show repeated data. */
 	if (raw_level)
 	{
-		clearPrompt();
-		if (raw_level >= RAW_HIGH1)
-		{
-			/* Header */
-			colPrintf("\n~FGRX %d bytes:\n",buffer[BUFF_TCP].len);
-			printPacketDetails(pkt_hdr,pkt_data,1);
-		}
-		else
-		{
-			colPrintf("~FGRX:~RS ");
-			printMesg(
-				buffer[BUFF_TCP].data+PKT_HDR_LEN,
-				pkt_hdr->data_len);
-		}
-		/* Minor issue - any ampersand codes won't get translated even
-		   if translate flag set. Oh well. */
-		if (data_len > 2 && !memcmp(pkt_data->command,"NTI",3))
-			addTitle(pkt_data->mesg,data_len - MESG_TERM_LEN);
-		clearBuffer(BUFF_TCP);
-		if (print_prompt) printPrompt();
-
+		printRawRX(pkt_data,data_len,print_prompt);
 		/* 2 of the levels don't do pretty print */
 		if (raw_level == RAW_LOW1 || raw_level == RAW_HIGH1) return;
 	}
@@ -585,6 +537,47 @@ int writeSocket(char *write_data, int write_data_len)
 	}
 	free(pkt);
 	return ret;
+}
+
+
+
+
+int processNTM(t_iscp_data *pkt_data, uint32_t data_len)
+{
+	if (strncmp(pkt_data->command,"NTM",3)) return 0;
+
+	if (data_len >= 8)
+	{
+		snprintf(
+			track_time_str,
+			sizeof(track_time_str),
+			"%.8s",pkt_data->command+3);
+	}
+	else strcpy(track_time_str,TIME_DEF_STR);
+
+	if (data_len >= 20)
+	{
+		snprintf(
+			track_len_str,
+			sizeof(track_time_str),
+			"%.8s",pkt_data->command+12);
+	}
+	else strcpy(track_len_str,TIME_DEF_STR);
+
+	/* Ignore unless told otherwise */
+	if (!flags.show_track_time)
+	{
+		if (flags.update_prompt_time)
+		{
+			/* Reprint prompt with new time. If track time flag is 
+			   is set prompt will be reprinted anyway so only call 
+			   manually if not set */
+			printPrompt();
+		}
+		clearBuffer(BUFF_TCP);
+		return 1;
+	}
+	return 0;
 }
 
 

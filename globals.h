@@ -29,10 +29,12 @@
 #define EXTERN extern
 #endif
 
-#define VERSION "20241130"
+#define VERSION "20241215"
 
 #define UDP_PORT       10102
 #define TCP_PORT       60128
+#define PKT_HDR_LEN    (int)sizeof(t_iscp_hdr)
+#define MESG_TERM_LEN  3
 #define ALLOC_BLOCK    10
 #define ADDR_LIST_SIZE 20
 #define MESG_OFFSET    5
@@ -393,10 +395,11 @@ extern struct st_command commands[];
 struct st_flags
 {
 	/* User toggled flags */
-	unsigned show_track_time : 1;
-	unsigned trans_html_amps : 1;
-	unsigned use_colour      : 1;
-	unsigned verbose         : 1;
+	unsigned show_track_time    : 1;
+	unsigned trans_html_amps    : 1;
+	unsigned use_colour         : 1;
+	unsigned verbose            : 1;
+	unsigned update_prompt_time : 1;
 
 	/* System flags */
 	unsigned macro_running   : 1;
@@ -533,9 +536,11 @@ int  getStreamerAddress(void);
 int  connectToStreamer(void);
 void readSocket(int print_prompt);
 int  writeSocket(char *write_data, int write_data_len);
+void printPacketDetails(t_iscp_hdr *hdr, t_iscp_data *data, int rx);
 void networkClear(void);
 
 /* printrx.c */
+void printRawRX(t_iscp_data *pkt_data, uint32_t data_len, int print_prompt);
 void printMesg(char *mesg, int len);
 void prettyPrint(t_iscp_data *pkt_data, int print_prompt);
 int  prettyPrintRXList(char *pat, int max);

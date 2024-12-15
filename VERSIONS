@@ -74,3 +74,8 @@ Older versions skipped.
 20241130
 ========
 - Minor bug fix. Seek hours can go beyond 23 up to 99.
+
+20241215
+========
+- Added auto update of times in the prompt (if appropriate prompt type is set)
+  and the new prompttm toggle option switches this on/off.
