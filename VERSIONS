@@ -79,3 +79,8 @@ Older versions skipped.
 ========
 - Added auto update of times in the prompt (if appropriate prompt type is set)
   and the new prompttm toggle option switches this on/off.
+
+20241228
+========
+- Added command files with new command "run" and -c and -r options.
+- Added example command file example.cmd

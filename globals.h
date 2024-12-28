@@ -14,12 +14,14 @@
 #include <errno.h>
 #include <signal.h>
 #include <limits.h>
+#include <fcntl.h>
 #include <assert.h>
 #include <uuid/uuid.h>
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/mman.h>
 #include <arpa/inet.h>
 #include <netinet/tcp.h>
 
@@ -29,7 +31,7 @@
 #define EXTERN extern
 #endif
 
-#define VERSION "20241215"
+#define VERSION "20241228"
 
 #define UDP_PORT       10102
 #define TCP_PORT       60128
@@ -40,6 +42,8 @@
 #define MESG_OFFSET    5
 #define SAVE_TIMEOUT   5
 #define TIME_DEF_STR   "--:--:--"
+#define RC_FILENAME    ".pionrc"
+
 
 #define FREE(M)   { free(M); M = NULL; }
 #define FREEIF(M) if (M) FREE(M)
@@ -101,6 +105,14 @@ enum
 
 enum
 {
+	CMDFILE_RC,
+	CMDFILE_CMDLINE,
+	CMDFILE_RUN
+};
+
+
+enum
+{
 	RAW_OFF,
 	RAW_LOW1,
 	RAW_LOW2,
@@ -142,63 +154,66 @@ enum
 	COM_ECHO,
 	COM_MACRO,
 	COM_BACK,
-	LAST_CLIENT_COM = COM_BACK,
 
-	/* 15. Streamer commands */
+	/* 15 */
+	COM_RUN,
+	LAST_CLIENT_COM = COM_RUN,
+
+	/* 16. Streamer commands */
 	COM_MENU,
 	FIRST_STREAMER_COM = COM_MENU,
 	COM_MENUSTAT,
 	COM_UP,
 	COM_DN,
-	COM_EN,
 
 	/* 20 */
+	COM_EN,
 	COM_EX,
 	COM_FLIP,
 	COM_TOP,
 	COM_DIM,
-	COM_DIMWRAP,
 
 	/* 25 */
+	COM_DIMWRAP,
 	COM_DIMSTAT,
 	COM_FILTER,
 	COM_FILSTAT,
 	COM_ALBUM,
-	COM_ARTIST,
 
 	/* 30 */
+	COM_ARTIST,
 	COM_TITLE,
 	COM_TRACKS,
 	COM_ARTDIS,
 	COM_ARTBMP,
-	COM_ARTURL,
 
 	/* 35 */
+	COM_ARTURL,
 	COM_ARTSTAT,
 	COM_ARTSAVE,
 	COM_SBON,
 	COM_SBOFF,
-	COM_SBSTAT,
 
 	/* 40 */
+	COM_SBSTAT,
 	COM_AUINFO,
 
 	/* Enums beyond artsave not required except for these */
-	COM_LRA      = 58,
-	COM_APDON    = 62,
-	COM_MSV      = 65,
-	COM_DTS      = 75,
-	COM_TIDALVER = 77,
-	COM_STOP     = 86,
-	COM_SEEK     = 93,
-	COM_MRMSTAT  = 98,
-	COM_SETNAME  = 108,
-	COM_UPDSTAT  = 111,
+	COM_LRA      = 59,
+	COM_APDON    = 63,
+	COM_MSV      = 66,
+	COM_DTS      = 76,
+	COM_TIDALVER = 78,
+	COM_STOP     = 87,
+	COM_SEEK     = 94,
+	COM_MRMSTAT  = 99,
+	COM_SETNAME  = 109,
+	COM_UPDSTAT  = 112,
 	COM_SETUP,
 	COM_SERIAL,
-	COM_ETHMAC,
 
 	/* 115 */
+	COM_ETHMAC,
 	COM_ICONURL,
 	COM_MODINFO,
 	COM_ECOVER,
@@ -238,7 +253,10 @@ struct st_command commands[] =
 	{ "macro",    NULL },
 	{ "back",     NULL },
 
-	/* 15. Menu navigation */
+	/* 15 */
+	{ "run",      NULL },
+
+	/* 16. Menu navigation */
 	{ "menu",    "NTCMENU"  },
 	{ "menustat","NMSQSTN"  },
 	{ "up",      "OSDUP"    }, 
@@ -394,15 +412,17 @@ extern struct st_command commands[];
 
 struct st_flags
 {
-	/* User toggled flags */
+	/* User command line and toggled flags */
 	unsigned show_track_time    : 1;
 	unsigned trans_html_amps    : 1;
 	unsigned use_colour         : 1;
 	unsigned verbose            : 1;
 	unsigned update_prompt_time : 1;
+	unsigned run_rc_file        : 1;
 
 	/* System flags */
 	unsigned macro_running   : 1;
+	unsigned cmdfile_running : 1;
 	unsigned offline         : 1;
 	unsigned exit_after_cmds : 1;
 	unsigned pretty_printing : 1;
@@ -633,6 +653,9 @@ void clearReverse(void);
 void addReverseCom(int ra, int com, int cnt);
 int  getReverseCom(int com);
 void runShowReverse(int run, char *param);
+
+/* cmdfile.c */
+int runCommandFile(char *cmdfile);
 
 /* misc.c */
 int   doWait(int comnum, float secs);

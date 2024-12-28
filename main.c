@@ -12,6 +12,7 @@
 #define DEVICE_CODE    '1'
 #define LISTEN_TIMEOUT 60
 
+char *cmd_file;
 char *cmd_list;
 
 void comSanityCheck(void);
@@ -39,9 +40,9 @@ void comSanityCheck(void)
 	for(int i=0;i < NUM_COMMANDS;++i)
 		printf("%-3d: %s\n",i,commands[i].com);
 	*/
-	assert(NUM_COMMANDS == 119);
-	assert(LAST_CLIENT_COM == 14);
-	assert(FIRST_STREAMER_COM == 15);
+	assert(NUM_COMMANDS == 120);
+	assert(LAST_CLIENT_COM == 15);
+	assert(FIRST_STREAMER_COM == 16);
 	assert(!strcmp(commands[COM_MENU].com,"menu"));
 	assert(!strcmp(commands[COM_FILTER].com,"filter"));
 	assert(!strcmp(commands[COM_LRA].com,"lra"));
@@ -70,11 +71,13 @@ void parseCmdLine(int argc, char **argv)
 	device_code = DEVICE_CODE;
 	listen_timeout = LISTEN_TIMEOUT;
 	connect_timeout = 0;
+	cmd_file = NULL;
 	cmd_list = NULL;
 	prompt_type = PROMPT_NAME;
 	raw_level = 0;
 	bzero(&flags,sizeof(flags));
 	flags.use_colour = 1;
+	flags.run_rc_file = 1;
 
 	for(i=1;i < argc;++i)
 	{
@@ -93,6 +96,9 @@ void parseCmdLine(int argc, char **argv)
 			continue;
 		case 'o':
 			flags.offline = 1;
+			continue;
+		case 'r':
+			flags.run_rc_file = 0;
 			continue;
 		case 's':
 			flags.trans_html_amps = 1;
@@ -115,6 +121,9 @@ void parseCmdLine(int argc, char **argv)
 		case 'd':
 			if (strlen(argv[++i]) != 1) goto USAGE;
 			device_code = argv[i][0];
+			break;
+		case 'f':
+			cmd_file = argv[++i];
 			break;
 		case 'i':
 			cmd_list = argv[++i];
@@ -163,9 +172,9 @@ void parseCmdLine(int argc, char **argv)
 		puts("ERROR: The -a and -o options are mutually exclusive.");
 		exit(1);
 	}
-	if (flags.exit_after_cmds && !cmd_list)
+	if (flags.exit_after_cmds && !cmd_list && !cmd_file)
 	{
-		puts("ERROR: The -e option requires -i.");
+		puts("ERROR: The -e option requires -f or -i.");
 		exit(1);
 	}
 	return;
@@ -177,26 +186,42 @@ void parseCmdLine(int argc, char **argv)
 	       "       -u <UDP listen port>     : 0 to 65535. Default = %d.\n"
 	       "       -l <UDP listen timeout>  : Default = %d secs.\n"
 	       "       -d <device code (0-9)>   : Default = %c.\n"
+	       "       -f <command file>        : File of commands to run immediately after\n"
+	       "                                  connect. Takes precendence over -i.\n"
 	       "       -i <command list>        : Semi colon seperated list of commands to run\n"
-	       "                                  immediately. Eg: tunein;3 dn;en\n"
+	       "                                  after connection. Eg: tunein;3 dn;en\n"
 	       "       -p [0 to %d]              : Prompt type. Default = %d.\n"
 	       "       -r [0 to %d]              : Raw RX/TX print level. Default = %d.\n"
 	       "       -b                       : Verbose mode (currently only shows macros run\n"
 	       "                                  and expanded command names).\n"
 	       "       -c                       : Do NOT use ansi colour.\n"
-	       "       -e                       : Exit after immediate commands run using -i.\n"
+	       "       -e                       : Exit after commands run via -f or -i.\n"
 	       "       -o                       : Offline mode, ie don't listen for streamer.\n"
+	       "       -r                       : Do NOT run %s (if it exists) at startup.\n"
 	       "       -s                       : Translate HTML ampersand codes in album,\n"
 	       "                                  artist and title when pretty printing.\n"
 	       "       -t                       : Print NTM track time info.\n"
 	       "       -v                       : Print version then exit.\n"
-	       "All arguments are optional. If the -a option is not used then the streamer\n"
-	       "address is obtained by listening for an EZProxy UDP packet unless -o is.\n"
-	       "specified.\n",
-		argv[0],
-		UDP_PORT,LISTEN_TIMEOUT,DEVICE_CODE,
-		NUM_PROMPTS-1,prompt_type,
-		NUM_RAW_LEVELS-1,raw_level);
+	       "Notes:\n"
+	       " - All arguments are optional.\n"
+	       " - If the -a option or a %s or other command file with a connect command\n"
+	       "   is not given with -f then the streamer address is obtained by listening for\n"
+	       "   an EZProxy UDP packet.\n"
+	       " - The -a and -o options are mutually exclusive. If -o is used with a command\n"
+	       "   file at startup then any connect commands in the file will be ignored.\n"
+	       " - The -f and -i commands are run *after* auto connection is complete. If you\n"
+	       "   want any commands to run before connection put them in the %s file.\n",
+			argv[0],
+			UDP_PORT,
+			LISTEN_TIMEOUT,
+			DEVICE_CODE,
+			NUM_PROMPTS-1,
+			prompt_type,
+			NUM_RAW_LEVELS-1,
+			raw_level,
+			RC_FILENAME,
+			RC_FILENAME,
+			RC_FILENAME);
 	exit(1);
 }
 
@@ -224,14 +249,30 @@ void init(void)
 	signal(SIGQUIT,sigHandler);
 	signal(SIGTERM,sigHandler);
 
+	if (flags.run_rc_file) runCommandFile(NULL);
+
 	if (flags.offline) puts("Offline mode.\n");
-	else if (!networkStart())
+	else if (!connect_time && !networkStart())
 	{
 		if (!flags.interrupted) doExit(1);
 		flags.interrupted = 0;
 	}
 	strcpy(track_time_str,TIME_DEF_STR);
 	strcpy(track_len_str,TIME_DEF_STR);
+
+	if (cmd_file && runCommandFile(cmd_file) != OK) doExit(1);
+
+	/* Reset so connects in immediate and further command files won't be 
+	   ignored */
+	flags.offline = 0;
+
+	if (cmd_list) runImmediate();
+	if (flags.exit_after_cmds)
+	{
+		quitPrintf("after file/immediate commands");
+		doExit(0);
+	}
+
 	printPrompt();
 }
 
@@ -243,8 +284,6 @@ void mainloop(void)
 	struct timeval tvs;
 	struct timeval *tvp;
 	fd_set mask;
-
-	if (cmd_list) runImmediate();
 
 	while(1)
 	{
@@ -284,15 +323,9 @@ void mainloop(void)
 
 void runImmediate(void)
 {
+	int len = strlen(cmd_list);
+	colPrintf("~FMRunning immediate commands:~RS \"%s\"\n",cmd_list);
+	parseInputLine(cmd_list,len);
+	colPrintf("~FGImmediate command run complete.\n");
 	printPrompt();
-	puts(cmd_list);
-	addToBuffer(keyb_buffnum,cmd_list,strlen(cmd_list));
-	parseInputLine(buffer[keyb_buffnum].data,buffer[keyb_buffnum].len);
-	printPrompt();
-
-	if (flags.exit_after_cmds)
-	{
-		quitPrintf("after immediate commands");
-		doExit(0);
-	}
 }

@@ -31,7 +31,7 @@ void nlErrPrintf(const char *fmt, ...)
 void warnPrintf(const char *fmt, ...)
 {
 	va_list args;
-	colPrintf("~BM~FWWARNING:~RS ");
+	colPrintf("~BY~FWWARNING:~RS ");
 	va_start(args,fmt);
 	vprintf(fmt,args);
 	va_end(args);
@@ -43,7 +43,7 @@ void warnPrintf(const char *fmt, ...)
 void nlWarnPrintf(const char *fmt, ...)
 {
 	va_list args;
-	colPrintf("\n~BM~FWWARNING:~RS ");
+	colPrintf("\n~BY~FWWARNING:~RS ");
 	va_start(args,fmt);
 	vprintf(fmt,args);
 	va_end(args);

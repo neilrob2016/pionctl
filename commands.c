@@ -40,6 +40,7 @@ int  comDisconnect(void);
 void comClearHistory(void);
 int  comWait(int comnum, char *param);
 void comEcho(int cmd_word, int word_cnt, char **words);
+int  comRun(int word_cnt, char *param1);
 
 int  comMacro(char *opt, char *name, int cmd_word, int word_cnt, char **words);
 int  optMacroDefine(int cmd_word, int word_cnt, char **words);
@@ -82,7 +83,7 @@ int parseInputLine(char *data, int len)
 		in_quotes = 0;
 
 		/* Find the seperator (but ignore if inside double quotes) */
-		for(separator=ptr;*separator;++separator)
+		for(separator=ptr;*separator && separator < end;++separator)
 		{
 			c = *separator;
 			if (c == '"' || c == '\'')
@@ -118,7 +119,7 @@ int parseInputLine(char *data, int len)
 
 		if (len)
 		{
-			if (flags.macro_running)
+			if (flags.macro_running || flags.cmdfile_running)
 			{
 				/* Skip initial whitespace */
 				for(ptr2=ptr;*ptr2 < 33;++ptr2);
@@ -231,7 +232,7 @@ int parseCommand(char *buff, int bufflen)
 		}
 		if (i == MAX_WORDS)
 		{
-			errPrintf("Too many words or strings. Maximum is %d.\n",MAX_WORDS);
+			errPrintf("Maximum (%d) words or strings exceeded.\n",MAX_WORDS);
 			return ERR_CMD_FAIL;
 		}
 
@@ -677,11 +678,13 @@ int processBuiltInCommand(
 	case COM_ECHO:
 		comEcho(cmd_word,word_cnt,words);
 		break;
+	case COM_MACRO:
+		return comMacro(param1,param2,cmd_word,word_cnt,words);
 	case COM_BACK:
 		runShowReverse(1,param1);
 		break;
-	case COM_MACRO:
-		return comMacro(param1,param2,cmd_word,word_cnt,words);
+	case COM_RUN:
+		return comRun(word_cnt,param1);
 	default:
 		assert(0);
 	}
@@ -1303,6 +1306,11 @@ int optHelpSorted(char *pat)
 
 int comConnect(char *param)
 {
+	if (flags.cmdfile_running && flags.offline)
+	{
+		warnPrintf("Offline mode set, ignoring connect command.\n");
+		return OK;
+	}
 	if (tcp_sock)
 	{
 		if (connect_time)
@@ -1385,6 +1393,19 @@ void comEcho(int cmd_word, int word_cnt, char **words)
 
 
 
+int comRun(int word_cnt, char *param1)
+{
+	if (word_cnt != 2)
+	{
+		usagePrintf("run <command file>\n");
+		return ERR_CMD_FAIL;
+	}
+	return runCommandFile(param1);
+}
+
+
+
+
 int comMacro(char *opt, char *name, int cmd_word, int word_cnt, char **words)
 {
 	char *options[8] =
@@ -1450,8 +1471,8 @@ int comMacro(char *opt, char *name, int cmd_word, int word_cnt, char **words)
 	puts("             delete <macro name>/*");
 	puts("             run    <macro name>");
 	puts("             load   <filename>");
-	puts("             save   <filename>     [<macro name>]");
-	puts("             sava   <filename>     [<macro name>]");
+	puts("             save   <filename>     [<macro name>]  : Overwrite");
+	puts("             sava   <filename>     [<macro name>]  : Append");
 	puts("             list");
 	return ERR_CMD_FAIL;
 }
@@ -1512,7 +1533,6 @@ int optMacroSave(int append, int cmd_word, int word_cnt, char **words)
 	}
 	return ERR_CMD_FAIL;
 }
-
 
 /********************************** FLAGS *************************************/
 

@@ -29,6 +29,7 @@ OBJS=\
 	strings.o \
 	time.o \
 	reverse.o \
+	cmdfile.o \
 	misc.o
 BIN=pionctl
 
@@ -85,6 +86,9 @@ time.o: time.c $(DEPS)
 
 reverse.o: reverse.c $(DEPS)
 	$(COMP) reverse.c
+
+cmdfile.o: cmdfile.c $(DEPS)
+	$(COMP) cmdfile.c
 
 misc.o: misc.c build_date.h $(DEPS)
 	$(COMP) misc.c
