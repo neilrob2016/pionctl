@@ -84,3 +84,9 @@ Older versions skipped.
 ========
 - Added command files with new command "run" and -c and -r options.
 - Added example command file example.cmd
+
+20250102
+========
+- Added "on_error" command with "stop" & "cont" options to control if command 
+  file execution stops when a command fails or not. Default is not to. This 
+  comment is really meant for bookending manual connects in .pionrc.

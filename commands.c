@@ -41,6 +41,7 @@ void comClearHistory(void);
 int  comWait(int comnum, char *param);
 void comEcho(int cmd_word, int word_cnt, char **words);
 int  comRun(int word_cnt, char *param1);
+int  comOnError(int word_cnt, char *param1);
 
 int  comMacro(char *opt, char *name, int cmd_word, int word_cnt, char **words);
 int  optMacroDefine(int cmd_word, int word_cnt, char **words);
@@ -685,6 +686,9 @@ int processBuiltInCommand(
 		break;
 	case COM_RUN:
 		return comRun(word_cnt,param1);
+	case COM_ON_ERROR:
+		return comOnError(word_cnt,param1);
+		break;
 	default:
 		assert(0);
 	}
@@ -1142,7 +1146,7 @@ int optHelpMain(int extra, char *pat)
 		if (i && commands[i].data && !commands[i-1].data)
 		{
 			if (cnt % nlafter) putchar('\n');
-			colPrintf("\n~BB~FW*** Streamer commands ***\n\n");
+			colPrintf("\n~BB~FW*** Streamer commands ***\n");
 			if (extra) nlafter = 4;
 			cnt = 0;
 		}
@@ -1308,8 +1312,8 @@ int comConnect(char *param)
 {
 	if (flags.cmdfile_running && flags.offline)
 	{
-		warnPrintf("Offline mode set, ignoring connect command.\n");
-		return OK;
+		errPrintf("Offline mode set, cannot run connect command.\n");
+		return ERR_CMD_FAIL;
 	}
 	if (tcp_sock)
 	{
@@ -1401,6 +1405,28 @@ int comRun(int word_cnt, char *param1)
 		return ERR_CMD_FAIL;
 	}
 	return runCommandFile(param1);
+}
+
+
+
+
+int comOnError(int word_cnt, char *param1)
+{
+	if (word_cnt == 2)
+	{
+		if (!strcmp(param1,"stop"))
+		{
+			flags.on_error_stop = 1;
+			return OK;
+		}
+		if (!strcmp(param1,"cont"))
+		{
+			flags.on_error_stop = 0;
+			return OK;
+		}
+	}
+	usagePrintf("on_error stop/cont\n");
+	return ERR_CMD_FAIL;
 }
 
 

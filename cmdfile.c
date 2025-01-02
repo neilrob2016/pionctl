@@ -13,9 +13,11 @@ int runCommandFile(char *cmdfile)
 	int fd;
 	int len;
 	int comment;
+	int error;
 
+	if (!recurse) flags.on_error_stop = 0;
 	/* Ten seems a reasonable amount to me. Change to suit. */
-	if (recurse == 10)
+	else if (recurse == 10)
 	{
 		errPrintf("Too many nested calls.\n");
 		return ERR_CMD_FAIL;
@@ -63,6 +65,7 @@ int runCommandFile(char *cmdfile)
 
 	end = start + fs.st_size;
 	comment = 0;
+	error = 0;
 
 	/* Find the lines and pass them to the executor */
 	for(p1=start;p1 < end;p1=p2+1)
@@ -93,12 +96,20 @@ int runCommandFile(char *cmdfile)
 
 		/* Just run the command, don't print the prompt or the 
 		   command itself */
-		if (len) parseInputLine(p1,len);
+		if (len)
+		{
+			if (parseInputLine(p1,len) != OK && flags.on_error_stop)
+			{
+				error = 1;
+				break;
+			}
+		}
 	}
 	munmap(start,fs.st_size);
-	flags.cmdfile_running = 0;
-	colPrintf("Command file run of \"%s\" ~FGCOMPLETE.\n",path);
+	colPrintf("Command file run of \"%s\": %s\n",
+		path,error ? "~FRSTOPPED" : "~FGOK");
 	if (!cmdfile) free(path);
-	--recurse;
+	if (!--recurse) flags.on_error_stop = 0;
+	flags.cmdfile_running = 0;
 	return OK;
 }

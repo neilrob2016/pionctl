@@ -40,9 +40,9 @@ void comSanityCheck(void)
 	for(int i=0;i < NUM_COMMANDS;++i)
 		printf("%-3d: %s\n",i,commands[i].com);
 	*/
-	assert(NUM_COMMANDS == 120);
-	assert(LAST_CLIENT_COM == 15);
-	assert(FIRST_STREAMER_COM == 16);
+	assert(NUM_COMMANDS == 121);
+	assert(LAST_CLIENT_COM == COM_ON_ERROR);
+	assert(FIRST_STREAMER_COM == COM_MENU);
 	assert(!strcmp(commands[COM_MENU].com,"menu"));
 	assert(!strcmp(commands[COM_FILTER].com,"filter"));
 	assert(!strcmp(commands[COM_LRA].com,"lra"));
@@ -55,6 +55,7 @@ void comSanityCheck(void)
 	assert(!strcmp(commands[COM_MRMSTAT].com,"mrmstat"));
 	assert(!strcmp(commands[COM_SETNAME].com,"setname"));
 	assert(!strcmp(commands[COM_SETUP].com,"setup"));
+	assert(!strcmp(commands[COM_PRODID].com,"prodid"));
 }
 
 

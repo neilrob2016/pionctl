@@ -7,4 +7,6 @@ wait 2
 # Won't connect but shows how to connect to your streamer immediately instead
 # of waiting for EZPROZY packets. If this fails it'll try to listen anyway.
 echo "Trying to connect..."
+on_error stop
 connect 127.0.0.1
+echo "~FG~LI*** CONNECTED ***"

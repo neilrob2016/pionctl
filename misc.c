@@ -1,5 +1,4 @@
 #include "globals.h"
-#include "build_date.h"
 
 
 int doWait(int comnum, float secs)
@@ -123,9 +122,9 @@ u_int getUsecTime(void)
 void version(int print_pid)
 {
 	colPrintf("\n~BM~FW*** PIONCTL - Pioneer N-70AE control client ***\n\n");
-	colPrintf("~FTCopyright (C) Neil Robertson 2021-2024\n\n");
+	colPrintf("~FTCopyright (C) Neil Robertson 2021-2025\n\n");
 	colPrintf("~FYVersion~RS   : %s\n",VERSION);
-	colPrintf("~FGBuild date~RS: %s\n",BUILD_DATE);
+	colPrintf("~FGBuild date~RS: %s, %s\n",__DATE__,__TIME__);
 	if (print_pid) colPrintf("~FBPID~RS       : %d\n",getpid());
 	putchar('\n');
 }

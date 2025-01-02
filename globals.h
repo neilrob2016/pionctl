@@ -31,7 +31,7 @@
 #define EXTERN extern
 #endif
 
-#define VERSION "20241228"
+#define VERSION "20250102"
 
 #define UDP_PORT       10102
 #define TCP_PORT       60128
@@ -157,66 +157,69 @@ enum
 
 	/* 15 */
 	COM_RUN,
-	LAST_CLIENT_COM = COM_RUN,
+	COM_ON_ERROR,
+	LAST_CLIENT_COM = COM_ON_ERROR,
 
-	/* 16. Streamer commands */
+	/* 17. Streamer commands */
 	COM_MENU,
 	FIRST_STREAMER_COM = COM_MENU,
 	COM_MENUSTAT,
 	COM_UP,
-	COM_DN,
 
 	/* 20 */
+	COM_DN,
 	COM_EN,
 	COM_EX,
 	COM_FLIP,
 	COM_TOP,
-	COM_DIM,
 
 	/* 25 */
+	COM_DIM,
 	COM_DIMWRAP,
 	COM_DIMSTAT,
 	COM_FILTER,
 	COM_FILSTAT,
-	COM_ALBUM,
 
 	/* 30 */
+	COM_ALBUM,
 	COM_ARTIST,
 	COM_TITLE,
 	COM_TRACKS,
 	COM_ARTDIS,
-	COM_ARTBMP,
 
 	/* 35 */
+	COM_ARTBMP,
 	COM_ARTURL,
 	COM_ARTSTAT,
 	COM_ARTSAVE,
 	COM_SBON,
-	COM_SBOFF,
 
 	/* 40 */
+	COM_SBOFF,
 	COM_SBSTAT,
 	COM_AUINFO,
 
 	/* Enums beyond artsave not required except for these */
-	COM_LRA      = 59,
-	COM_APDON    = 63,
-	COM_MSV      = 66,
-	COM_DTS      = 76,
-	COM_TIDALVER = 78,
-	COM_STOP     = 87,
-	COM_SEEK     = 94,
-	COM_MRMSTAT  = 99,
-	COM_SETNAME  = 109,
-	COM_UPDSTAT  = 112,
+	COM_LRA      = 60,
+	COM_APDON    = 64,
+	COM_MSV      = 67,
+	COM_DTS      = 77,
+	COM_TIDALVER = 79,
+	COM_STOP     = 88,
+	COM_SEEK     = 95,
+	COM_MRMSTAT  = 100,
+	COM_SETNAME  = 110,
+	COM_UPDSTAT  = 113,
 	COM_SETUP,
-	COM_SERIAL,
 
 	/* 115 */
+	COM_SERIAL,
 	COM_ETHMAC,
 	COM_ICONURL,
 	COM_MODINFO,
 	COM_ECOVER,
+
+	/* 120 */
 	COM_PRODID,
 
 	NUM_COMMANDS
@@ -255,8 +258,9 @@ struct st_command commands[] =
 
 	/* 15 */
 	{ "run",      NULL },
+	{ "on_error", NULL },
 
-	/* 16. Menu navigation */
+	/* 17. Menu navigation */
 	{ "menu",    "NTCMENU"  },
 	{ "menustat","NMSQSTN"  },
 	{ "up",      "OSDUP"    }, 
@@ -271,7 +275,7 @@ struct st_command commands[] =
 	   remote control */
 	{ "dim",     "DIM"     }, /* Takes 00 -> 03 as an argument */
 	{ "dimwrap", "DIMDIM"  }, /* Should set wrap around up but doesn't */
-	{ "dimstat", "DIMQSTN" }, /* 25 */
+	{ "dimstat", "DIMQSTN" }, 
 
 	/* Digital filter */
 	{ "filter",  "DGF"     },
@@ -282,13 +286,13 @@ struct st_command commands[] =
 	   we request the art manually so not much use but can reduce network 
 	   traffic. */
 	{ "album",   "NALQSTN"        },
-	{ "artist",  "NATQSTN"        },
-	{ "title",   "NTIQSTN"        }, /* 30 */
+	{ "artist",  "NATQSTN"        }, 
+	{ "title",   "NTIQSTN"        }, 
 	{ "tracks",  "NTRQSTN"        },
 	{ "artdis",  "NJADIS"         },
 	{ "artbmp",  "NJABMP"         },
-	{ "arturl",  "NJALINK;NJAREQ" },
-	{ "artstat", "NJAQSTN"        }, /* 35 */
+	{ "arturl",  "NJALINK;NJAREQ" }, 
+	{ "artstat", "NJAQSTN"        }, 
 	{ "artsave", "NJABMP;NJAREQ"  },
 
 	/* Network standby - if off then streamer switches completely off 
@@ -431,6 +435,7 @@ struct st_flags
 	unsigned com_dn          : 1;
 	unsigned reset_reverse   : 1;
 	unsigned interrupted     : 1;
+	unsigned on_error_stop   : 1;
 };
 
 

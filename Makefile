@@ -33,11 +33,8 @@ OBJS=\
 	misc.o
 BIN=pionctl
 
-$(BIN): build_date.h $(OBJS) Makefile
+$(BIN): $(OBJS) Makefile
 	$(CC) $(OBJS) $(SANI) -o $(BIN)
-
-build_date.h:
-	echo "#define BUILD_DATE \"`date -u +'%F %T %Z'`\"" > build_date.h
 
 main.o: main.c globals.h Makefile
 	$(COMP) main.c
@@ -75,7 +72,7 @@ menu.o: menu.c $(DEPS)
 saveart.o: saveart.c $(DEPS)
 	$(COMP) saveart.c
 
-macros.o: macros.c build_date.h $(DEPS)
+macros.o: macros.c $(DEPS)
 	$(COMP) macros.c
 
 strings.o: strings.c $(DEPS)
@@ -90,8 +87,10 @@ reverse.o: reverse.c $(DEPS)
 cmdfile.o: cmdfile.c $(DEPS)
 	$(COMP) cmdfile.c
 
-misc.o: misc.c build_date.h $(DEPS)
+# Always rebuild so get correct build date
+.PHONY: misc.o
+misc.o: 
 	$(COMP) misc.c
 
 clean:
-	rm -f *.o $(BIN) core *.jpg *.bmp build_date.h 
+	rm -f *.o $(BIN) core *.jpg *.bmp
