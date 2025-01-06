@@ -131,7 +131,8 @@ int getStreamerAddress(void)
 	char dummy;
 	int i;
 
-	puts("Listening for streamer... ");
+	printf("Listening for streamer... ");
+	fflush(stdout);
 	size = sizeof(struct sockaddr_in);
 
 	while(1)
@@ -141,9 +142,9 @@ int getStreamerAddress(void)
 		FD_ZERO(&mask);
 		FD_SET(udp_sock,&mask);
 
-		if (listen_timeout)
+		if (connect_timeout)
 		{
-			tvs.tv_sec = listen_timeout;
+			tvs.tv_sec = connect_timeout;
 			tvs.tv_usec = 0;
 			tvp = &tvs;
 		}
@@ -160,6 +161,7 @@ int getStreamerAddress(void)
 			networkClear();
 			return 0;
 		}
+		ok();
 		if (recvfrom(
 			udp_sock,
 			&dummy,1,0,(struct sockaddr *)&addr,&size) == -1)

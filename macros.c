@@ -338,9 +338,9 @@ int runMacro(char *name)
 	macro->running = 0;
 	if (!--recurse) flags.macro_running = 0;
 
-	if (ret != OK)
+	if (ret != OK && flags.on_error_stop)
 	{
-		errPrintf("Macro \"%s\" FAILED.\n",macro->name);
+		errPrintf("Macro \"%s\" ~FRFAILED.\n",macro->name);
 		return ERR_MACRO;
 	}
 	return OK;

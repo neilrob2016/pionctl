@@ -15,9 +15,8 @@ int runCommandFile(char *cmdfile)
 	int comment;
 	int error;
 
-	if (!recurse) flags.on_error_stop = 0;
 	/* Ten seems a reasonable amount to me. Change to suit. */
-	else if (recurse == 10)
+	if (recurse == 10)
 	{
 		errPrintf("Too many nested calls.\n");
 		return ERR_CMD_FAIL;
@@ -61,7 +60,7 @@ int runCommandFile(char *cmdfile)
 	}
 	ok();
 	close(fd);
-	colPrintf("~FMRunning commands...\n");
+	colPrintf("~FMRunning command file...\n");
 
 	end = start + fs.st_size;
 	comment = 0;
@@ -106,10 +105,9 @@ int runCommandFile(char *cmdfile)
 		}
 	}
 	munmap(start,fs.st_size);
-	colPrintf("Command file run of \"%s\": %s\n",
-		path,error ? "~FRSTOPPED" : "~FGOK");
+	colPrintf("Command file run of \"%s\" %s\n",
+		path,error ? "~FRFAILED" : "~FGOK");
 	if (!cmdfile) free(path);
-	if (!--recurse) flags.on_error_stop = 0;
 	flags.cmdfile_running = 0;
-	return OK;
+	return (error ? ERR_RUN : OK);
 }

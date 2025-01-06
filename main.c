@@ -9,8 +9,7 @@
 #define MAINFILE
 #include "globals.h"
 
-#define DEVICE_CODE    '1'
-#define LISTEN_TIMEOUT 60
+#define DEVICE_CODE '1'
 
 char *cmd_file;
 char *cmd_list;
@@ -70,8 +69,7 @@ void parseCmdLine(int argc, char **argv)
 	udp_port = UDP_PORT;
 	tcp_port = TCP_PORT;
 	device_code = DEVICE_CODE;
-	listen_timeout = LISTEN_TIMEOUT;
-	connect_timeout = 0;
+	connect_timeout = CONNECT_TIMEOUT;
 	cmd_file = NULL;
 	cmd_list = NULL;
 	prompt_type = PROMPT_NAME;
@@ -129,11 +127,6 @@ void parseCmdLine(int argc, char **argv)
 		case 'i':
 			cmd_list = argv[++i];
 			break;
-		case 'l':
-			++i;
-			if (!isNumber(argv[i]) ||
-			    (listen_timeout = atoi(argv[i])) < 0) goto USAGE;
-			break;
 		case 'n':
 			++i;
 			if (!isNumber(argv[i]) ||
@@ -183,9 +176,9 @@ void parseCmdLine(int argc, char **argv)
 	USAGE:
 	printf("Usage: %s\n"
 	       "       -a <TCP address[:<port>]>\n"
-	       "       -n <TCP connect timeout> : Default = TCP default\n"
+	       "       -n <TCP/UDP timeout>     : For TCP connect and UDP EZPROXY listen.\n"
+	       "                                  Default = %d seconds.\n"
 	       "       -u <UDP listen port>     : 0 to 65535. Default = %d.\n"
-	       "       -l <UDP listen timeout>  : Default = %d secs.\n"
 	       "       -d <device code (0-9)>   : Default = %c.\n"
 	       "       -f <command file>        : File of commands to run immediately after\n"
 	       "                                  connect. Takes precendence over -i.\n"
@@ -213,8 +206,8 @@ void parseCmdLine(int argc, char **argv)
 	       " - The -f and -i commands are run *after* auto connection is complete. If you\n"
 	       "   want any commands to run before connection put them in the %s file.\n",
 			argv[0],
+			CONNECT_TIMEOUT,
 			UDP_PORT,
-			LISTEN_TIMEOUT,
 			DEVICE_CODE,
 			NUM_PROMPTS-1,
 			prompt_type,
@@ -231,6 +224,8 @@ void parseCmdLine(int argc, char **argv)
 
 void init(void)
 {
+	int ret = OK;
+
 	initBuffers();
 	initKeyboard();
 	initTitles();
@@ -242,9 +237,9 @@ void init(void)
 	menu_cursor_pos = -1;
 	input_state = INPUT_CMD;
 	macro_append = -1;
-	connect_time = 0;
 	start_time = time(0);
 	nri_command = 0;
+	flags.on_error_stop = 1;
 
 	signal(SIGINT,sigHandler);
 	signal(SIGQUIT,sigHandler);
@@ -261,13 +256,19 @@ void init(void)
 	strcpy(track_time_str,TIME_DEF_STR);
 	strcpy(track_len_str,TIME_DEF_STR);
 
-	if (cmd_file && runCommandFile(cmd_file) != OK) doExit(1);
+	if (cmd_file) ret = runCommandFile(cmd_file);
 
 	/* Reset so connects in immediate and further command files won't be 
 	   ignored */
 	flags.offline = 0;
 
-	if (cmd_list) runImmediate();
+	if (cmd_list)
+	{
+		if (ret == OK)
+			runImmediate();
+		else
+			warnPrintf("Not running immediate commands due to command file failing.\n");
+	}
 	if (flags.exit_after_cmds)
 	{
 		quitPrintf("after file/immediate commands");
@@ -289,6 +290,8 @@ void mainloop(void)
 	while(1)
 	{
 		flags.interrupted = 0;
+		flags.on_error_stop = 1;
+
 		FD_ZERO(&mask);
 		FD_SET(STDIN_FILENO,&mask);
 		if (tcp_sock) FD_SET(tcp_sock,&mask);
@@ -325,8 +328,10 @@ void mainloop(void)
 void runImmediate(void)
 {
 	int len = strlen(cmd_list);
+	int ret;
 	colPrintf("~FMRunning immediate commands:~RS \"%s\"\n",cmd_list);
-	parseInputLine(cmd_list,len);
-	colPrintf("~FGImmediate command run complete.\n");
+	ret = parseInputLine(cmd_list,len);
+	colPrintf("Immediate command run %s\n",
+		ret == OK ? "~FGOK" : "~FRFAILED");
 	printPrompt();
 }

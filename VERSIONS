@@ -22,6 +22,8 @@ Older versions skipped.
 - Fixed bug in clearPrompt()
 - Minor code tidying.
 
+
+
 20230304
 ========
 - Changed "exit" command to "quit" as accidently typing 'e' instead of "en",
@@ -41,6 +43,8 @@ Older versions skipped.
 - Renamed "sysinfo" to "xinfo" as is a fairly random mix of extra information
 - Tidied up output of sysinfo
 - Removed some almost unreadable colours from some NRI fields.
+
+
 
 20240301
 ========
@@ -85,8 +89,16 @@ Older versions skipped.
 - Added command files with new command "run" and -c and -r options.
 - Added example command file example.cmd
 
+
+
 20250102
 ========
 - Added "on_error" command with "stop" & "cont" options to control if command 
   file execution stops when a command fails or not. Default is not to. This 
   comment is really meant for bookending manual connects in .pionrc.
+
+20250106
+========
+- Changed default of on_error to stop to match prior macro behaviour.
+- Added optional timeout option as the 1st argument to connect command.
+- Bug fixes

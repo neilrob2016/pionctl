@@ -31,18 +31,19 @@
 #define EXTERN extern
 #endif
 
-#define VERSION "20250102"
+#define VERSION "20250106"
 
-#define UDP_PORT       10102
-#define TCP_PORT       60128
-#define PKT_HDR_LEN    (int)sizeof(t_iscp_hdr)
-#define MESG_TERM_LEN  3
-#define ALLOC_BLOCK    10
-#define ADDR_LIST_SIZE 20
-#define MESG_OFFSET    5
-#define SAVE_TIMEOUT   5
-#define TIME_DEF_STR   "--:--:--"
-#define RC_FILENAME    ".pionrc"
+#define UDP_PORT        10102
+#define TCP_PORT        60128
+#define CONNECT_TIMEOUT 10
+#define PKT_HDR_LEN     (int)sizeof(t_iscp_hdr)
+#define MESG_TERM_LEN   3
+#define ALLOC_BLOCK     10
+#define ADDR_LIST_SIZE  20
+#define MESG_OFFSET     5
+#define SAVE_TIMEOUT    5
+#define TIME_DEF_STR    "--:--:--"
+#define RC_FILENAME     ".pionrc"
 
 
 #define FREE(M)   { free(M); M = NULL; }
@@ -83,7 +84,8 @@ enum
 	ERR_CMD_MISSING,
 	ERR_CMD_FAIL,
 	ERR_MACRO,
-	ERR_FILE
+	ERR_FILE,
+	ERR_RUN
 };
 
 
@@ -496,7 +498,6 @@ EXTERN char *ipaddr;
 EXTERN char device_code;
 EXTERN uint16_t udp_port;
 EXTERN uint16_t tcp_port;
-EXTERN int listen_timeout;
 EXTERN int connect_timeout;
 
 /* Runtime globals */

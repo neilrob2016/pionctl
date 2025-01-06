@@ -35,13 +35,13 @@ int  optHelpMain(int extra, char *pat);
 int  optHelpSorted(char *pat);
 void optHelpNotes(void);
 
-int  comConnect(char *param);
+int  comConnect(char *param1, char *param2);
 int  comDisconnect(void);
 void comClearHistory(void);
 int  comWait(int comnum, char *param);
 void comEcho(int cmd_word, int word_cnt, char **words);
-int  comRun(int word_cnt, char *param1);
-int  comOnError(int word_cnt, char *param1);
+int  comRun(char *param);
+int  comOnError(char *param);
 
 int  comMacro(char *opt, char *name, int cmd_word, int word_cnt, char **words);
 int  optMacroDefine(int cmd_word, int word_cnt, char **words);
@@ -133,7 +133,7 @@ int parseInputLine(char *data, int len)
 
 			if ((ret = parseCommand(ptr,len)) != ERR_CMD_MISSING)
 				keyb_buffnum = (keyb_buffnum + 1) % MAX_HIST_BUFFERS;
-			if (ret != OK) return ret;
+			if (ret != OK && flags.on_error_stop) return ret;
 			if (flags.interrupted) return ERR_CMD_FAIL;
 			if (!separator) break;
 		}
@@ -666,7 +666,7 @@ int processBuiltInCommand(
 	case COM_HELP:
 		return comHelp(param1,param2);
 	case COM_CONNECT:
-		return comConnect(param1);
+		return comConnect(param1,param2);
 	case COM_DISCONNECT:
 		return comDisconnect();
 	case COM_WAIT:
@@ -685,10 +685,9 @@ int processBuiltInCommand(
 		runShowReverse(1,param1);
 		break;
 	case COM_RUN:
-		return comRun(word_cnt,param1);
+		return comRun(param1);
 	case COM_ON_ERROR:
-		return comOnError(word_cnt,param1);
-		break;
+		return comOnError(param1);
 	default:
 		assert(0);
 	}
@@ -1308,8 +1307,10 @@ int optHelpSorted(char *pat)
 
 
 
-int comConnect(char *param)
+int comConnect(char *param1, char *param2)
 {
+	int isnum = 0;
+
 	if (flags.cmdfile_running && flags.offline)
 	{
 		errPrintf("Offline mode set, cannot run connect command.\n");
@@ -1324,11 +1325,42 @@ int comConnect(char *param)
 		}
 		networkClear();
 	}
-	/* Could have:       con [address]
-	               <cnt> con [address]  - pointless to do but... */
-	if (param) ipaddr = strdup(param);
-	if (!networkStart()) networkClear();
-	return OK;
+	/* Formats:
+	     connect
+	     connect <timeout secs>
+	     connect <ipaddr>
+	     connect <timeout secs> <ipaddr>
+	*/
+	connect_timeout = CONNECT_TIMEOUT;
+	if (param1)
+	{
+		if (isNumber(param1))
+		{
+			connect_timeout = atoi(param1);
+			isnum = 1;
+		}
+		else ipaddr = strdup(param1);
+
+		if (param2)
+		{
+			if (isNumber(param2))
+			{
+				if (isnum) goto ERROR;
+				connect_timeout = atoi(param2);
+			}
+			else if (isnum)
+				ipaddr = strdup(param2);
+			else
+				goto ERROR;
+		}
+	}
+	if (networkStart()) return OK;
+	networkClear();
+	return ERR_CMD_FAIL;
+
+	ERROR:
+	usagePrintf("connect [<timeout secs>] [<IP address>]\n");
+	return ERR_CMD_FAIL;
 }
 
 
@@ -1397,29 +1429,26 @@ void comEcho(int cmd_word, int word_cnt, char **words)
 
 
 
-int comRun(int word_cnt, char *param1)
+int comRun(char *param)
 {
-	if (word_cnt != 2)
-	{
-		usagePrintf("run <command file>\n");
-		return ERR_CMD_FAIL;
-	}
-	return runCommandFile(param1);
+	if (param) return runCommandFile(param);
+	usagePrintf("run <command file>\n");
+	return ERR_CMD_FAIL;
 }
 
 
 
 
-int comOnError(int word_cnt, char *param1)
+int comOnError(char *param)
 {
-	if (word_cnt == 2)
+	if (param)
 	{
-		if (!strcmp(param1,"stop"))
+		if (!strcmp(param,"stop"))
 		{
 			flags.on_error_stop = 1;
 			return OK;
 		}
-		if (!strcmp(param1,"cont"))
+		if (!strcmp(param,"cont"))
 		{
 			flags.on_error_stop = 0;
 			return OK;
@@ -1472,7 +1501,11 @@ int comMacro(char *opt, char *name, int cmd_word, int word_cnt, char **words)
 			if (name) return deleteMacro(name);
 			goto USAGE;
 		case 3:
-			if (name) return runMacro(name);
+			if (name)
+			{
+				ret = runMacro(name);
+				return ret;
+			}
 			goto USAGE;
 		case 4:
 			if (name) return loadMacros(name);
