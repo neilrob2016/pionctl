@@ -448,7 +448,7 @@ void printIFA(char *mesg, uint32_t len)
 
 void printFWV(char *mesg, uint32_t len)
 {
-	printf("Firmware vers: ");
+	printf("Firmwr ver: ");
 	printMesg(mesg,len);
 }
 

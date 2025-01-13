@@ -1,0 +1,15 @@
+on_error skip 2
+on_error noprint
+
+# Try listening first
+connect 2
+echo "~LI~FG*** CONNECTED ***"
+return
+
+# Try a direct connection to known IP address
+echo "Listen ~FRFAILED~RS, trying direct connect..."
+connect 2 192.168.0.97
+echo "~LI~FM*** CONNECTED ***"
+return
+
+echo "~LI~FR*** FAILED ***"

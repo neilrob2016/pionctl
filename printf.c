@@ -7,9 +7,14 @@
 void errPrintf(const char *fmt, ...)
 {
 	va_list args;
+	char *msg;
+	if (!flags.on_error_print) return;
+
 	colPrintf("\07~BR~FWERROR:~RS ");
 	va_start(args,fmt);
-	vprintf(fmt,args);
+	vasprintf(&msg,fmt,args);
+	colPrintf(msg);
+	free(msg);
 	va_end(args);
 }
 
@@ -19,9 +24,14 @@ void errPrintf(const char *fmt, ...)
 void nlErrPrintf(const char *fmt, ...)
 {
 	va_list args;
+	char *msg;
+	if (!flags.on_error_print) return;
+
 	colPrintf("\n\07~BR~FWERROR:~RS ");
 	va_start(args,fmt);
-	vprintf(fmt,args);
+	vasprintf(&msg,fmt,args);
+	colPrintf(msg);
+	free(msg);
 	va_end(args);
 }
 
@@ -31,9 +41,14 @@ void nlErrPrintf(const char *fmt, ...)
 void warnPrintf(const char *fmt, ...)
 {
 	va_list args;
+	char *msg;
+	if (!flags.on_error_print) return;
+
 	colPrintf("~BY~FWWARNING:~RS ");
 	va_start(args,fmt);
-	vprintf(fmt,args);
+	vasprintf(&msg,fmt,args);
+	colPrintf(msg);
+	free(msg);
 	va_end(args);
 }
 
@@ -43,9 +58,14 @@ void warnPrintf(const char *fmt, ...)
 void nlWarnPrintf(const char *fmt, ...)
 {
 	va_list args;
+	char *msg;
+	if (!flags.on_error_print) return;
+
 	colPrintf("\n~BY~FWWARNING:~RS ");
 	va_start(args,fmt);
-	vprintf(fmt,args);
+	vasprintf(&msg,fmt,args);
+	colPrintf(msg);
+	free(msg);
 	va_end(args);
 }
 

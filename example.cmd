@@ -1,12 +1,31 @@
 # An example command file that can be run using the -f option or if renamed
 # to ~/.pionrc will run automatically at startup.
 
+#on_error halt
 cls
 echo "~BM*** Example command file ***"
-wait 1
-# Won't connect but shows how to connect to your streamer immediately instead
-# of waiting for EZPROZY packets. If this fails it'll try to listen anyway.
-echo "Trying to connect..."
-#on_error cont
-connect 127.0.0.1
+
+# Skip over connected message and return on fail
+on_error skip 2
+
+# Don't print standard error message
+on_error noprint
+
+echo "Trying 127.0.0.1 ..."
+#connect 2 127.0.0.1
+connect 2 
 echo "~FG~LI*** CONNECTED ***"
+
+# Exit this command file and any command sequence, macro or file that called it
+#halt
+
+# Only exit this command file
+return
+
+echo "~FR~LIFAILED"
+echo "Trying 127.0.0.2 ..."
+connect 2 127.0.0.2
+echo "~FG~LI*** CONNECTED ***"
+return
+
+echo "~FR~LIFAILED"

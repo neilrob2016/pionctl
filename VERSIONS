@@ -102,3 +102,13 @@ Older versions skipped.
 - Changed default of on_error to stop to match prior macro behaviour.
 - Added optional timeout option as the 1st argument to connect command.
 - Bug fixes
+
+20250113
+========
+- Added "return" and "halt" commands. The former returns from the current
+  executing command file or macro but further commands continue to run. The
+  latter stops all command execution and returns to the prompt.
+- Added "on_error skip <line count>" which will skip N lines if an error 
+  occurs allowing very basic flow control in command files.
+- Changed "on_error stop" to "on_error halt" to match "halt" and avoid 
+  confusion with streamer "stop" command.

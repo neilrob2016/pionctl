@@ -41,7 +41,7 @@ void comClearHistory(void);
 int  comWait(int comnum, char *param);
 void comEcho(int cmd_word, int word_cnt, char **words);
 int  comRun(char *param);
-int  comOnError(char *param);
+int  comOnError(char *param1, char *param2);
 
 int  comMacro(char *opt, char *name, int cmd_word, int word_cnt, char **words);
 int  optMacroDefine(int cmd_word, int word_cnt, char **words);
@@ -108,7 +108,7 @@ int parseInputLine(char *data, int len)
 		if (in_quotes)
 		{
 			errPrintf("Unterminated quotes.\n");
-			if (!flags.macro_running)
+			if (!flags.macro_running && !flags.cmdfile_running)
 				keyb_buffnum = (keyb_buffnum + 1) % MAX_HIST_BUFFERS;
 			break;
 		}
@@ -131,9 +131,24 @@ int parseInputLine(char *data, int len)
 				}
 			}
 
-			if ((ret = parseCommand(ptr,len)) != ERR_CMD_MISSING)
+			if ((ret = parseCommand(ptr,len)) != ERR_CMD_MISSING &&
+			    !flags.macro_running && !flags.cmdfile_running)
+			{
 				keyb_buffnum = (keyb_buffnum + 1) % MAX_HIST_BUFFERS;
-			if (ret != OK && flags.on_error_stop) return ret;
+			}
+
+			/* Stop running */
+			if (flags.do_halt || flags.do_return) return OK;
+
+			if (ret != OK)
+			{
+				if (flags.on_error_halt) return ret;
+				if (on_error_skip_set)
+				{
+					on_error_skip_cnt = on_error_skip_set;
+					continue;
+				}
+			}
 			if (flags.interrupted) return ERR_CMD_FAIL;
 			if (!separator) break;
 		}
@@ -174,6 +189,12 @@ int parseCommand(char *buff, int bufflen)
 	/* Make sure we have something other than whitespace */
 	for(s=buff;s < end;++s) if (!isspace(*s)) break;
 	if (s == buff+bufflen) return ERR_CMD_MISSING;
+
+	if (on_error_skip_cnt)
+	{
+		--on_error_skip_cnt;
+		return OK;
+	}
 
 	/* See if we have !<num> which means put that history buffer into
 	   current keyboard buffer */
@@ -686,8 +707,14 @@ int processBuiltInCommand(
 		break;
 	case COM_RUN:
 		return comRun(param1);
+	case COM_HALT:
+		flags.do_halt = 1;
+		return OK;
+	case COM_RETURN:
+		flags.do_return = 1;
+		return OK;
 	case COM_ON_ERROR:
-		return comOnError(param1);
+		return comOnError(param1,param2);
 	default:
 		assert(0);
 	}
@@ -1439,22 +1466,49 @@ int comRun(char *param)
 
 
 
-int comOnError(char *param)
+int comOnError(char *param1, char *param2)
 {
-	if (param)
+	if (!param1) goto USAGE;
+	if (param2)
 	{
-		if (!strcmp(param,"stop"))
-		{
-			flags.on_error_stop = 1;
-			return OK;
-		}
-		if (!strcmp(param,"cont"))
-		{
-			flags.on_error_stop = 0;
-			return OK;
-		}
+		if (strcmp(param1,"skip") || !isNumber(param2)) goto USAGE;
+		on_error_skip_set = atoi(param2);
+		on_error_skip_cnt = 0;
+		flags.on_error_halt = 0;
+		return OK;		
 	}
-	usagePrintf("on_error stop/cont\n");
+ 	if (!strcmp(param1,"halt"))
+	{
+		flags.on_error_halt = 1;
+		on_error_skip_cnt = 0;
+		on_error_skip_set = 0;
+		return OK;
+	}
+	if (!strcmp(param1,"cont"))
+	{
+		flags.on_error_halt = 0;
+		on_error_skip_cnt = 0;
+		on_error_skip_set = 0;
+		return OK;
+	}
+	if (!strcmp(param1,"print"))
+	{
+		flags.on_error_print = 1;
+		return OK;
+	}
+	if (!strcmp(param1,"noprint"))
+	{
+		flags.on_error_print = 0;
+		return OK;
+	}
+	
+	USAGE:
+	usagePrintf("on_error halt\n"
+	            "                cont\n"
+	            "                print\n"
+	            "                noprint\n"
+	            "                skip <line count>\n");
+	colPrintf("~FYNote:~RS halt, cont and skip will reset each others settings.\n");
 	return ERR_CMD_FAIL;
 }
 

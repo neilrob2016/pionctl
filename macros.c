@@ -329,7 +329,8 @@ int runMacro(char *name)
 	}
 
 	flags.macro_running = 1;
-	recurse++;
+	flags.do_return = 0;
+	++recurse;
 	macro->running = 1; 
 
 	if (flags.verbose) colPrintf("~FMRunning macro:~RS \"%s\"\n",name);
@@ -337,10 +338,16 @@ int runMacro(char *name)
 
 	macro->running = 0;
 	if (!--recurse) flags.macro_running = 0;
-
-	if (ret != OK && flags.on_error_stop)
+	if (flags.do_return)
 	{
-		errPrintf("Macro \"%s\" ~FRFAILED.\n",macro->name);
+		flags.do_return = 0;
+		return OK;
+	}
+
+	if (ret != OK && flags.on_error_halt)
+	{
+		if (flags.on_error_print)
+			errPrintf("Macro \"%s\" ~FRFAILED.\n",macro->name);
 		return ERR_MACRO;
 	}
 	return OK;

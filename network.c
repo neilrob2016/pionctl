@@ -29,6 +29,8 @@ int networkStart(void)
 	tx_writes = 0;
 	nja_prev = 0;
 
+	if (flags.cmdfile_running) flags.tried_connect = 1;
+
 	if (ipaddr)
 	{
 		if ((ptr = strchr(ipaddr,':')))
@@ -157,7 +159,7 @@ int getStreamerAddress(void)
 				strerror(errno));
 			return 0;
 		case 0:
-			colPrintf("~FYTIMEOUT\n");
+			if (flags.on_error_print) colPrintf("~FYTIMEOUT\n");
 			networkClear();
 			return 0;
 		}
@@ -286,10 +288,10 @@ int connectToStreamer(void)
 		case EINPROGRESS:
 			break;	
 		case ECONNREFUSED:
-			colPrintf("~FRREFUSED\n");
+			if (flags.on_error_print) colPrintf("~FRREFUSED\n");
 			return 0;
 		case ETIMEDOUT:
-			colPrintf("~FYTIMEOUT\n");
+			if (flags.on_error_print) colPrintf("~FYTIMEOUT\n");
 			return 0;
 		default:
 			errPrintf("connectToStreamer(): connect(): %s\n",strerror(errno));
@@ -313,7 +315,7 @@ int connectToStreamer(void)
 				strerror(errno));
 			return 0;
 		case 0:
-			colPrintf("~FYTIMEOUT\n");
+			if (flags.on_error_print) colPrintf("~FYTIMEOUT\n");
 			return 0;
 		}
 
@@ -332,7 +334,9 @@ int connectToStreamer(void)
 		fcntl(tcp_sock,F_SETFL,sock_flags ^ O_NONBLOCK);
 	}
 
-	colPrintf("~FGCONNECTED\n");
+	/* Don't want any system messages if not set */
+	if (flags.on_error_print) colPrintf("~FGCONNECTED\n");
+
 	connect_time = time(0);
 	return 1;
 }

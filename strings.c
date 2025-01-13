@@ -70,6 +70,7 @@ int isPattern(char *str)
 int isNumber(char *str)
 {
 	char *s;
+	if (!str) return 0;
 	for(s=str;*s;++s) if (!isdigit(*s)) return 0;
 	return 1;
 }
@@ -80,6 +81,7 @@ int isNumber(char *str)
 int isNumberWithLen(char *str, int len)
 {
 	int i;
+	if (!str) return 0;
 	for(i=0;i < len && isdigit(str[i]);++i);
 	return (i == len);
 }

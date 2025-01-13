@@ -31,7 +31,7 @@
 #define EXTERN extern
 #endif
 
-#define VERSION "20250106"
+#define VERSION "20250113"
 
 #define UDP_PORT        10102
 #define TCP_PORT        60128
@@ -159,69 +159,71 @@ enum
 
 	/* 15 */
 	COM_RUN,
+	COM_HALT,
+	COM_RETURN,
 	COM_ON_ERROR,
 	LAST_CLIENT_COM = COM_ON_ERROR,
 
-	/* 17. Streamer commands */
+	/* 19. Streamer commands */
 	COM_MENU,
 	FIRST_STREAMER_COM = COM_MENU,
-	COM_MENUSTAT,
-	COM_UP,
 
 	/* 20 */
+	COM_MENUSTAT,
+	COM_UP,
 	COM_DN,
 	COM_EN,
 	COM_EX,
-	COM_FLIP,
-	COM_TOP,
 
 	/* 25 */
+	COM_FLIP,
+	COM_TOP,
 	COM_DIM,
 	COM_DIMWRAP,
 	COM_DIMSTAT,
-	COM_FILTER,
-	COM_FILSTAT,
 
 	/* 30 */
+	COM_FILTER,
+	COM_FILSTAT,
 	COM_ALBUM,
 	COM_ARTIST,
 	COM_TITLE,
-	COM_TRACKS,
-	COM_ARTDIS,
 
 	/* 35 */
+	COM_TRACKS,
+	COM_ARTDIS,
 	COM_ARTBMP,
 	COM_ARTURL,
 	COM_ARTSTAT,
-	COM_ARTSAVE,
-	COM_SBON,
 
 	/* 40 */
+	COM_ARTSAVE,
+	COM_SBON,
 	COM_SBOFF,
 	COM_SBSTAT,
 	COM_AUINFO,
 
 	/* Enums beyond artsave not required except for these */
-	COM_LRA      = 60,
-	COM_APDON    = 64,
-	COM_MSV      = 67,
-	COM_DTS      = 77,
-	COM_TIDALVER = 79,
-	COM_STOP     = 88,
-	COM_SEEK     = 95,
-	COM_MRMSTAT  = 100,
-	COM_SETNAME  = 110,
-	COM_UPDSTAT  = 113,
-	COM_SETUP,
+	COM_LRA      = 62,
+	COM_APDON    = 66,
+	COM_MSV      = 69,
+	COM_DTS      = 79,
+	COM_TIDALVER = 81,
+	COM_STOP     = 90,
+	COM_SEEK     = 97,
+	COM_MRMSTAT  = 102,
+	COM_SETNAME  = 112,
 
 	/* 115 */
+	COM_UPDSTAT  = 115,
+	COM_SETUP,
 	COM_SERIAL,
 	COM_ETHMAC,
 	COM_ICONURL,
-	COM_MODINFO,
-	COM_ECOVER,
 
 	/* 120 */
+	COM_MODINFO,
+	COM_ECOVER,
 	COM_PRODID,
 
 	NUM_COMMANDS
@@ -260,9 +262,11 @@ struct st_command commands[] =
 
 	/* 15 */
 	{ "run",      NULL },
+	{ "halt",     NULL },
+	{ "return",   NULL },
 	{ "on_error", NULL },
 
-	/* 17. Menu navigation */
+	/* 19. Menu navigation */
 	{ "menu",    "NTCMENU"  },
 	{ "menustat","NMSQSTN"  },
 	{ "up",      "OSDUP"    }, 
@@ -430,6 +434,7 @@ struct st_flags
 	unsigned macro_running   : 1;
 	unsigned cmdfile_running : 1;
 	unsigned offline         : 1;
+	unsigned tried_connect   : 1;
 	unsigned exit_after_cmds : 1;
 	unsigned pretty_printing : 1;
 	unsigned in_menu         : 1;
@@ -437,7 +442,10 @@ struct st_flags
 	unsigned com_dn          : 1;
 	unsigned reset_reverse   : 1;
 	unsigned interrupted     : 1;
-	unsigned on_error_stop   : 1;
+	unsigned on_error_halt   : 1;
+	unsigned on_error_print  : 1;
+	unsigned do_halt         : 1;
+	unsigned do_return       : 1;
 };
 
 
@@ -531,6 +539,8 @@ EXTERN int raw_level;
 EXTERN int nri_command;
 EXTERN int rev_arr;
 EXTERN int titles_pos;
+EXTERN int on_error_skip_set;
+EXTERN int on_error_skip_cnt;
 EXTERN size_t rx_bytes;
 EXTERN size_t tx_bytes;
 EXTERN u_long rx_reads;

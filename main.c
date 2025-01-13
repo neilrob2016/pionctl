@@ -19,6 +19,7 @@ void parseCmdLine(int argc, char **argv);
 void init(void);
 void mainloop(void);
 void runImmediate(void);
+void runReset(void);
 
 int main(int argc, char **argv)
 {
@@ -32,6 +33,7 @@ int main(int argc, char **argv)
 
 
 
+
 /*** Only required to check after updating commands array and enum ***/
 void comSanityCheck(void)
 {
@@ -39,7 +41,7 @@ void comSanityCheck(void)
 	for(int i=0;i < NUM_COMMANDS;++i)
 		printf("%-3d: %s\n",i,commands[i].com);
 	*/
-	assert(NUM_COMMANDS == 121);
+	assert(NUM_COMMANDS == 123);
 	assert(LAST_CLIENT_COM == COM_ON_ERROR);
 	assert(FIRST_STREAMER_COM == COM_MENU);
 	assert(!strcmp(commands[COM_MENU].com,"menu"));
@@ -56,6 +58,7 @@ void comSanityCheck(void)
 	assert(!strcmp(commands[COM_SETUP].com,"setup"));
 	assert(!strcmp(commands[COM_PRODID].com,"prodid"));
 }
+
 
 
 
@@ -239,7 +242,7 @@ void init(void)
 	macro_append = -1;
 	start_time = time(0);
 	nri_command = 0;
-	flags.on_error_stop = 1;
+	runReset();
 
 	signal(SIGINT,sigHandler);
 	signal(SIGQUIT,sigHandler);
@@ -248,7 +251,12 @@ void init(void)
 	if (flags.run_rc_file) runCommandFile(NULL);
 
 	if (flags.offline) puts("Offline mode.\n");
-	else if (!connect_time && !networkStart())
+	else if (flags.tried_connect)
+	{
+		if (!connect_time)
+			puts("Connect already tried and failed, not attempting streamer listen.");
+	}
+	else if (!networkStart())
 	{
 		if (!flags.interrupted) doExit(1);
 		flags.interrupted = 0;
@@ -289,8 +297,7 @@ void mainloop(void)
 
 	while(1)
 	{
-		flags.interrupted = 0;
-		flags.on_error_stop = 1;
+		runReset();
 
 		FD_ZERO(&mask);
 		FD_SET(STDIN_FILENO,&mask);
@@ -334,4 +341,18 @@ void runImmediate(void)
 	colPrintf("Immediate command run %s\n",
 		ret == OK ? "~FGOK" : "~FRFAILED");
 	printPrompt();
+}
+
+
+
+
+void runReset(void)
+{
+	flags.interrupted = 0;
+	flags.do_halt = 0;
+	flags.do_return = 0;
+	flags.on_error_halt = 1;
+	flags.on_error_print = 1;
+	on_error_skip_set = 0;
+	on_error_skip_cnt = 0;
 }

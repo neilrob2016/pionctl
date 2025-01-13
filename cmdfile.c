@@ -33,6 +33,7 @@ int runCommandFile(char *cmdfile)
 
 	printf("Opening command file \"%s\"... ",path);
 	flags.cmdfile_running = 1;
+	flags.do_return = 0;
 	
 	if ((fd = open(path,O_RDONLY)) == -1)
 	{
@@ -97,9 +98,20 @@ int runCommandFile(char *cmdfile)
 		   command itself */
 		if (len)
 		{
-			if (parseInputLine(p1,len) != OK && flags.on_error_stop)
+			if (parseInputLine(p1,len) != OK && 
+			    flags.on_error_halt)
 			{
 				error = 1;
+				break;
+			}
+
+			/* Stop running */
+			if (flags.do_halt) break;
+
+			/* Only stop running this command file */
+			if (flags.do_return)
+			{
+				flags.do_return = 0;
 				break;
 			}
 		}
@@ -109,5 +121,6 @@ int runCommandFile(char *cmdfile)
 		path,error ? "~FRFAILED" : "~FGOK");
 	if (!cmdfile) free(path);
 	flags.cmdfile_running = 0;
+	--recurse;
 	return (error ? ERR_RUN : OK);
 }
