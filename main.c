@@ -204,6 +204,7 @@ void parseCmdLine(int argc, char **argv)
 	       " - If the -a option or a %s or other command file with a connect command\n"
 	       "   is not given with -f then the streamer address is obtained by listening for\n"
 	       "   an EZProxy UDP packet.\n"
+	       " - Any connects in the %s file will override the address given with -a.\n"
 	       " - The -a and -o options are mutually exclusive. If -o is used with a command\n"
 	       "   file at startup then any connect commands in the file will be ignored.\n"
 	       " - The -f and -i commands are run *after* auto connection is complete. If you\n"
@@ -216,6 +217,7 @@ void parseCmdLine(int argc, char **argv)
 			prompt_type,
 			NUM_RAW_LEVELS-1,
 			raw_level,
+			RC_FILENAME,
 			RC_FILENAME,
 			RC_FILENAME,
 			RC_FILENAME);
@@ -254,11 +256,11 @@ void init(void)
 	else if (flags.tried_connect)
 	{
 		if (!connect_time)
-			puts("Connect already tried and failed, not attempting streamer listen.");
+			warnPrintf("Connect already tried and failed, not attempting streamer listen.\n");
 	}
-	else if (!networkStart())
+	else
 	{
-		if (!flags.interrupted) doExit(1);
+		networkStart();
 		flags.interrupted = 0;
 	}
 	strcpy(track_time_str,TIME_DEF_STR);

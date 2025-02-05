@@ -238,6 +238,7 @@ int resolveAddress(void)
 int connectToStreamer(void)
 {
 	struct timeval tvs;
+	struct timeval *tvp;
 	fd_set mask;
 	socklen_t len;
 	int sock_flags = 0; /* Keeps gcc happy in -O mode */
@@ -263,33 +264,39 @@ int connectToStreamer(void)
 		   send the probe */
 		val = 30; 
 #ifdef __APPLE__
-		if (setsockopt(tcp_sock,IPPROTO_TCP,TCP_KEEPALIVE,&val,sizeof(val)) == -1)
-			warnPrintf("connectToStreamer(): setsockopt(TCP_KEEPALIVE): %s\n",strerror(errno));
+		if (setsockopt(
+			tcp_sock,
+			IPPROTO_TCP,TCP_KEEPALIVE,&val,sizeof(val)) == -1)
+		{
+			warnPrintf("connectToStreamer(): setsockopt(TCP_KEEPALIVE): %s\n",
+				strerror(errno));
+		}
 #else
-		if (setsockopt(tcp_sock,IPPROTO_TCP,TCP_KEEPIDLE,&val,sizeof(val)) == -1)
-			warnPrintf("connectToStreamer(): setsockopt(TCP_KEEPIDLE): %s\n",strerror(errno));
+		if (setsockopt(
+			tcp_sock,
+			IPPROTO_TCP,TCP_KEEPIDLE,&val,sizeof(val)) == -1)
+		{
+			warnPrintf("connectToStreamer(): setsockopt(TCP_KEEPIDLE): %s\n",
+				strerror(errno));
+		}
 #endif
 	}
 
+
+	/* Set socket to non blocking so we can have our own timeout on 
+	   connect */
+	sock_flags = fcntl(tcp_sock,F_GETFL);
+	fcntl(tcp_sock,F_SETFL,sock_flags | O_NONBLOCK);
+
 	con_addr.sin_port = htons(tcp_port);
-
-	if (connect_timeout)
-	{
-		/* Set socket to non blocking so we can have our own timeout 
-		   on connect */
-		sock_flags = fcntl(tcp_sock,F_GETFL);
-		fcntl(tcp_sock,F_SETFL,sock_flags | O_NONBLOCK);
-	}
-
 	if (connect(tcp_sock,(struct sockaddr *)&con_addr,sizeof(con_addr)) == -1)
 	{
 		switch(errno)
 		{
 		case EINPROGRESS:
+			/* Where we should end up if it doesn't immediately
+			   connect */
 			break;	
-		case ECONNREFUSED:
-			if (flags.on_error_print) colPrintf("~FRREFUSED\n");
-			return 0;
 		case ETIMEDOUT:
 			if (flags.on_error_print) colPrintf("~FYTIMEOUT\n");
 			return 0;
@@ -299,40 +306,42 @@ int connectToStreamer(void)
 		}
 	}
 
-	if (connect_timeout && errno != EISCONN)
+	if (connect_timeout)
 	{
 		tvs.tv_sec = connect_timeout;
 		tvs.tv_usec = 0;
-
-		FD_ZERO(&mask);
-		FD_SET(tcp_sock,&mask);
-
-		/* Wait for connect to complete/fail or select timeout */
-		switch(select(FD_SETSIZE,0,&mask,0,&tvs))
-		{
-		case -1:
-			errPrintf("connectToStreamer(): select(): %s\n",
-				strerror(errno));
-			return 0;
-		case 0:
-			if (flags.on_error_print) colPrintf("~FYTIMEOUT\n");
-			return 0;
-		}
-
-		/* See if connect errored */
-		len = sizeof(int);
-		getsockopt(tcp_sock,SOL_SOCKET,SO_ERROR,&so_error,&len);
-
-		if (so_error)
-		{
-			errPrintf("connectToStreamer(): connect(): %s\n",
-				strerror(so_error));
-			return 0;
-		}
-
-		/* Reset socket back to blocking */
-		fcntl(tcp_sock,F_SETFL,sock_flags ^ O_NONBLOCK);
+		tvp = &tvs;
 	}
+	else tvp = NULL;
+
+	FD_ZERO(&mask);
+	FD_SET(tcp_sock,&mask);
+
+	/* Wait for connect to complete/fail or select timeout */
+	switch(select(FD_SETSIZE,0,&mask,0,tvp))
+	{
+	case -1:
+		errPrintf("connectToStreamer(): select(): %s\n",
+			strerror(errno));
+		return 0;
+	case 0:
+		if (flags.on_error_print) colPrintf("~FYTIMEOUT\n");
+		return 0;
+	}
+
+	/* See if connect errored */
+	len = sizeof(int);
+	getsockopt(tcp_sock,SOL_SOCKET,SO_ERROR,&so_error,&len);
+
+	if (so_error)
+	{
+		errPrintf("connectToStreamer(): connect(): %s\n",
+			strerror(so_error));
+		return 0;
+	}
+
+	/* Reset socket back to blocking */
+	fcntl(tcp_sock,F_SETFL,sock_flags);
 
 	/* Don't want any system messages if not set */
 	if (flags.on_error_print) colPrintf("~FGCONNECTED\n");

@@ -16,7 +16,6 @@
 #include <limits.h>
 #include <fcntl.h>
 #include <assert.h>
-#include <uuid/uuid.h>
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -31,7 +30,7 @@
 #define EXTERN extern
 #endif
 
-#define VERSION "20250113"
+#define VERSION "20250205"
 
 #define UDP_PORT        10102
 #define TCP_PORT        60128

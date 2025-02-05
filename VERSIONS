@@ -112,3 +112,10 @@ Older versions skipped.
   occurs allowing very basic flow control in command files.
 - Changed "on_error stop" to "on_error halt" to match "halt" and avoid 
   confusion with streamer "stop" command.
+
+20250204
+========
+- Program no longer exits if initial default connect fails.
+- Simplified some networking code.
+- Updated main usage message.
+- Other minor code updates.

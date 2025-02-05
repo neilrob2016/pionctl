@@ -1357,8 +1357,7 @@ int comConnect(char *param1, char *param2)
 	     connect <timeout secs>
 	     connect <ipaddr>
 	     connect <timeout secs> <ipaddr>
-	*/
-	connect_timeout = CONNECT_TIMEOUT;
+	   If no timeout given then uses current one. */
 	if (param1)
 	{
 		if (isNumber(param1))

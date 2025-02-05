@@ -121,6 +121,7 @@ int runCommandFile(char *cmdfile)
 		path,error ? "~FRFAILED" : "~FGOK");
 	if (!cmdfile) free(path);
 	flags.cmdfile_running = 0;
+	flags.on_error_print = 1;
 	--recurse;
 	return (error ? ERR_RUN : OK);
 }
