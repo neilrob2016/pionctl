@@ -30,7 +30,7 @@
 #define EXTERN extern
 #endif
 
-#define VERSION "20250205"
+#define VERSION "20250207"
 
 #define UDP_PORT        10102
 #define TCP_PORT        60128
@@ -428,6 +428,7 @@ struct st_flags
 	unsigned verbose            : 1;
 	unsigned update_prompt_time : 1;
 	unsigned run_rc_file        : 1;
+	unsigned reset_con_timeout  : 1;
 
 	/* System flags */
 	unsigned macro_running   : 1;

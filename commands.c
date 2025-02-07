@@ -50,8 +50,9 @@ int  optMacroSave(int append, int cmd_word, int word_cnt, char **words);
 
 void printFlagTrackTime(void);
 void printFlagPromptTime(void);
-void printFlagColour(void);
+void printFlagConTimeout(void);
 void printFlagHTML(void);
+void printFlagColour(void);
 void printFlagVerb(void);
 
 void  clearHistory(void);
@@ -731,6 +732,7 @@ int comToggle(char *opt)
 		"tracktm",
 		"prompttm",
 		"htmlamp",
+		"rctimeout",
 		"colour",
 		"verbose"
 	};
@@ -758,10 +760,14 @@ int comToggle(char *opt)
 			printFlagHTML();
 			return OK;
 		case 3:
+			flags.reset_con_timeout = !flags.reset_con_timeout;
+			printFlagConTimeout();
+			return OK;
+		case 4:
 			flags.use_colour = !flags.use_colour;
 			printFlagColour();
 			return OK;
-		case 4:
+		case 5:
 			flags.verbose = !flags.verbose;
 			printFlagVerb();
 			return OK;
@@ -771,6 +777,8 @@ int comToggle(char *opt)
 	usagePrintf("toggle tracktm  : Show track time received from streamer.\n");
 	puts("              prompttm : Update prompt times if appropriate prompt type set.");
 	puts("              htmlamp  : Translate HTML ampersand values text data.");
+	puts("              rctimeout: Reset connect timeout to the default value after");
+	puts("                         connect command completes.");
 	puts("              colour");
 	puts("              verbose");
 	return ERR_CMD_FAIL;
@@ -923,8 +931,9 @@ void optShowFlags(void)
 	colPrintf("\n~BB~FW*** Toggle flags ***\n\n");
 	printFlagTrackTime();
 	printFlagPromptTime();
-	printFlagColour();
 	printFlagHTML();
+	printFlagConTimeout();
+	printFlagColour();
 	printFlagVerb();
 	putchar('\n');
 }
@@ -1650,7 +1659,7 @@ int optMacroSave(int append, int cmd_word, int word_cnt, char **words)
 
 void printFlagTrackTime(void)
 {
-	printf("Show track time   : ");
+	printf("Show track time      : ");
 	PRINT_ON_OFF(flags.show_track_time);
 }
 
@@ -1659,17 +1668,8 @@ void printFlagTrackTime(void)
 
 void printFlagPromptTime(void)
 {
-	printf("Update prompt time: ");
+	printf("Update prompt time   : ");
 	PRINT_ON_OFF(flags.update_prompt_time);
-}
-
-
-
-
-void printFlagColour(void)
-{
-	printf("Ansi colour       : ");
-	PRINT_ON_OFF(flags.use_colour);
 }
 
 
@@ -1677,8 +1677,26 @@ void printFlagColour(void)
 
 void printFlagHTML(void)
 {
-	printf("Trans HTML codes  : ");
+	printf("Translate HTML codes : ");
 	PRINT_ON_OFF(flags.trans_html_amps);
+}
+
+
+
+
+void printFlagConTimeout(void)
+{
+	printf("Reset connect timeout: ");
+	PRINT_ON_OFF(flags.reset_con_timeout);
+}
+
+
+
+
+void printFlagColour(void)
+{
+	printf("Ansi colour          : ");
+	PRINT_ON_OFF(flags.use_colour);
 }
 
 
@@ -1686,7 +1704,7 @@ void printFlagHTML(void)
 
 void printFlagVerb(void)
 {
-	printf("Verbose output    : ");
+	printf("Verbose output       : ");
 	PRINT_ON_OFF(flags.verbose);
 }
 

@@ -244,6 +244,7 @@ int connectToStreamer(void)
 	int sock_flags = 0; /* Keeps gcc happy in -O mode */
 	int so_error;
 	int val;
+	int ret = 0;
 
 	printf("Connecting to %s:%d... ",inet_ntoa(con_addr.sin_addr),tcp_port);
 	fflush(stdout);
@@ -251,7 +252,7 @@ int connectToStreamer(void)
 	if ((tcp_sock = socket(AF_INET,SOCK_STREAM,0)) == -1)
 	{
 		errPrintf("connectToStreamer(): socket(): %s\n",strerror(errno));
-		return 0;
+		goto ERROR;
 	}
 
 	/* Set keepalive so if streamer is switched off we find out about it */
@@ -299,10 +300,10 @@ int connectToStreamer(void)
 			break;	
 		case ETIMEDOUT:
 			if (flags.on_error_print) colPrintf("~FYTIMEOUT\n");
-			return 0;
+			goto ERROR;
 		default:
 			errPrintf("connectToStreamer(): connect(): %s\n",strerror(errno));
-			return 0;
+			goto ERROR;
 		}
 	}
 
@@ -323,10 +324,10 @@ int connectToStreamer(void)
 	case -1:
 		errPrintf("connectToStreamer(): select(): %s\n",
 			strerror(errno));
-		return 0;
+		goto ERROR;
 	case 0:
 		if (flags.on_error_print) colPrintf("~FYTIMEOUT\n");
-		return 0;
+		goto ERROR;
 	}
 
 	/* See if connect errored */
@@ -337,7 +338,7 @@ int connectToStreamer(void)
 	{
 		errPrintf("connectToStreamer(): connect(): %s\n",
 			strerror(so_error));
-		return 0;
+		goto ERROR;
 	}
 
 	/* Reset socket back to blocking */
@@ -347,7 +348,11 @@ int connectToStreamer(void)
 	if (flags.on_error_print) colPrintf("~FGCONNECTED\n");
 
 	connect_time = time(0);
-	return 1;
+	ret = 1;
+
+	ERROR:
+	if (flags.reset_con_timeout) connect_timeout = CONNECT_TIMEOUT;
+	return ret;
 }
 
 

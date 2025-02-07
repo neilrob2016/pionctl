@@ -113,9 +113,14 @@ Older versions skipped.
 - Changed "on_error stop" to "on_error halt" to match "halt" and avoid 
   confusion with streamer "stop" command.
 
-20250204
+20250205
 ========
 - Program no longer exits if initial default connect fails.
 - Simplified some networking code.
 - Updated main usage message.
 - Other minor code updates.
+
+20250207
+========
+- Added reset connection timeout toggle flag which if true will reset the
+  connection timeout back to the default after a connect command.

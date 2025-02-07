@@ -80,6 +80,7 @@ void parseCmdLine(int argc, char **argv)
 	bzero(&flags,sizeof(flags));
 	flags.use_colour = 1;
 	flags.run_rc_file = 1;
+	flags.reset_con_timeout = 1;
 
 	for(i=1;i < argc;++i)
 	{
