@@ -124,3 +124,9 @@ Older versions skipped.
 ========
 - Added reset connection timeout toggle flag which if true will reset the
   connection timeout back to the default after a connect command.
+
+20250213
+========
+- Added "wait_rep" command which causes a wait inbetween each repeated 
+  command. eg: wait_rep 1; 5 dn
+- A timeout for wait_menu is no longer an error.

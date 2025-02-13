@@ -98,7 +98,7 @@ void runShowReverse(int run, char *param)
 		{
 			if ((secs = atof(param)) <= 0)
 			{
-				usagePrintf("rev [<wait seconds>]\n");
+				usagePrintf("back [<wait seconds>]\n");
 				return;
 			}
 		}

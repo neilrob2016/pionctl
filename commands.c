@@ -516,7 +516,11 @@ int getCommand(char *word, int len)
 int sendCommand(int repeat_cnt, char *cmd, int cmd_len)
 {
 	int i;
-	for(i=0;i < repeat_cnt;++i) if (!writeSocket(cmd,cmd_len)) return 0;
+	for(i=0;i < repeat_cnt;++i)
+	{
+		if (i && repeat_wait_secs) doWait(COM_WAIT,repeat_wait_secs);
+		if (!writeSocket(cmd,cmd_len)) return 0;
+	}
 	return 1;
 }
 
@@ -693,6 +697,7 @@ int processBuiltInCommand(
 		return comDisconnect();
 	case COM_WAIT:
 	case COM_WAIT_MENU:
+	case COM_WAIT_REPEAT:
 		return comWait(comnum,param1);
 	case COM_CLS:
 		/* [2J clears screen, [H makes the cursor go to the top left */
@@ -1181,7 +1186,7 @@ int optHelpMain(int extra, char *pat)
 		if (i && commands[i].data && !commands[i-1].data)
 		{
 			if (cnt % nlafter) putchar('\n');
-			colPrintf("\n~BB~FW*** Streamer commands ***\n");
+			colPrintf("\n~BB~FW*** Streamer commands ***\n\n");
 			if (extra) nlafter = 4;
 			cnt = 0;
 		}
@@ -1415,7 +1420,7 @@ int comDisconnect(void)
 
 
 
-/*** WAIT and WAIT_MENU ***/
+/*** WAIT, WAIT_MENU and WAIT_REPEAT ***/
 int comWait(int comnum, char *param)
 {
 	float secs = 0;
@@ -1425,9 +1430,14 @@ int comWait(int comnum, char *param)
 	   a menu. If the timeout expires it errors. */
 	if (param)
 	{
-		if ((secs = atof(param)) <= 0) goto USAGE;
+		if ((secs = atof(param)) < 0) goto USAGE;
+		if (comnum == COM_WAIT_REPEAT)
+		{
+			repeat_wait_secs = secs;
+			return OK;
+		}
 	}
-	else if (comnum == COM_WAIT) goto USAGE;
+	else if (comnum != COM_WAIT_MENU) goto USAGE;
 
 	if (tcp_sock) return doWait(comnum,secs);
 
@@ -1441,10 +1451,20 @@ int comWait(int comnum, char *param)
 	return (usleep(usecs) == -1 && errno == EINTR) ? ERR_CMD_FAIL : OK;
 
 	USAGE:
-	if (comnum == COM_WAIT)
+	switch(comnum)
+	{
+	case COM_WAIT:
 		usagePrintf("wait <seconds>\n");
-	else
+		break;
+	case COM_WAIT_REPEAT:
+		usagePrintf("wait_rep <seconds>\n");
+		break;
+	case COM_WAIT_MENU:
 		usagePrintf("wait_menu [<seconds>]\n");
+		break;
+	default:
+		assert(0);	
+	}
 	return ERR_CMD_FAIL;
 }
 

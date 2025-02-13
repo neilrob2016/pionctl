@@ -12,15 +12,11 @@ int doWait(int comnum, float secs)
 
 	usecs = (u_int)(secs * 1000000);
 
-	if (!tcp_sock)
+	if (comnum == COM_WAIT_MENU && !tcp_sock)
 	{
 		/* We're not connected to anything */
-		if (comnum == COM_WAIT_MENU)
-		{
-			errNotConnected();
-			return ERR_CMD_FAIL;
-		}
-		return (usleep(usecs) == -1 && errno == EINTR) ? ERR_CMD_FAIL : OK;
+		errNotConnected();
+		return ERR_CMD_FAIL;
 	}
 
 	if (usecs) end = getUsecTime() + usecs;
@@ -29,7 +25,7 @@ int doWait(int comnum, float secs)
 	while(1)
 	{
 		FD_ZERO(&mask);
-		FD_SET(tcp_sock,&mask);
+		if (tcp_sock) FD_SET(tcp_sock,&mask);
 
 		if (usecs || final)
 		{
@@ -46,12 +42,6 @@ int doWait(int comnum, float secs)
 			return (errno == EINTR) ? ERR_CMD_FAIL : OK;
 		case 0:
 			/* Wait time expired */
-			if (comnum == COM_WAIT_MENU)
-			{
-				if (final) return OK; 
-				errPrintf("TIMEOUT\n");
-				return ERR_CMD_FAIL;
-			}
 			return OK;
 		}
 

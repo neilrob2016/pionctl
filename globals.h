@@ -30,7 +30,7 @@
 #define EXTERN extern
 #endif
 
-#define VERSION "20250207"
+#define VERSION "20250213"
 
 #define UDP_PORT        10102
 #define TCP_PORT        60128
@@ -151,76 +151,75 @@ enum
 
 	/* 10 */
 	COM_WAIT_MENU,
+	COM_WAIT_REPEAT,
 	COM_CLS,
 	COM_ECHO,
 	COM_MACRO,
-	COM_BACK,
 
 	/* 15 */
+	COM_BACK,
 	COM_RUN,
 	COM_HALT,
 	COM_RETURN,
 	COM_ON_ERROR,
 	LAST_CLIENT_COM = COM_ON_ERROR,
 
-	/* 19. Streamer commands */
+	/* 20. Streamer commands */
 	COM_MENU,
 	FIRST_STREAMER_COM = COM_MENU,
-
-	/* 20 */
 	COM_MENUSTAT,
 	COM_UP,
 	COM_DN,
 	COM_EN,
-	COM_EX,
 
 	/* 25 */
+	COM_EX,
 	COM_FLIP,
 	COM_TOP,
 	COM_DIM,
 	COM_DIMWRAP,
-	COM_DIMSTAT,
 
 	/* 30 */
+	COM_DIMSTAT,
 	COM_FILTER,
 	COM_FILSTAT,
 	COM_ALBUM,
 	COM_ARTIST,
-	COM_TITLE,
 
 	/* 35 */
+	COM_TITLE,
 	COM_TRACKS,
 	COM_ARTDIS,
 	COM_ARTBMP,
 	COM_ARTURL,
-	COM_ARTSTAT,
 
 	/* 40 */
+	COM_ARTSTAT,
 	COM_ARTSAVE,
 	COM_SBON,
 	COM_SBOFF,
 	COM_SBSTAT,
+
+	/* 45 */
 	COM_AUINFO,
 
 	/* Enums beyond artsave not required except for these */
-	COM_LRA      = 62,
-	COM_APDON    = 66,
-	COM_MSV      = 69,
-	COM_DTS      = 79,
-	COM_TIDALVER = 81,
-	COM_STOP     = 90,
-	COM_SEEK     = 97,
-	COM_MRMSTAT  = 102,
-	COM_SETNAME  = 112,
-
-	/* 115 */
-	COM_UPDSTAT  = 115,
+	COM_LRA      = 63,
+	COM_APDON    = 67,
+	COM_MSV      = 70,
+	COM_DTS      = 80,
+	COM_TIDALVER = 82,
+	COM_STOP     = 91,
+	COM_SEEK     = 98,
+	COM_MRMSTAT  = 103,
+	COM_SETNAME  = 113,
+	COM_UPDSTAT  = 116,
 	COM_SETUP,
 	COM_SERIAL,
 	COM_ETHMAC,
-	COM_ICONURL,
 
 	/* 120 */
+	COM_ICONURL,
 	COM_MODINFO,
 	COM_ECOVER,
 	COM_PRODID,
@@ -254,18 +253,19 @@ struct st_command commands[] =
 
 	/* 10 */
 	{ "wait_menu",NULL },
+	{ "wait_rep", NULL },
 	{ "cls",      NULL },
 	{ "echo",     NULL },
 	{ "macro",    NULL },
-	{ "back",     NULL },
 
 	/* 15 */
+	{ "back",     NULL },
 	{ "run",      NULL },
 	{ "halt",     NULL },
 	{ "return",   NULL },
 	{ "on_error", NULL },
 
-	/* 19. Menu navigation */
+	/* 20. Menu navigation */
 	{ "menu",    "NTCMENU"  },
 	{ "menustat","NMSQSTN"  },
 	{ "up",      "OSDUP"    }, 
@@ -545,6 +545,7 @@ EXTERN size_t rx_bytes;
 EXTERN size_t tx_bytes;
 EXTERN u_long rx_reads;
 EXTERN u_long tx_writes;
+EXTERN float repeat_wait_secs;
 EXTERN char track_time_str[9];
 EXTERN char track_len_str[9];
 EXTERN char nja_prev;

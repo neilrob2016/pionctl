@@ -41,7 +41,7 @@ void comSanityCheck(void)
 	for(int i=0;i < NUM_COMMANDS;++i)
 		printf("%-3d: %s\n",i,commands[i].com);
 	*/
-	assert(NUM_COMMANDS == 123);
+	assert(NUM_COMMANDS == 124);
 	assert(LAST_CLIENT_COM == COM_ON_ERROR);
 	assert(FIRST_STREAMER_COM == COM_MENU);
 	assert(!strcmp(commands[COM_MENU].com,"menu"));
@@ -245,6 +245,7 @@ void init(void)
 	macro_append = -1;
 	start_time = time(0);
 	nri_command = 0;
+	repeat_wait_secs = 0;
 	runReset();
 
 	signal(SIGINT,sigHandler);
