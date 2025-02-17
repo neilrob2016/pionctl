@@ -18,12 +18,12 @@ int comNumeric(int comnum, int repeat_cnt, char *valstr);
 int processBuiltInCommand(
 	int comnum, int cmd_word, int word_cnt, char **words);
 
-int  comToggle(char *opt);
-int  comPrompt(char *param);
-int  comRaw(char *param);
-int  comShow(char *opt, char *pat, int max);
+int comToggle(char *opt);
+int comPrompt(char *param);
+int comRaw(char *param);
+int comShow(char *opt, char *pat, int max);
 
-void optShowFlags(void);
+void optShowSettings(void);
 void optShowTXCommands(char *pat);
 void optShowTimes(void);
 void optShowConStat(void);
@@ -35,8 +35,9 @@ int  optHelpMain(int extra, char *pat);
 int  optHelpSorted(char *pat);
 void optHelpNotes(void);
 
-int  comConnect(char *param1, char *param2);
+int  comConnect(char *param1);
 int  comDisconnect(void);
+int  comTimeout(char *param1);
 void comClearHistory(void);
 int  comWait(int comnum, char *param);
 void comEcho(int cmd_word, int word_cnt, char **words);
@@ -50,7 +51,6 @@ int  optMacroSave(int append, int cmd_word, int word_cnt, char **words);
 
 void printFlagTrackTime(void);
 void printFlagPromptTime(void);
-void printFlagConTimeout(void);
 void printFlagHTML(void);
 void printFlagColour(void);
 void printFlagVerb(void);
@@ -692,9 +692,11 @@ int processBuiltInCommand(
 	case COM_HELP:
 		return comHelp(param1,param2);
 	case COM_CONNECT:
-		return comConnect(param1,param2);
+		return comConnect(param1);
 	case COM_DISCONNECT:
 		return comDisconnect();
+	case COM_TIMEOUT:
+		return comTimeout(param1);
 	case COM_WAIT:
 	case COM_WAIT_MENU:
 	case COM_WAIT_REPEAT:
@@ -737,7 +739,6 @@ int comToggle(char *opt)
 		"tracktm",
 		"prompttm",
 		"htmlamp",
-		"rctimeout",
 		"colour",
 		"verbose"
 	};
@@ -765,14 +766,10 @@ int comToggle(char *opt)
 			printFlagHTML();
 			return OK;
 		case 3:
-			flags.reset_con_timeout = !flags.reset_con_timeout;
-			printFlagConTimeout();
-			return OK;
-		case 4:
 			flags.use_colour = !flags.use_colour;
 			printFlagColour();
 			return OK;
-		case 5:
+		case 4:
 			flags.verbose = !flags.verbose;
 			printFlagVerb();
 			return OK;
@@ -782,8 +779,6 @@ int comToggle(char *opt)
 	usagePrintf("toggle tracktm  : Show track time received from streamer.\n");
 	puts("              prompttm : Update prompt times if appropriate prompt type set.");
 	puts("              htmlamp  : Translate HTML ampersand values text data.");
-	puts("              rctimeout: Reset connect timeout to the default value after");
-	puts("                         connect command completes.");
 	puts("              colour");
 	puts("              verbose");
 	return ERR_CMD_FAIL;
@@ -847,7 +842,7 @@ int comShow(char *opt, char *pat, int max)
 		/* 5 */
 		"txcoms",
 		"times",
-		"flags",
+		"settings",
 		"menu",
 		"selected",
 
@@ -886,7 +881,7 @@ int comShow(char *opt, char *pat, int max)
 			optShowTimes();
 			break;
 		case 7:
-			optShowFlags();
+			optShowSettings();
 			break;
 		case 8:
 			printMenuList();
@@ -918,7 +913,7 @@ int comShow(char *opt, char *pat, int max)
 	puts("            rxcoms  [<pattern>]");
 	puts("            txcoms  [<pattern>]");
 	puts("            times");
-	puts("            flags");
+	puts("            settings");
 	puts("            menu");
 	puts("            back");
 	puts("            selected");
@@ -931,13 +926,18 @@ int comShow(char *opt, char *pat, int max)
 
 
 
-void optShowFlags(void)
+void optShowSettings(void)
 {
-	colPrintf("\n~BB~FW*** Toggle flags ***\n\n");
+	colPrintf("\n~BM~FW*** Wait seconds ***\n\n");
+	printf("Cmd repeat wait: %.2f\n",repeat_wait_secs);
+	colPrintf("Connect timeout: %.2f %s\n\n",
+		timeout_secs,
+		timeout_secs ? "" : "~FY(Wait for TCP timeout)");
+
+	colPrintf("~BB~FW*** Toggle flags ***\n\n");
 	printFlagTrackTime();
 	printFlagPromptTime();
 	printFlagHTML();
-	printFlagConTimeout();
 	printFlagColour();
 	printFlagVerb();
 	putchar('\n');
@@ -1180,7 +1180,7 @@ int optHelpMain(int extra, char *pat)
 
 	if (pat && !isPattern(pat)) return ERR_CMD_FAIL;
 
-	colPrintf("\n~BM~FW*** Client commands ***\n\n");
+	colPrintf("\n~BM~FW*** Local commands ***\n\n");
 	for(i=cnt=0;i < NUM_COMMANDS;++i)
 	{
 		if (i && commands[i].data && !commands[i-1].data)
@@ -1188,6 +1188,7 @@ int optHelpMain(int extra, char *pat)
 			if (cnt % nlafter) putchar('\n');
 			colPrintf("\n~BB~FW*** Streamer commands ***\n\n");
 			if (extra) nlafter = 4;
+			nl = 1;
 			cnt = 0;
 		}
 		if (pat)
@@ -1348,10 +1349,8 @@ int optHelpSorted(char *pat)
 
 
 
-int comConnect(char *param1, char *param2)
+int comConnect(char *param1)
 {
-	int isnum = 0;
-
 	if (flags.cmdfile_running && flags.offline)
 	{
 		errPrintf("Offline mode set, cannot run connect command.\n");
@@ -1368,38 +1367,11 @@ int comConnect(char *param1, char *param2)
 	}
 	/* Formats:
 	     connect
-	     connect <timeout secs>
 	     connect <ipaddr>
-	     connect <timeout secs> <ipaddr>
-	   If no timeout given then uses current one. */
-	if (param1)
-	{
-		if (isNumber(param1))
-		{
-			connect_timeout = atoi(param1);
-			isnum = 1;
-		}
-		else ipaddr = strdup(param1);
-
-		if (param2)
-		{
-			if (isNumber(param2))
-			{
-				if (isnum) goto ERROR;
-				connect_timeout = atoi(param2);
-			}
-			else if (isnum)
-				ipaddr = strdup(param2);
-			else
-				goto ERROR;
-		}
-	}
+	*/
+	if (param1) ipaddr = strdup(param1);
 	if (networkStart()) return OK;
 	networkClear();
-	return ERR_CMD_FAIL;
-
-	ERROR:
-	usagePrintf("connect [<timeout secs>] [<IP address>]\n");
 	return ERR_CMD_FAIL;
 }
 
@@ -1415,6 +1387,23 @@ int comDisconnect(void)
 	}
 	errNotConnected();
 	return ERR_CMD_FAIL;
+}
+
+
+
+
+/*** Set connect timeout ***/
+int comTimeout(char *param1)
+{
+	float val;
+	if (param1 && isNumber(param1) && (val = atof(param1)) >= 0)
+	{
+		timeout_secs = val;
+		if (!val) puts("Wait for TCP timeout.");
+		return 1;
+	}
+	usagePrintf("timeout <connect timeout secs>\n");
+	return 0;
 }
 
 
@@ -1699,15 +1688,6 @@ void printFlagHTML(void)
 {
 	printf("Translate HTML codes : ");
 	PRINT_ON_OFF(flags.trans_html_amps);
-}
-
-
-
-
-void printFlagConTimeout(void)
-{
-	printf("Reset connect timeout: ");
-	PRINT_ON_OFF(flags.reset_con_timeout);
 }
 
 

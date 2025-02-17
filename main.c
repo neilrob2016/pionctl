@@ -41,7 +41,7 @@ void comSanityCheck(void)
 	for(int i=0;i < NUM_COMMANDS;++i)
 		printf("%-3d: %s\n",i,commands[i].com);
 	*/
-	assert(NUM_COMMANDS == 124);
+	assert(NUM_COMMANDS == 125);
 	assert(LAST_CLIENT_COM == COM_ON_ERROR);
 	assert(FIRST_STREAMER_COM == COM_MENU);
 	assert(!strcmp(commands[COM_MENU].com,"menu"));
@@ -72,7 +72,6 @@ void parseCmdLine(int argc, char **argv)
 	udp_port = UDP_PORT;
 	tcp_port = TCP_PORT;
 	device_code = DEVICE_CODE;
-	connect_timeout = CONNECT_TIMEOUT;
 	cmd_file = NULL;
 	cmd_list = NULL;
 	prompt_type = PROMPT_NAME;
@@ -80,7 +79,6 @@ void parseCmdLine(int argc, char **argv)
 	bzero(&flags,sizeof(flags));
 	flags.use_colour = 1;
 	flags.run_rc_file = 1;
-	flags.reset_con_timeout = 1;
 
 	for(i=1;i < argc;++i)
 	{
@@ -131,11 +129,6 @@ void parseCmdLine(int argc, char **argv)
 		case 'i':
 			cmd_list = argv[++i];
 			break;
-		case 'n':
-			++i;
-			if (!isNumber(argv[i]) ||
-			    (connect_timeout = atoi(argv[i])) < 0) goto USAGE;
-			break;
 		case 'p':
 			prompt_type = atoi(argv[++i]);
 			if (!isNumber(argv[i]) ||
@@ -180,8 +173,6 @@ void parseCmdLine(int argc, char **argv)
 	USAGE:
 	printf("Usage: %s\n"
 	       "       -a <TCP address[:<port>]>\n"
-	       "       -n <TCP/UDP timeout>     : For TCP connect and UDP EZPROXY listen.\n"
-	       "                                  Default = %d seconds.\n"
 	       "       -u <UDP listen port>     : 0 to 65535. Default = %d.\n"
 	       "       -d <device code (0-9)>   : Default = %c.\n"
 	       "       -f <command file>        : File of commands to run immediately after\n"
@@ -211,7 +202,6 @@ void parseCmdLine(int argc, char **argv)
 	       " - The -f and -i commands are run *after* auto connection is complete. If you\n"
 	       "   want any commands to run before connection put them in the %s file.\n",
 			argv[0],
-			CONNECT_TIMEOUT,
 			UDP_PORT,
 			DEVICE_CODE,
 			NUM_PROMPTS-1,
@@ -246,6 +236,8 @@ void init(void)
 	start_time = time(0);
 	nri_command = 0;
 	repeat_wait_secs = 0;
+	timeout_secs = TIMEOUT_SECS;
+
 	runReset();
 
 	signal(SIGINT,sigHandler);

@@ -12,8 +12,9 @@ on_error skip 2
 on_error noprint
 
 echo "Trying 127.0.0.1 ..."
-#connect 2 127.0.0.1
-connect 2 
+timeout 2
+#connect  127.0.0.1
+connect 
 echo "~FG~LI*** CONNECTED ***"
 
 # Exit this command file and any command sequence, macro or file that called it
@@ -24,7 +25,7 @@ return
 
 echo "~FR~LIFAILED"
 echo "Trying 127.0.0.2 ..."
-connect 2 127.0.0.2
+connect 127.0.0.2
 echo "~FG~LI*** CONNECTED ***"
 return
 

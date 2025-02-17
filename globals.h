@@ -30,20 +30,19 @@
 #define EXTERN extern
 #endif
 
-#define VERSION "20250213"
+#define VERSION "20250216"
 
-#define UDP_PORT        10102
-#define TCP_PORT        60128
-#define CONNECT_TIMEOUT 10
-#define PKT_HDR_LEN     (int)sizeof(t_iscp_hdr)
-#define MESG_TERM_LEN   3
-#define ALLOC_BLOCK     10
-#define ADDR_LIST_SIZE  20
-#define MESG_OFFSET     5
-#define SAVE_TIMEOUT    5
-#define TIME_DEF_STR    "--:--:--"
-#define RC_FILENAME     ".pionrc"
-
+#define UDP_PORT       10102
+#define TCP_PORT       60128
+#define TIMEOUT_SECS   10
+#define PKT_HDR_LEN    (int)sizeof(t_iscp_hdr)
+#define MESG_TERM_LEN  3
+#define ALLOC_BLOCK    10
+#define ADDR_LIST_SIZE 20
+#define MESG_OFFSET    5
+#define SAVE_TIMEOUT   5
+#define TIME_DEF_STR   "--:--:--"
+#define RC_FILENAME    ".pionrc"
 
 #define FREE(M)   { free(M); M = NULL; }
 #define FREEIF(M) if (M) FREE(M)
@@ -147,78 +146,79 @@ enum
 	COM_HELP,
 	COM_CONNECT,
 	COM_DISCONNECT,
-	COM_WAIT,
+	COM_TIMEOUT,
 
 	/* 10 */
+	COM_WAIT,
 	COM_WAIT_MENU,
 	COM_WAIT_REPEAT,
 	COM_CLS,
 	COM_ECHO,
-	COM_MACRO,
 
 	/* 15 */
+	COM_MACRO,
 	COM_BACK,
 	COM_RUN,
 	COM_HALT,
 	COM_RETURN,
-	COM_ON_ERROR,
-	LAST_CLIENT_COM = COM_ON_ERROR,
 
 	/* 20. Streamer commands */
+	COM_ON_ERROR,
+	LAST_CLIENT_COM = COM_ON_ERROR,
 	COM_MENU,
 	FIRST_STREAMER_COM = COM_MENU,
 	COM_MENUSTAT,
 	COM_UP,
 	COM_DN,
-	COM_EN,
 
 	/* 25 */
+	COM_EN,
 	COM_EX,
 	COM_FLIP,
 	COM_TOP,
 	COM_DIM,
-	COM_DIMWRAP,
 
 	/* 30 */
+	COM_DIMWRAP,
 	COM_DIMSTAT,
 	COM_FILTER,
 	COM_FILSTAT,
 	COM_ALBUM,
-	COM_ARTIST,
 
 	/* 35 */
+	COM_ARTIST,
 	COM_TITLE,
 	COM_TRACKS,
 	COM_ARTDIS,
 	COM_ARTBMP,
-	COM_ARTURL,
 
 	/* 40 */
+	COM_ARTURL,
 	COM_ARTSTAT,
 	COM_ARTSAVE,
 	COM_SBON,
 	COM_SBOFF,
-	COM_SBSTAT,
 
 	/* 45 */
+	COM_SBSTAT,
 	COM_AUINFO,
 
 	/* Enums beyond artsave not required except for these */
-	COM_LRA      = 63,
-	COM_APDON    = 67,
-	COM_MSV      = 70,
-	COM_DTS      = 80,
-	COM_TIDALVER = 82,
-	COM_STOP     = 91,
-	COM_SEEK     = 98,
-	COM_MRMSTAT  = 103,
-	COM_SETNAME  = 113,
-	COM_UPDSTAT  = 116,
+	COM_LRA      = 64,
+	COM_APDON    = 68,
+	COM_MSV      = 71,
+	COM_DTS      = 81,
+	COM_TIDALVER = 83,
+	COM_STOP     = 92,
+	COM_SEEK     = 99,
+	COM_MRMSTAT  = 104,
+	COM_SETNAME  = 114,
+	COM_UPDSTAT  = 117,
 	COM_SETUP,
 	COM_SERIAL,
-	COM_ETHMAC,
 
 	/* 120 */
+	COM_ETHMAC,
 	COM_ICONURL,
 	COM_MODINFO,
 	COM_ECOVER,
@@ -249,29 +249,30 @@ struct st_command commands[] =
 	{ "help",      NULL },
 	{ "connect",   NULL },
 	{ "disconnect",NULL },
-	{ "wait",      NULL },
+	{ "timeout",   NULL },
 
 	/* 10 */
+	{ "wait",     NULL },
 	{ "wait_menu",NULL },
 	{ "wait_rep", NULL },
 	{ "cls",      NULL },
 	{ "echo",     NULL },
-	{ "macro",    NULL },
 
 	/* 15 */
+	{ "macro",    NULL },
 	{ "back",     NULL },
 	{ "run",      NULL },
 	{ "halt",     NULL },
 	{ "return",   NULL },
-	{ "on_error", NULL },
 
 	/* 20. Menu navigation */
+	{ "on_error", NULL },
 	{ "menu",    "NTCMENU"  },
 	{ "menustat","NMSQSTN"  },
 	{ "up",      "OSDUP"    }, 
 	{ "dn",      "OSDDOWN"  },
 	{ "en",      "OSDENTER" },
-	{ "ex",      "OSDEXIT"  }, /* 20 */
+	{ "ex",      "OSDEXIT"  },
 	{ "flip",    "NTCLIST"  },
 	{ "top",     "NTCTOP"   },
 
@@ -428,7 +429,6 @@ struct st_flags
 	unsigned verbose            : 1;
 	unsigned update_prompt_time : 1;
 	unsigned run_rc_file        : 1;
-	unsigned reset_con_timeout  : 1;
 
 	/* System flags */
 	unsigned macro_running   : 1;
@@ -506,7 +506,6 @@ EXTERN char *ipaddr;
 EXTERN char device_code;
 EXTERN uint16_t udp_port;
 EXTERN uint16_t tcp_port;
-EXTERN int connect_timeout;
 
 /* Runtime globals */
 EXTERN struct termios saved_tio;
@@ -545,6 +544,7 @@ EXTERN size_t rx_bytes;
 EXTERN size_t tx_bytes;
 EXTERN u_long rx_reads;
 EXTERN u_long tx_writes;
+EXTERN float timeout_secs;
 EXTERN float repeat_wait_secs;
 EXTERN char track_time_str[9];
 EXTERN char track_len_str[9];

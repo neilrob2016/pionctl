@@ -131,6 +131,7 @@ int getStreamerAddress(void)
 	socklen_t size;
 	fd_set mask;
 	char dummy;
+	int ct;
 	int i;
 
 	printf("Listening for streamer... ");
@@ -144,10 +145,11 @@ int getStreamerAddress(void)
 		FD_ZERO(&mask);
 		FD_SET(udp_sock,&mask);
 
-		if (connect_timeout)
+		if (timeout_secs)
 		{
-			tvs.tv_sec = connect_timeout;
-			tvs.tv_usec = 0;
+			ct = (int)timeout_secs;
+			tvs.tv_sec = ct;
+			tvs.tv_usec = (timeout_secs - ct) * 1000000;
 			tvp = &tvs;
 		}
 		else tvp = NULL;
@@ -244,7 +246,7 @@ int connectToStreamer(void)
 	int sock_flags = 0; /* Keeps gcc happy in -O mode */
 	int so_error;
 	int val;
-	int ret = 0;
+	int ct;
 
 	printf("Connecting to %s:%d... ",inet_ntoa(con_addr.sin_addr),tcp_port);
 	fflush(stdout);
@@ -252,7 +254,7 @@ int connectToStreamer(void)
 	if ((tcp_sock = socket(AF_INET,SOCK_STREAM,0)) == -1)
 	{
 		errPrintf("connectToStreamer(): socket(): %s\n",strerror(errno));
-		goto ERROR;
+		return 0;
 	}
 
 	/* Set keepalive so if streamer is switched off we find out about it */
@@ -300,17 +302,18 @@ int connectToStreamer(void)
 			break;	
 		case ETIMEDOUT:
 			if (flags.on_error_print) colPrintf("~FYTIMEOUT\n");
-			goto ERROR;
+			return 0;
 		default:
 			errPrintf("connectToStreamer(): connect(): %s\n",strerror(errno));
-			goto ERROR;
+			return 0;
 		}
 	}
 
-	if (connect_timeout)
+	if (timeout_secs)
 	{
-		tvs.tv_sec = connect_timeout;
-		tvs.tv_usec = 0;
+		ct = (int)timeout_secs;
+		tvs.tv_sec = ct;
+		tvs.tv_usec = (timeout_secs - ct) * 1000000;
 		tvp = &tvs;
 	}
 	else tvp = NULL;
@@ -324,10 +327,10 @@ int connectToStreamer(void)
 	case -1:
 		errPrintf("connectToStreamer(): select(): %s\n",
 			strerror(errno));
-		goto ERROR;
+		return 0;
 	case 0:
 		if (flags.on_error_print) colPrintf("~FYTIMEOUT\n");
-		goto ERROR;
+		return 0;
 	}
 
 	/* See if connect errored */
@@ -338,7 +341,7 @@ int connectToStreamer(void)
 	{
 		errPrintf("connectToStreamer(): connect(): %s\n",
 			strerror(so_error));
-		goto ERROR;
+		return 0;
 	}
 
 	/* Reset socket back to blocking */
@@ -348,11 +351,7 @@ int connectToStreamer(void)
 	if (flags.on_error_print) colPrintf("~FGCONNECTED\n");
 
 	connect_time = time(0);
-	ret = 1;
-
-	ERROR:
-	if (flags.reset_con_timeout) connect_timeout = CONNECT_TIMEOUT;
-	return ret;
+	return 1;
 }
 
 

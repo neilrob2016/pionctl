@@ -130,3 +130,10 @@ Older versions skipped.
 - Added "wait_rep" command which causes a wait inbetween each repeated 
   command. eg: wait_rep 1; 5 dn
 - A timeout for wait_menu is no longer an error.
+
+20250216
+========
+- Added "timeout" command to set connect timeout.
+- Removed "rctimeout" toggle flag as no longer required due to new command.
+- Removed -n command line option.
+- Changed "show flags" to "show settings".
