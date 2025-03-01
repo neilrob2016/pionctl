@@ -137,3 +137,7 @@ Older versions skipped.
 - Removed "rctimeout" toggle flag as no longer required due to new command.
 - Removed -n command line option.
 - Changed "show flags" to "show settings".
+
+20250301
+========
+- Bug fix for "timeout" command.

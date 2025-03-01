@@ -30,7 +30,7 @@
 #define EXTERN extern
 #endif
 
-#define VERSION "20250216"
+#define VERSION "20250301"
 
 #define UDP_PORT       10102
 #define TCP_PORT       60128

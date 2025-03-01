@@ -1400,10 +1400,10 @@ int comTimeout(char *param1)
 	{
 		timeout_secs = val;
 		if (!val) puts("Wait for TCP timeout.");
-		return 1;
+		return OK;
 	}
 	usagePrintf("timeout <connect timeout secs>\n");
-	return 0;
+	return ERR_CMD_FAIL;
 }
 
 
