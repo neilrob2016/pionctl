@@ -121,7 +121,7 @@ void runShowReverse(int run, char *param)
 	{
 		if (pos < 0) pos = MAX_HIST_BUFFERS - 1;
 		rev = &revcom[rev_arr][pos];
-		cmd = commands[rev->com].com;
+		cmd = commands[rev->com].name;
 		if (run)
 		{
 			colPrintf("~FMReverse command:~RS %d %s\n",

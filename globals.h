@@ -30,7 +30,7 @@
 #define EXTERN extern
 #endif
 
-#define VERSION "20250301"
+#define VERSION "20250304"
 
 #define UDP_PORT       10102
 #define TCP_PORT       60128
@@ -152,76 +152,79 @@ enum
 	COM_WAIT,
 	COM_WAIT_MENU,
 	COM_WAIT_REPEAT,
+	COM_WAIT_NEXT,
 	COM_CLS,
-	COM_ECHO,
 
 	/* 15 */
+	COM_ECHO,
 	COM_MACRO,
 	COM_BACK,
 	COM_RUN,
 	COM_HALT,
-	COM_RETURN,
 
 	/* 20. Streamer commands */
+	COM_RETURN,
 	COM_ON_ERROR,
 	LAST_CLIENT_COM = COM_ON_ERROR,
 	COM_MENU,
 	FIRST_STREAMER_COM = COM_MENU,
 	COM_MENUSTAT,
 	COM_UP,
-	COM_DN,
 
 	/* 25 */
+	COM_DN,
 	COM_EN,
 	COM_EX,
 	COM_FLIP,
 	COM_TOP,
-	COM_DIM,
 
 	/* 30 */
+	COM_DIM,
 	COM_DIMWRAP,
 	COM_DIMSTAT,
 	COM_FILTER,
 	COM_FILSTAT,
-	COM_ALBUM,
 
 	/* 35 */
+	COM_ALBUM,
 	COM_ARTIST,
 	COM_TITLE,
 	COM_TRACKS,
 	COM_ARTDIS,
-	COM_ARTBMP,
 
 	/* 40 */
+	COM_ARTBMP,
 	COM_ARTURL,
 	COM_ARTSTAT,
 	COM_ARTSAVE,
 	COM_SBON,
-	COM_SBOFF,
 
 	/* 45 */
+	COM_SBOFF,
 	COM_SBSTAT,
 	COM_AUINFO,
 
 	/* Enums beyond artsave not required except for these */
-	COM_LRA      = 64,
-	COM_APDON    = 68,
-	COM_MSV      = 71,
-	COM_DTS      = 81,
-	COM_TIDALVER = 83,
-	COM_STOP     = 92,
-	COM_SEEK     = 99,
-	COM_MRMSTAT  = 104,
-	COM_SETNAME  = 114,
-	COM_UPDSTAT  = 117,
+	COM_LRA      = 65,
+	COM_APDON    = 69,
+	COM_MSV      = 72,
+	COM_DTS      = 82,
+	COM_TIDALVER = 84,
+	COM_STOP     = 93,
+	COM_SEEK     = 100,
+	COM_MRMSTAT  = 105,
+	COM_SETNAME  = 115,
+	COM_UPDSTAT  = 118,
 	COM_SETUP,
-	COM_SERIAL,
 
 	/* 120 */
+	COM_SERIAL,
 	COM_ETHMAC,
 	COM_ICONURL,
 	COM_MODINFO,
 	COM_ECOVER,
+
+	/* 125 */
 	COM_PRODID,
 
 	NUM_COMMANDS
@@ -230,7 +233,7 @@ enum
 
 struct st_command
 {
-	char *com;
+	char *name;
 	char *data;
 };
 
@@ -255,17 +258,18 @@ struct st_command commands[] =
 	{ "wait",     NULL },
 	{ "wait_menu",NULL },
 	{ "wait_rep", NULL },
+	{ "wait_next",NULL },
 	{ "cls",      NULL },
-	{ "echo",     NULL },
 
 	/* 15 */
+	{ "echo",     NULL },
 	{ "macro",    NULL },
 	{ "back",     NULL },
 	{ "run",      NULL },
 	{ "halt",     NULL },
-	{ "return",   NULL },
 
 	/* 20. Menu navigation */
+	{ "return",   NULL },
 	{ "on_error", NULL },
 	{ "menu",    "NTCMENU"  },
 	{ "menustat","NMSQSTN"  },
@@ -424,6 +428,8 @@ struct st_flags
 {
 	/* User command line and toggled flags */
 	unsigned show_track_time    : 1;
+	unsigned show_command       : 1;
+	unsigned show_wait          : 1;
 	unsigned trans_html_amps    : 1;
 	unsigned use_colour         : 1;
 	unsigned verbose            : 1;
@@ -545,7 +551,8 @@ EXTERN size_t tx_bytes;
 EXTERN u_long rx_reads;
 EXTERN u_long tx_writes;
 EXTERN float timeout_secs;
-EXTERN float repeat_wait_secs;
+EXTERN float wait_repeat_secs;
+EXTERN float wait_next_secs;
 EXTERN char track_time_str[9];
 EXTERN char track_len_str[9];
 EXTERN char nja_prev;

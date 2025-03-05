@@ -141,3 +141,10 @@ Older versions skipped.
 20250301
 ========
 - Bug fix for "timeout" command.
+
+20250304
+========
+- Added "wait_next" command which puts a delay between streamer commands
+  given on the same command line seperated by ';'.
+- Added "showcmd" and "showwait" options for toggle command.
+- Code mods.

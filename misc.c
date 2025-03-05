@@ -12,6 +12,14 @@ int doWait(int comnum, float secs)
 
 	usecs = (u_int)(secs * 1000000);
 
+	if (usecs && flags.show_wait)
+	{
+		if (comnum == COM_WAIT_REPEAT)
+			colPrintf("~FYRepeat command wait...\n");
+		else if (comnum == COM_WAIT_NEXT)
+			colPrintf("~FYNext command wait...\n");
+	}
+
 	if (comnum == COM_WAIT_MENU && !tcp_sock)
 	{
 		/* We're not connected to anything */

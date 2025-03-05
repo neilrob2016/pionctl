@@ -39,24 +39,24 @@ void comSanityCheck(void)
 {
 	/*
 	for(int i=0;i < NUM_COMMANDS;++i)
-		printf("%-3d: %s\n",i,commands[i].com);
+		printf("%-3d: %s\n",i,commands[i].name);
 	*/
-	assert(NUM_COMMANDS == 125);
+	assert(NUM_COMMANDS == 126);
 	assert(LAST_CLIENT_COM == COM_ON_ERROR);
 	assert(FIRST_STREAMER_COM == COM_MENU);
-	assert(!strcmp(commands[COM_MENU].com,"menu"));
-	assert(!strcmp(commands[COM_FILTER].com,"filter"));
-	assert(!strcmp(commands[COM_LRA].com,"lra"));
-	assert(!strcmp(commands[COM_APDON].com,"apdon"));
-	assert(!strcmp(commands[COM_MSV].com,"msv"));
-	assert(!strcmp(commands[COM_DTS].com,"dts"));
-	assert(!strcmp(commands[COM_TIDALVER].com,"tidalver"));
-	assert(!strcmp(commands[COM_STOP].com,"stop"));
-	assert(!strcmp(commands[COM_SEEK].com,"seek"));
-	assert(!strcmp(commands[COM_MRMSTAT].com,"mrmstat"));
-	assert(!strcmp(commands[COM_SETNAME].com,"setname"));
-	assert(!strcmp(commands[COM_SETUP].com,"setup"));
-	assert(!strcmp(commands[COM_PRODID].com,"prodid"));
+	assert(!strcmp(commands[COM_MENU].name,"menu"));
+	assert(!strcmp(commands[COM_FILTER].name,"filter"));
+	assert(!strcmp(commands[COM_LRA].name,"lra"));
+	assert(!strcmp(commands[COM_APDON].name,"apdon"));
+	assert(!strcmp(commands[COM_MSV].name,"msv"));
+	assert(!strcmp(commands[COM_DTS].name,"dts"));
+	assert(!strcmp(commands[COM_TIDALVER].name,"tidalver"));
+	assert(!strcmp(commands[COM_STOP].name,"stop"));
+	assert(!strcmp(commands[COM_SEEK].name,"seek"));
+	assert(!strcmp(commands[COM_MRMSTAT].name,"mrmstat"));
+	assert(!strcmp(commands[COM_SETNAME].name,"setname"));
+	assert(!strcmp(commands[COM_SETUP].name,"setup"));
+	assert(!strcmp(commands[COM_PRODID].name,"prodid"));
 }
 
 
@@ -235,7 +235,8 @@ void init(void)
 	macro_append = -1;
 	start_time = time(0);
 	nri_command = 0;
-	repeat_wait_secs = 0;
+	wait_repeat_secs = 0;
+	wait_next_secs = 0;
 	timeout_secs = TIMEOUT_SECS;
 
 	runReset();

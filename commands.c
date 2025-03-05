@@ -9,7 +9,7 @@
 char *sorted_client_coms[NUM_CLIENT_COMS];
 char *sorted_streamer_coms[NUM_STREAMER_COMS];
 
-int parseCommand(char *buff, int bufflen);
+int parseCommand(char *buff, int bufflen, int *comnum_ptr);
 int sendCommand(int repeat_cnt, char *cmd, int cmd_len);
 int copyHistoryBuffer(int buffnum);
 int comSeek(int repeat_cnt, char *timestr);
@@ -54,6 +54,8 @@ void printFlagPromptTime(void);
 void printFlagHTML(void);
 void printFlagColour(void);
 void printFlagVerb(void);
+void printFlagShowCommand(void);
+void printFlagShowWait(void);
 
 void  clearHistory(void);
 char *bytesSizeStr(u_long num);
@@ -69,6 +71,7 @@ int parseInputLine(char *data, int len)
 	char *end;
 	char q_char;
 	char c;
+	int comnum;
 	int in_quotes;
 	int ret;
 
@@ -119,40 +122,44 @@ int parseInputLine(char *data, int len)
 		else
 			len = (int)(end - ptr);
 
-		if (len)
+		/* Nothing between seperator and next/end? */
+		if (!len) continue;
+
+		if (flags.macro_running || flags.cmdfile_running)
 		{
-			if (flags.macro_running || flags.cmdfile_running)
+			/* Skip initial whitespace */
+			for(ptr2=ptr;*ptr2 < 33;++ptr2);
+			if (flags.verbose)
 			{
-				/* Skip initial whitespace */
-				for(ptr2=ptr;*ptr2 < 33;++ptr2);
-				if (flags.verbose)
-				{
-					colPrintf("~FB~OLExec cmd:~RS %.*s\n",
-						len - (int)(ptr2-ptr),ptr2);
-				}
+				colPrintf("~FB~OLExec cmd:~RS %.*s\n",
+					len - (int)(ptr2-ptr),ptr2);
 			}
-
-			if ((ret = parseCommand(ptr,len)) != ERR_CMD_MISSING &&
-			    !flags.macro_running && !flags.cmdfile_running)
-			{
-				keyb_buffnum = (keyb_buffnum + 1) % MAX_HIST_BUFFERS;
-			}
-
-			/* Stop running */
-			if (flags.do_halt || flags.do_return) return OK;
-
-			if (ret != OK)
-			{
-				if (flags.on_error_halt) return ret;
-				if (on_error_skip_set)
-				{
-					on_error_skip_cnt = on_error_skip_set;
-					continue;
-				}
-			}
-			if (flags.interrupted) return ERR_CMD_FAIL;
-			if (!separator) break;
 		}
+
+		if ((ret = parseCommand(ptr,len,&comnum)) != ERR_CMD_MISSING &&
+		    !flags.macro_running && !flags.cmdfile_running)
+		{
+			keyb_buffnum = (keyb_buffnum + 1) % MAX_HIST_BUFFERS;
+		}
+
+		/* Stop running */
+		if (flags.do_halt || flags.do_return) return OK;
+
+		if (ret != OK)
+		{
+			if (flags.on_error_halt) return ret;
+			if (on_error_skip_set)
+			{
+				on_error_skip_cnt = on_error_skip_set;
+				continue;
+			}
+		}
+		if (flags.interrupted) return ERR_CMD_FAIL;
+		if (!*separator) break;
+
+		/* Delay between sending streamer commands */
+		if (wait_next_secs && comnum > LAST_CLIENT_COM)
+			doWait(COM_WAIT_NEXT,wait_next_secs);
 	}
 	return OK;
 }
@@ -162,7 +169,7 @@ int parseInputLine(char *data, int len)
 
 /*** Parse the command which can either be a built in command or a raw server
      command, eg NJAREQ  ***/
-int parseCommand(char *buff, int bufflen)
+int parseCommand(char *buff, int bufflen, int *comnum_ptr)
 {
 	char *words[MAX_WORDS];
 	char *comword;
@@ -332,6 +339,8 @@ int parseCommand(char *buff, int bufflen)
 		ret = ERR_CMD_FAIL;
 		goto FREE;
 	}
+	if (flags.show_command)
+		colPrintf("~FMCommand:~RS %s\n",commands[comnum].name);
 
 	/* If no data then its a built-in command */
 	if (!commands[comnum].data)
@@ -419,7 +428,7 @@ int parseCommand(char *buff, int bufflen)
 		if (word_cnt < cmd_word + 2 || 
 		    !comNumeric(comnum,repeat_cnt,words[cmd_word+1]))
 		{
-			usagePrintf("%s <number>\n",commands[comnum].com);
+			usagePrintf("%s <number>\n",commands[comnum].name);
 			ret = ERR_CMD_FAIL;
 		}
 		goto FREE;
@@ -479,32 +488,34 @@ int parseCommand(char *buff, int bufflen)
 	default:
 		if (comnum > LAST_CLIENT_COM) flags.reset_reverse = 1;
 	}
+	*comnum_ptr = comnum;
 	return ret;
 }
 
 
 
 
-/*** Look for a client command. Try exact match first and if that fails look 
-     for partial match ***/
+/*** Find the command ***/
 int getCommand(char *word, int len)
 {
 	int comnum;
 
+	/* Try full match */
 	for(comnum=0;
-	    comnum < NUM_COMMANDS && strcmp(word,commands[comnum].com);
+	    comnum < NUM_COMMANDS && strcmp(word,commands[comnum].name);
 	    ++comnum);
 
 	if (comnum < NUM_COMMANDS) return comnum;
 
+	/* Try partial match */
 	for(comnum=0;
-	    comnum < NUM_COMMANDS && strncmp(word,commands[comnum].com,len);
+	    comnum < NUM_COMMANDS && strncmp(word,commands[comnum].name,len);
 	    ++comnum);
 
 	if (comnum < NUM_COMMANDS)
 	{
 		if (flags.verbose)
-			colPrintf("~FMExpanded to:~RS \"%s\"\n",commands[comnum].com);
+			colPrintf("~FMExpanded to:~RS \"%s\"\n",commands[comnum].name);
 		return comnum;
 	}
 	return -1;
@@ -518,7 +529,8 @@ int sendCommand(int repeat_cnt, char *cmd, int cmd_len)
 	int i;
 	for(i=0;i < repeat_cnt;++i)
 	{
-		if (i && repeat_wait_secs) doWait(COM_WAIT,repeat_wait_secs);
+		if (i && wait_repeat_secs)
+			doWait(COM_WAIT_REPEAT,wait_repeat_secs);
 		if (!writeSocket(cmd,cmd_len)) return 0;
 	}
 	return 1;
@@ -700,6 +712,7 @@ int processBuiltInCommand(
 	case COM_WAIT:
 	case COM_WAIT_MENU:
 	case COM_WAIT_REPEAT:
+	case COM_WAIT_NEXT:
 		return comWait(comnum,param1);
 	case COM_CLS:
 		/* [2J clears screen, [H makes the cursor go to the top left */
@@ -734,20 +747,22 @@ int processBuiltInCommand(
 
 int comToggle(char *opt)
 {
-	char *options[] =
+	char *options[7] =
 	{
 		"tracktm",
 		"prompttm",
 		"htmlamp",
 		"colour",
-		"verbose"
+		"verbose",
+		"showcmd",
+		"showwait"
 	};
 	int len;
 	int i;
 
 	if (!opt) goto USAGE;
 	len = strlen(opt);
-	for(i=0;i < 5;++i)
+	for(i=0;i < 7;++i)
 	{
 		if (strncmp(opt,options[i],len)) continue;
 
@@ -773,12 +788,22 @@ int comToggle(char *opt)
 			flags.verbose = !flags.verbose;
 			printFlagVerb();
 			return OK;
+		case 5:
+			flags.show_command = !flags.show_command;
+			printFlagShowCommand();
+			return OK;
+		case 6:
+			flags.show_wait = !flags.show_wait;
+			printFlagShowWait();
+			return OK;
 		}
 	}
 	USAGE:
 	usagePrintf("toggle tracktm  : Show track time received from streamer.\n");
 	puts("              prompttm : Update prompt times if appropriate prompt type set.");
 	puts("              htmlamp  : Translate HTML ampersand values text data.");
+	puts("              showcmd  : Show the command name before the command is executed.");
+	puts("              showwait : Show waiting between commands.");
 	puts("              colour");
 	puts("              verbose");
 	return ERR_CMD_FAIL;
@@ -928,9 +953,10 @@ int comShow(char *opt, char *pat, int max)
 
 void optShowSettings(void)
 {
-	colPrintf("\n~BM~FW*** Wait seconds ***\n\n");
-	printf("Cmd repeat wait: %.2f\n",repeat_wait_secs);
-	colPrintf("Connect timeout: %.2f %s\n\n",
+	colPrintf("\n~BM~FW*** Wait times ***\n\n");
+	printf("Command repeat : %.2f secs\n",wait_repeat_secs);
+	printf("Command next   : %.2f secs\n",wait_next_secs);
+	colPrintf("Connect timeout: %.2f secs %s\n\n",
 		timeout_secs,
 		timeout_secs ? "" : "~FY(Wait for TCP timeout)");
 
@@ -940,6 +966,8 @@ void optShowSettings(void)
 	printFlagHTML();
 	printFlagColour();
 	printFlagVerb();
+	printFlagShowCommand();
+	printFlagShowWait();
 	putchar('\n');
 }
 
@@ -960,7 +988,7 @@ void optShowTXCommands(char *pat)
 		if (commands[i].data)
 		{
 			++cnt1;
-			if (!pat || wildMatch(commands[i].com,pat))
+			if (!pat || wildMatch(commands[i].name,pat))
 			{
 				if (cnt2 && !(cnt2 % 3)) putchar('\n');
 				data = commands[i].data;
@@ -978,7 +1006,7 @@ void optShowTXCommands(char *pat)
 					strcpy(str,data);
 
 				colPrintf("%-8s = ~FT%-15s~RS",
-					commands[i].com,str);
+					commands[i].name,str);
 				++cnt2;
 			}
 		}
@@ -1193,7 +1221,7 @@ int optHelpMain(int extra, char *pat)
 		}
 		if (pat)
 		{
-			if (!wildMatch(commands[i].com,pat)) continue;
+			if (!wildMatch(commands[i].name,pat)) continue;
 		}
 		else
 		{
@@ -1262,12 +1290,12 @@ int optHelpMain(int extra, char *pat)
 			if (i > LAST_CLIENT_COM)
 			{
 				printf("   %-10s (%.3s)",
-					commands[i].com,
+					commands[i].name,
 					commands[i].data);
 			}
-			else printf("   %-10s",commands[i].com);
+			else printf("   %-10s",commands[i].name);
 		}
-		else printf("   %-10s",commands[i].com);
+		else printf("   %-10s",commands[i].name);
 		if (!(++cnt % nlafter))
 		{
 			putchar('\n');
@@ -1422,7 +1450,12 @@ int comWait(int comnum, char *param)
 		if ((secs = atof(param)) < 0) goto USAGE;
 		if (comnum == COM_WAIT_REPEAT)
 		{
-			repeat_wait_secs = secs;
+			wait_repeat_secs = secs;
+			return OK;
+		}
+		if (comnum == COM_WAIT_NEXT)
+		{
+			wait_next_secs = secs;
 			return OK;
 		}
 	}
@@ -1440,20 +1473,10 @@ int comWait(int comnum, char *param)
 	return (usleep(usecs) == -1 && errno == EINTR) ? ERR_CMD_FAIL : OK;
 
 	USAGE:
-	switch(comnum)
-	{
-	case COM_WAIT:
-		usagePrintf("wait <seconds>\n");
-		break;
-	case COM_WAIT_REPEAT:
-		usagePrintf("wait_rep <seconds>\n");
-		break;
-	case COM_WAIT_MENU:
+	if (comnum == COM_WAIT_MENU)
 		usagePrintf("wait_menu [<seconds>]\n");
-		break;
-	default:
-		assert(0);	
-	}
+	else
+		usagePrintf("%s <seconds>\n",commands[comnum].name);
 	return ERR_CMD_FAIL;
 }
 
@@ -1708,6 +1731,24 @@ void printFlagVerb(void)
 	PRINT_ON_OFF(flags.verbose);
 }
 
+
+
+
+void printFlagShowCommand(void)
+{
+	printf("Show command         : ");
+	PRINT_ON_OFF(flags.show_command);
+}
+
+
+
+
+void printFlagShowWait(void)
+{
+	printf("Show wait            : ");
+	PRINT_ON_OFF(flags.show_wait);
+}
+
 /********************************** MISC *************************************/
 
 /*** addr1 and addr2 contain the array element memory location, not the
@@ -1726,11 +1767,11 @@ void sortCommands(void)
 	int i;
 
 	for(i=0;i < NUM_CLIENT_COMS;++i)
-		sorted_client_coms[i] = commands[i].com;
+		sorted_client_coms[i] = commands[i].name;
 	qsort(sorted_client_coms,NUM_CLIENT_COMS,sizeof(char *),compareComs);
 
 	for(i=0;i < NUM_STREAMER_COMS;++i)
-		sorted_streamer_coms[i] = commands[FIRST_STREAMER_COM+i].com;
+		sorted_streamer_coms[i] = commands[FIRST_STREAMER_COM+i].name;
 	qsort(sorted_streamer_coms,NUM_STREAMER_COMS,sizeof(char *),compareComs);
 }
 
