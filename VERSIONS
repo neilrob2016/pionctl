@@ -148,3 +148,8 @@ Older versions skipped.
   given on the same command line seperated by ';'.
 - Added "showcmd" and "showwait" options for toggle command.
 - Code mods.
+
+20250411
+========
+- Fixed bug whereby control-c didn't stop a repeated streamer command loop.
+- Minor updates

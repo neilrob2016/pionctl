@@ -527,11 +527,16 @@ int getCommand(char *word, int len)
 int sendCommand(int repeat_cnt, char *cmd, int cmd_len)
 {
 	int i;
+	flags.interrupted = 0;
 	for(i=0;i < repeat_cnt;++i)
 	{
-		if (i && wait_repeat_secs)
-			doWait(COM_WAIT_REPEAT,wait_repeat_secs);
-		if (!writeSocket(cmd,cmd_len)) return 0;
+		if (i && 
+		    wait_repeat_secs &&
+		    doWait(COM_WAIT_REPEAT,wait_repeat_secs) == ERR_CMD_FAIL)
+		{
+			return 0;
+		}
+		if (flags.interrupted || !writeSocket(cmd,cmd_len)) return 0;
 	}
 	return 1;
 }

@@ -176,15 +176,18 @@ int dumpRXList(char *pat, int max)
 void setEntryValue(t_rx_entry *entry, char *value, int val_len)
 {
 	FREEIF(entry->value);
-	if (val_len)
+	if (val_len > 0)
 	{
 		assert((entry->value = (char *)malloc(val_len+1)));
 		memcpy(entry->value,value,val_len);
 		entry->value[val_len] = 0;
+		entry->val_len = val_len;
 	}
-	else entry->value = NULL;
-
-	entry->val_len = val_len;
+	else
+	{
+		entry->value = NULL;
+		entry->val_len = 0;
+	}
 }
 
 

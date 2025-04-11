@@ -416,9 +416,23 @@ void readSocket(int print_prompt)
 	/* We do now */
 	pkt_data = (t_iscp_data *)(buffer[BUFF_TCP].data + pkt_hdr->hdr_len);
 	if (strncmp(pkt_hdr->iscp,"ISCP",4))
-		warnPrintf("\nUnknown preamble: %.4s\n",pkt_hdr->iscp);
+	{
+		/* Somethings corrupted. Print error then disconnect */
+		for(len=0;len < 4;++len)
+			if (pkt_hdr->iscp[len] < 32) pkt_hdr->iscp[len] = '?';	
+		errPrintf("Unexpected packet preamble: \"%.4s\"\n",pkt_hdr->iscp);
+		goto ERROR;
+	}
 	if (pkt_data->start_char != START_CHAR)
-		warnPrintf("\nUnknown start char: %c\n",pkt_data->start_char);
+	{
+		/* Should be an exclamation mark but don't error as we have
+		   an ISCP packet */
+		warnPrintf("Unexpected packet data start char: %c (%d)\n",
+			(pkt_data->start_char < 32) ? '?' : pkt_data->start_char,
+			pkt_data->start_char);
+		clearBuffer(BUFF_TCP);
+		return;
+	}
 
 	/* Add RX to list for recall later. Returns 1 if new data */
 	new_data = updateRXList(
@@ -668,6 +682,8 @@ void networkClear(void)
 			colPrintf("~BM~FW*** ~LIDISCONNECTED~RS~BM ***\n");
 			connect_time = 0;
 		}
+		// Set so any command loops will halt
+		flags.interrupted = 1;
 	}
 	else if (flags.verbose) ok();
 }
